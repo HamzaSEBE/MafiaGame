@@ -1,5 +1,12 @@
 # 🕵️‍♂️ مافيا عالشوارب (Mafia 3al Shawarab)
 
+<div align="center">
+  <a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/Mafia_3al_Shawarab.apk">
+    <img src="https://img.shields.io/badge/Download_APK-Mafia__3al__Shawarab-E11D48?style=for-the-badge&logo=android&logoColor=white&scale=1.5" alt="Download APK" />
+  </a>
+</div>
+<br>
+
 مرحباً بك في أداة **"مافيا عالشوارب"**، المساعد الأول والأذكى لحكام لعبة المافيا الكلاسيكية! 
 
 هذا المستودع يحتوي على ملف التطبيق (APK) الجاهز للتحميل والتثبيت مباشرة على هواتف الأندرويد.

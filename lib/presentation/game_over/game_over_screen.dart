@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
@@ -13,6 +13,7 @@ import 'package:mafia_nightfall/data/repositories/history_repository.dart';
 import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/presentation/game_over/timeline_report_screen.dart';
+import 'package:mafia_nightfall/domain/engine/timeline_generator.dart';
 
 class GameOverScreen extends ConsumerStatefulWidget {
   const GameOverScreen({super.key});
@@ -38,15 +39,19 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
     final winner = gameState.winner;
     final isMafiaWin = winner == Team.mafia;
     
+    final winnerStr = isMafiaWin ? 'المافيا' : 'المواطنون';
+    final narrative = TimelineGenerator.generateNarrative(gameState, winnerStr);
+
     final record = GameRecord(
       id: gameState.id,
       date: DateTime.now(),
-      winningTeam: isMafiaWin ? 'مافيا' : 'مواطنون',
+      winningTeam: winnerStr,
       players: gameState.players.map((p) => PlayerRecord(
         name: p.name,
         roleName: AppTheme.roleArabicName(p.role),
-        team: p.role.team == Team.mafia ? 'مافيا' : 'مواطنون',
+        team: p.role.team == Team.mafia ? 'المافيا' : 'المواطنون',
       )).toList(),
+      newspaperText: narrative,
     );
     
     final repo = HistoryRepository();

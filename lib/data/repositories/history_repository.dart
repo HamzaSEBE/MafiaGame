@@ -1,18 +1,20 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 class GameRecord {
   final String id;
   final DateTime date;
-  final String winningTeam; // 'مافيا' or 'مواطنون'
+  final String winningTeam; 
   final List<PlayerRecord> players;
+  final String? newspaperText;
 
   GameRecord({
     required this.id,
     required this.date,
     required this.winningTeam,
     required this.players,
+    this.newspaperText,
   });
 
   Map<String, dynamic> toJson() => {
@@ -20,6 +22,7 @@ class GameRecord {
     'date': date.toIso8601String(),
     'winningTeam': winningTeam,
     'players': players.map((p) => p.toJson()).toList(),
+    'newspaperText': newspaperText,
   };
 
   factory GameRecord.fromJson(Map<String, dynamic> json) => GameRecord(
@@ -27,6 +30,7 @@ class GameRecord {
     date: DateTime.parse(json['date']),
     winningTeam: json['winningTeam'],
     players: (json['players'] as List).map((p) => PlayerRecord.fromJson(p)).toList(),
+    newspaperText: json['newspaperText'],
   );
 }
 
@@ -70,7 +74,7 @@ class HistoryRepository {
       }
       final String contents = await file.readAsString();
       final List<dynamic> jsonList = jsonDecode(contents);
-      return jsonList.map((j) => GameRecord.fromJson(j)).toList().reversed.toList(); // Newest first
+      return jsonList.map((j) => GameRecord.fromJson(j)).toList().reversed.toList(); 
     } catch (e) {
       return [];
     }

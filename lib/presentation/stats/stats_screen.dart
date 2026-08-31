@@ -24,8 +24,28 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   Future<void> _loadStats() async {
     final repo = ref.read(playerStatsRepoProvider);
     final stats = await repo.loadStats();
-    // Sort by games played
-    stats.sort((a, b) => b.gamesPlayed.compareTo(a.gamesPlayed));
+    
+    // Sort logic: Best to worst
+    // 1. Total Wins
+    // 2. Win Rate
+    // 3. Games Played
+    stats.sort((a, b) {
+      final winsA = a.mafiaWins + a.citizenWins;
+      final winsB = b.mafiaWins + b.citizenWins;
+      
+      if (winsA != winsB) {
+        return winsB.compareTo(winsA);
+      }
+      
+      final rateA = a.gamesPlayed == 0 ? 0 : winsA / a.gamesPlayed;
+      final rateB = b.gamesPlayed == 0 ? 0 : winsB / b.gamesPlayed;
+      if (rateA != rateB) {
+        return rateB.compareTo(rateA);
+      }
+      
+      return b.gamesPlayed.compareTo(a.gamesPlayed);
+    });
+
     setState(() {
       _stats = stats;
       _isLoading = false;
@@ -33,18 +53,24 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   String _getBadge(PlayerStats stat) {
-    if (stat.gamesPlayed < 2) return 'مبتدئ 👶';
-    if (stat.killedFirstNight >= 2 && stat.killedFirstNight >= stat.gamesPlayed / 2) return 'المنحوس 💀';
-    if (stat.mafiaWins >= 3 && stat.mafiaWins > stat.citizenWins) return 'العرّاب 👑';
-    if (stat.citizenWins >= 3 && stat.citizenWins > stat.mafiaWins) return 'المحقق 🕵️';
-    return 'لاعب خطير 🔥';
+    if (stat.gamesPlayed < 3) return 'مبتدئ 👶';
+    if (stat.killedFirstNight > 0 && stat.killedFirstNight >= stat.gamesPlayed * 0.3) return 'المنحوس 💀';
+    
+    final totalWins = stat.mafiaWins + stat.citizenWins;
+    final winRate = stat.gamesPlayed == 0 ? 0 : totalWins / stat.gamesPlayed;
+    
+    if (stat.mafiaWins >= 2 && stat.mafiaWins > stat.citizenWins) return 'العرّاب 👑';
+    if (stat.citizenWins >= 2 && stat.citizenWins > stat.mafiaWins) return 'المحقق 🕵️';
+    if (winRate >= 0.6) return 'محترف 🌟';
+    
+    return 'لاعب عادي 👤';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إحصائيات اللاعبين'),
+        title: const Text('إحصائيات اللاعبين الأساطير'),
         backgroundColor: AppTheme.surface,
       ),
       body: _isLoading
@@ -56,10 +82,17 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   itemCount: _stats.length,
                   itemBuilder: (context, index) {
                     final stat = _stats[index];
+                    final losses = stat.gamesPlayed - (stat.mafiaWins + stat.citizenWins);
+                    final rankColor = index == 0 ? Colors.amber : (index == 1 ? Colors.grey[400] : (index == 2 ? Colors.brown[300] : AppTheme.surfaceHigh));
+                    final isTop3 = index < 3;
+                    
                     return Card(
                       color: AppTheme.surfaceHigh,
                       margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: isTop3 ? BorderSide(color: rankColor!, width: 2) : BorderSide.none,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -68,31 +101,48 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  stat.name,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.white),
+                                Row(
+                                  children: [
+                                    if (isTop3) ...[
+                                      Icon(Icons.emoji_events, color: rankColor, size: 28),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Text(
+                                      '${index + 1}. ${stat.name}',
+                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.white),
+                                    ),
+                                  ],
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.mafiaPrimary.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: AppTheme.background,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppTheme.mafiaAccent.withValues(alpha: 0.3)),
                                   ),
                                   child: Text(
                                     _getBadge(stat),
-                                    style: const TextStyle(color: AppTheme.mafiaAccent, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                                    style: const TextStyle(color: AppTheme.mafiaAccent, fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _StatItem(label: 'لعب', value: stat.gamesPlayed.toString(), color: Colors.blueAccent),
-                                _StatItem(label: 'فوز مافيا', value: stat.mafiaWins.toString(), color: AppTheme.mafiaPrimary),
-                                _StatItem(label: 'فوز مواطن', value: stat.citizenWins.toString(), color: AppTheme.citizensPrimary),
-                              ],
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.background.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _StatItem(label: 'لعب', value: stat.gamesPlayed.toString(), color: Colors.blueAccent),
+                                  _StatItem(label: 'فاز مافيا', value: stat.mafiaWins.toString(), color: AppTheme.mafiaPrimary),
+                                  _StatItem(label: 'فاز مواطن', value: stat.citizenWins.toString(), color: AppTheme.citizensPrimary),
+                                  _StatItem(label: 'خسارة', value: losses.toString(), color: AppTheme.error),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -115,8 +165,9 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontFamily: 'Cairo')),
+        Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
       ],
     );
   }

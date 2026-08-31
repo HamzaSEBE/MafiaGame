@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
 import 'package:mafia_nightfall/domain/entities/player_stats.dart';
@@ -33,24 +33,24 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   String _getBadge(PlayerStats stat) {
-    if (stat.gamesPlayed < 2) return '????? ??';
-    if (stat.killedFirstNight >= 2 && stat.killedFirstNight >= stat.gamesPlayed / 2) return '??????? ??';
-    if (stat.mafiaWins >= 3 && stat.mafiaWins > stat.citizenWins) return '??????? ??';
-    if (stat.citizenWins >= 3 && stat.citizenWins > stat.mafiaWins) return '?????? ???';
-    return '???? ???? ??';
+    if (stat.gamesPlayed < 2) return 'مبتدئ 👶';
+    if (stat.killedFirstNight >= 2 && stat.killedFirstNight >= stat.gamesPlayed / 2) return 'المنحوس 💀';
+    if (stat.mafiaWins >= 3 && stat.mafiaWins > stat.citizenWins) return 'العرّاب 👑';
+    if (stat.citizenWins >= 3 && stat.citizenWins > stat.mafiaWins) return 'المحقق 🕵️';
+    return 'لاعب خطير 🔥';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('???????? ????????'),
+        title: const Text('إحصائيات اللاعبين'),
         backgroundColor: AppTheme.surface,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _stats.isEmpty
-              ? const Center(child: Text('?? ???? ???????? ???. ???? ???? ?????? ????????!'))
+              ? const Center(child: Text('لا توجد إحصائيات بعد. العب جولة لتسجيل البيانات!'))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _stats.length,
@@ -89,9 +89,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _StatItem(label: '???', value: stat.gamesPlayed.toString(), color: Colors.blueAccent),
-                                _StatItem(label: '??? ?????', value: stat.mafiaWins.toString(), color: AppTheme.mafiaPrimary),
-                                _StatItem(label: '??? ?????', value: stat.citizenWins.toString(), color: AppTheme.citizensPrimary),
+                                _StatItem(label: 'لعب', value: stat.gamesPlayed.toString(), color: Colors.blueAccent),
+                                _StatItem(label: 'فوز مافيا', value: stat.mafiaWins.toString(), color: AppTheme.mafiaPrimary),
+                                _StatItem(label: 'فوز مواطن', value: stat.citizenWins.toString(), color: AppTheme.citizensPrimary),
                               ],
                             ),
                           ],

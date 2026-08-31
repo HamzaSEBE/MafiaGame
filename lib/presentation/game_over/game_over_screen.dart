@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
-import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 
@@ -78,7 +77,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
 
     final winColor    = isMafiaWin ? AppTheme.mafiaAccent  : AppTheme.citizensAccent;
     final winTitle    = isMafiaWin ? 'فازت المافيا!'       : 'فاز المواطنون!';
-    final winSubtitle = isMafiaWin ? 'أحكمت المافيا قبضتها على المدينة' : 'دافع المواطنون عن مدينتهم';
+    final winSubtitle = isMafiaWin ? 'أحكمت المافيا قبضتها على المدينة' : 'تم تطهير المدينة من الخونة';
     final winIcon     = isMafiaWin ? Icons.local_fire_department : Icons.shield;
 
     // Build final stats
@@ -206,56 +205,56 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
 }
 
 class _PlayerList extends StatelessWidget {
-  final List players;
+  final List<Player> players;
   final Color teamColor;
+
   const _PlayerList({required this.players, required this.teamColor});
 
   @override
-  Widget build(BuildContext context) => ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        itemCount: players.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (ctx, i) {
-          final p = players[i];
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: p.isAlive ? teamColor.withValues(alpha: 0.3) : AppTheme.death.withValues(alpha: 0.2)),
-            ),
-            child: Row(
-              children: [
-                Icon(AppTheme.roleIcon(p.role), color: p.isAlive ? teamColor : AppTheme.death, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p.name, style: TextStyle(
-                        fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w600,
-                        color: p.isAlive ? AppTheme.textPrimary : AppTheme.death,
-                        decoration: p.isAlive ? null : TextDecoration.lineThrough,
-                      )),
-                      Text(AppTheme.roleArabicName(p.role), style: TextStyle(color: teamColor.withValues(alpha: 0.8), fontSize: 12, fontFamily: 'Cairo')),
-                    ],
+  Widget build(BuildContext context) {
+    if (players.isEmpty) {
+      return const Center(child: Text('لا يوجد', style: TextStyle(color: AppTheme.textSecondary)));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      itemCount: players.length,
+      itemBuilder: (ctx, i) {
+        final p = players[i];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceHigh,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: teamColor.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    image: AssetImage(AppTheme.roleImage(p.role)),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: p.isAlive ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.death.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    p.isAlive ? 'حي' : 'ميت',
-                    style: TextStyle(color: p.isAlive ? AppTheme.success : AppTheme.death, fontSize: 12, fontFamily: 'Cairo'),
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Cairo', color: Colors.white)),
+                    Text(AppTheme.roleArabicName(p.role), style: TextStyle(color: teamColor, fontSize: 13, fontFamily: 'Cairo')),
+                  ],
                 ),
-              ],
-            ),
-          );
-        },
-      );
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

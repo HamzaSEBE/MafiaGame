@@ -1,12 +1,11 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/setup/setup_screen.dart';
-import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 import 'package:mafia_nightfall/presentation/history/game_history_screen.dart';
 import 'package:mafia_nightfall/presentation/settings/settings_screen.dart';
 import 'package:mafia_nightfall/presentation/stats/stats_screen.dart';
+import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,20 +29,10 @@ class HomeScreen extends ConsumerWidget {
                     Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Background glow for the logo
-                        Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.mafiaPrimary.withValues(alpha: 0.2),
-                                blurRadius: 80,
-                                spreadRadius: 20,
-                              ),
-                            ],
-                          ),
+                        Positioned(
+                          top: -10,
+                          left: -10,
+                          child: Icon(Icons.star, size: 40, color: AppTheme.mafiaPrimary.withValues(alpha: 0.3)),
                         ),
                         Column(
                           children: [
@@ -91,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'مساعد حكم لعبة المافيا',
+                      'المساعد الذكي لحكام المافيا',
                       style: TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 16,
@@ -111,7 +100,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     _EpicButton(
-                      label: 'سجل الألعاب',
+                      label: 'سجل المباريات',
                       icon: Icons.history_rounded,
                       color: AppTheme.citizensPrimary,
                       onTap: () => Navigator.of(context).push(
@@ -173,56 +162,45 @@ class _EpicButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            highlightColor: color.withValues(alpha: 0.2),
-            splashColor: color.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-              decoration: BoxDecoration(
-                color: AppTheme.surface.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: color.withValues(alpha: 0.2),
+        highlightColor: color.withValues(alpha: 0.1),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceHigh.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.05),
+                blurRadius: 10,
+                spreadRadius: 2,
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: color, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Cairo',
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(Icons.arrow_forward_ios_rounded, color: color.withValues(alpha: 0.7), size: 20),
-                ],
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontFamily: 'Cairo',
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
+              const Spacer(),
+              Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.5)),
+            ],
           ),
         ),
       ),

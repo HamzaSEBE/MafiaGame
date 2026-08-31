@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
@@ -44,18 +44,18 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameOrchestratorProvider);
-    final winnerStr = gameState.winner == Team.mafia ? '???????' : '?????????';
+    final winnerStr = gameState.winner == Team.mafia ? 'المافيا' : 'المواطنون';
     final narrative = TimelineGenerator.generateNarrative(gameState.eventHistory, winnerStr);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('????? ???????'),
+        title: const Text('جريدة المدينة'),
         actions: [
           if (!_isCapturing)
             IconButton(
               icon: const Icon(Icons.share, color: Colors.amber),
               onPressed: _shareReport,
-              tooltip: '??????',
+              tooltip: 'مشاركة',
             ),
         ],
       ),
@@ -86,7 +86,7 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
                 const Divider(color: AppTheme.surfaceHigh),
                 const SizedBox(height: 8),
                 const Text(
-                  '?? ??????? ??????: ????? ????? ???????? ??????',
+                  'تم الإنشاء بواسطة: تطبيق مافيا عالشوارب 🕵️‍♂️',
                   style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 12),
                   textAlign: TextAlign.center,
                   textDirection: TextDirection.rtl,

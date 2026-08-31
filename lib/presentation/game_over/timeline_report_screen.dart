@@ -45,7 +45,7 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameOrchestratorProvider);
     final winnerStr = gameState.winner == Team.mafia ? 'المافيا' : 'المواطنون';
-    final narrative = TimelineGenerator.generateNarrative(gameState.eventHistory, winnerStr);
+    final narrative = TimelineGenerator.generateNarrative(gameState, winnerStr);
 
     return Scaffold(
       appBar: AppBar(

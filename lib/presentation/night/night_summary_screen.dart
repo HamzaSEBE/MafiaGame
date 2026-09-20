@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
@@ -200,7 +201,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       return ids.map((id) => state.getPlayerById(id)?.name ?? 'مجهول').join('، ');
     }
 
-    return Scaffold(
+    return GamePopScope(child: Scaffold(
       appBar: AppBar(
         title: const Text('ملخص الليل (للحكم فقط)'),
         automaticallyImplyLeading: false,
@@ -314,7 +315,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

@@ -23,14 +23,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       await ref.read(authServiceProvider).resetPassword(email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±')),
+          const SnackBar(content: Text('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك', style: TextStyle(fontFamily: 'Cairo'))),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ø®Ø·Ø£: ${e.toString()}')),
+          const SnackBar(content: Text('خطأ: الرجاء التأكد من صحة البريد الإلكتروني', style: TextStyle(fontFamily: 'Cairo'))),
         );
       }
     } finally {
@@ -51,6 +51,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -58,43 +59,51 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_reset, size: 80, color: Color(0xFFE11D48)),
+              const Icon(Icons.lock_reset, size: 80, color: AppTheme.mafiaPrimary),
               const SizedBox(height: 24),
               const Text(
-                'Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±',
-                style: TextStyle(color: Color(0xFFF5F5F7), fontSize: 24, fontWeight: FontWeight.bold),
+                'استعادة كلمة المرور',
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 28, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 16, fontFamily: 'Cairo'),
               ),
               const SizedBox(height: 32),
               TextField(
                 controller: _emailController,
-                style: const TextStyle(color: Color(0xFFF5F5F7)),
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: AppTheme.textPrimary),
                 decoration: InputDecoration(
-                  labelText: 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ',
-                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                  labelText: 'البريد الإلكتروني',
+                  labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                  prefixIcon: const Icon(Icons.email, color: AppTheme.textSecondary),
                   filled: true,
-                  fillColor: const Color(0xFF1A1A2E),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  fillColor: AppTheme.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE11D48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    backgroundColor: AppTheme.mafiaPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: _isLoading ? null : _resetPassword,
                   child: _isLoading 
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„ØªØ¹ÙŠÙŠÙ†', style: TextStyle(color: Colors.white, fontSize: 16)),
+                      : const Text('إرسال رابط إعادة التعيين', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                 ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„', style: TextStyle(color: Color(0xFF8E8E93))),
+                child: const Text('العودة لتسجيل الدخول', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 16)),
               ),
             ],
           ),
@@ -103,4 +112,3 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     );
   }
 }
-

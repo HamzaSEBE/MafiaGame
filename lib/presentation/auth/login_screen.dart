@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
 import 'package:mafia_nightfall/presentation/auth/register_screen.dart';
 import 'package:mafia_nightfall/presentation/auth/forgot_password_screen.dart';
@@ -15,13 +16,13 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _emailOrUserController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _emailOrUserController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -32,14 +33,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
     
     try {
+      String loginIdentifier = _emailOrUserController.text.trim();
+      String emailToUse = loginIdentifier;
+
+      // If it doesn't look like an email, assume it's a username and fetch the email
+      if (!loginIdentifier.contains('@')) {
+        final query = await FirebaseFirestore.instance
+            .collection('users')
+            .where('username', isEqualTo: loginIdentifier)
+            .limit(1)
+            .get();
+            
+        if (query.docs.isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('اسم المستخدم غير موجود', style: TextStyle(fontFamily: 'Cairo'))),
+            );
+            setState(() => _isLoading = false);
+          }
+          return;
+        }
+        emailToUse = query.docs.first.data()['email'] as String;
+      }
+
       await ref.read(authServiceProvider).signIn(
-        email: _emailController.text.trim(),
+        email: emailToUse,
         password: _passwordController.text,
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تسجيل الدخول')),
+          const SnackBar(content: Text('البريد الإلكتروني أو كلمة المرور غير صحيحة', style: TextStyle(fontFamily: 'Cairo'))),
         );
       }
     } finally {
@@ -59,6 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,22 +103,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 48),
                     TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _emailOrUserController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        labelText: 'البريد الإلكتروني',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary),
-                        prefixIcon: const Icon(Icons.email, color: AppTheme.textSecondary),
+                        labelText: 'البريد الإلكتروني أو اسم المستخدم',
+                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: const Icon(Icons.person, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'مطلوب';
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}\$').hasMatch(value)) {
-                          return 'صيغة البريد الإلكتروني غير صحيحة';
-                        }
                         return null;
                       },
                     ),
@@ -104,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'كلمة المرور',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
                         prefixIcon: const Icon(Icons.lock, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
@@ -123,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           context,
                           MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                         ),
-                        child: const Text('نسيت كلمة المرور؟', style: TextStyle(color: AppTheme.mafiaAccent)),
+                        child: const Text('نسيت كلمة المرور؟', style: TextStyle(color: AppTheme.mafiaAccent, fontFamily: 'Cairo')),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -136,7 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('تسجيل الدخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          : const Text('تسجيل الدخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                     ),
                     const SizedBox(height: 24),
                     TextButton(
@@ -144,7 +165,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         context,
                         MaterialPageRoute(builder: (_) => const RegisterScreen()),
                       ),
-                      child: const Text('مستخدم جديد؟ أنشئ حساب', style: TextStyle(color: AppTheme.textPrimary)),
+                      child: const Text('مستخدم جديد؟ أنشئ حساب', style: TextStyle(color: AppTheme.textPrimary, fontFamily: 'Cairo')),
                     ),
                   ],
                 ),

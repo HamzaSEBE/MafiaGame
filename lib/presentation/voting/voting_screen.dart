@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
@@ -404,7 +405,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
 
     final state = ref.watch(gameOrchestratorProvider);
 
-    return Scaffold(
+    return GamePopScope(child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -528,7 +529,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   void _confirmExit(BuildContext context, WidgetRef ref) {

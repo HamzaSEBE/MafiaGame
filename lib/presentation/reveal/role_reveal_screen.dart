@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
@@ -73,7 +74,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen>
     final color = AppTheme.roleColor(role);
     final isLastPlayer = _currentIndex == players.length - 1;
 
-    return Scaffold(
+    return GamePopScope(child: Scaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -216,6 +217,6 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen>
           ),
         ),
       ),
-    );
+    ));
   }
 }

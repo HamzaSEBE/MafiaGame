@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
@@ -19,7 +20,7 @@ class DayScreen extends ConsumerWidget {
     final dead = state.deadPlayers;
     final round = state.round;
 
-    return Scaffold(
+    return GamePopScope(child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -224,7 +225,7 @@ class DayScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   void _showTimerDialog(BuildContext context, String playerName) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
@@ -295,30 +296,8 @@ class _NightScreenState extends ConsumerState<NightScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        if (_stepIndex > 0) {
-          _goBack();
-        } else {
-          final exit = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              backgroundColor: const Color(0xFF1A1A2E),
-              title: const Text('إنهاء اللعبة؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-              content: const Text('هل تريد الخروج من اللعبة والعودة للرئيسية؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.white))),
-                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('خروج', style: TextStyle(color: Colors.red))),
-              ],
-            ),
-          );
-          if (exit == true && mounted) {
-            Navigator.of(context).pop();
-          }
-        }
-      },
+  Widget build(BuildContext context) {    return GamePopScope(
+      onBackStep: _stepIndex > 0 ? _goBack : null,
       child: Builder(builder: (context) {
 
     final gameState = ref.watch(gameOrchestratorProvider);

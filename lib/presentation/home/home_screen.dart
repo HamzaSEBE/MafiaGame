@@ -1,198 +1,164 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/presentation/setup/setup_screen.dart';
 import 'package:mafia_nightfall/presentation/history/game_history_screen.dart';
-import 'package:mafia_nightfall/presentation/stats/stats_screen.dart';
 import 'package:mafia_nightfall/presentation/settings/settings_screen.dart';
 import 'package:mafia_nightfall/presentation/profile/profile_screen.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
-import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
+import 'package:mafia_nightfall/data/services/auth_service.dart';
+import 'dart:ui';
 
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  Map<String, dynamic>? _profileData;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid != null) {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (mounted) {
-        setState(() {
-          _profileData = doc.data();
-        });
-      }
-    }
-  }
-
-  ImageProvider? _getProfileImage() {
-    final base64String = _profileData?['photoBase64'] as String?;
-    if (base64String != null && base64String.isNotEmpty) {
-      try {
-        return MemoryImage(base64Decode(base64String));
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final displayName = _profileData?['displayName'] ?? 'لاعب';
-    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
-    final imageProvider = _getProfileImage();
-
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authServiceProvider).currentUser;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: const Color(0xFF07070B), // Deep luxurious black
       body: Stack(
         children: [
-          const AnimatedBackground(),
-          
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 80), 
-                  // Premium Mafia Logo Area
-                  Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.mafiaPrimary.withValues(alpha: 0.6),
-                          blurRadius: 50,
-                          spreadRadius: 10,
-                        ),
-                        BoxShadow(
-                          color: AppTheme.surface.withValues(alpha: 0.8),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/mafia_sheikh.jpg'),
-                        fit: BoxFit.cover,
-                      ),
-                      border: Border.all(color: AppTheme.mafiaPrimary, width: 3),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    'مافيا\nعالشوارب',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          color: Colors.white,
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.w900,
-                          height: 1.1,
-                          shadows: [
-                            Shadow(
-                              color: AppTheme.mafiaPrimary.withValues(alpha: 0.8),
-                              blurRadius: 40,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                  ),
-                  const SizedBox(height: 64),
-                  _buildMenuButton(
-                    context,
-                    title: 'لعبة جديدة',
-                    icon: Icons.play_arrow_rounded,
-                    color: AppTheme.mafiaPrimary,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen())),
-                    isPrimary: true,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    title: 'سجل المباريات',
-                    icon: Icons.history_rounded,
-                    color: AppTheme.surfaceHigh,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GameHistoryScreen())),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    title: 'الإحصائيات والألقاب',
-                    icon: Icons.leaderboard_rounded,
-                    color: AppTheme.surfaceHigh,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatsScreen())),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+          // Elegant dark background with subtle glowing gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 1.2,
+                  colors: [
+                    Color(0xFF2A1115), // Deep dark red/mahogany core
+                    Color(0xFF0F0811), // Very dark purple
+                    Color(0xFF07070B), // Black edge
+                  ],
+                ),
               ),
             ),
           ),
           
-          // MOVED TO TOP OF STACK SO IT IS CLICKABLE
+          // Subtle noise texture overlay
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.03,
+              child: Image.asset(
+                'assets/images/mafia_sheikh.jpg', // We can still use it faintly just for noise/texture, or omit it. Let's omit and just use pure code.
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(),
+              ),
+            ),
+          ),
+
+          // Main Content
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      ref.read(audioManagerProvider).playClick();
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
-                          .then((_) => _loadProfile());
-                    },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: AppTheme.surfaceHigh,
-                          backgroundImage: imageProvider,
-                          child: imageProvider == null 
-                            ? Text(initial, style: const TextStyle(fontSize: 20, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold))
-                            : null,
+            child: Column(
+              children: [
+                // Luxurious Header
+                _buildHeader(context, ref, user),
+                
+                const Spacer(flex: 2),
+                
+                // Glowing Logo & Title
+                Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.surface.withValues(alpha: 0.3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.mafiaAccent.withValues(alpha: 0.15),
+                              blurRadius: 40,
+                              spreadRadius: 10,
+                            ),
+                          ],
+                          border: Border.all(color: AppTheme.mafiaAccent.withValues(alpha: 0.2)),
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('مرحباً بك،', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontFamily: 'Cairo')),
-                            Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                        child: const Icon(
+                          Icons.theater_comedy, // Or any elegant icon, local asset is better if we had one
+                          size: 70,
+                          color: AppTheme.mafiaAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'مافيا عالشوارب',
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                          letterSpacing: -1,
+                          shadows: [
+                            Shadow(color: AppTheme.mafiaAccent.withValues(alpha: 0.5), blurRadius: 30, offset: const Offset(0, 4)),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'البقاء للأذكى',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontFamily: 'Cairo',
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings, color: Colors.white),
-                    onPressed: () {
-                      ref.read(audioManagerProvider).playClick();
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                    },
+                ),
+                
+                const Spacer(flex: 3),
+                
+                // Action Buttons
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    children: [
+                      _buildLuxuriousButton(
+                        context: context,
+                        ref: ref,
+                        icon: Icons.play_arrow_rounded,
+                        label: 'بدء لعبة جديدة',
+                        primary: true,
+                        onTap: () {
+                          ref.read(audioManagerProvider).playClick();
+                          ref.read(gameOrchestratorProvider.notifier).resetGame();
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => const SetupScreen(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(opacity: animation, child: child);
+                              },
+                              transitionDuration: const Duration(milliseconds: 500),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLuxuriousButton(
+                        context: context,
+                        ref: ref,
+                        icon: Icons.history_edu,
+                        label: 'سجل المباريات',
+                        primary: false,
+                        onTap: () {
+                          ref.read(audioManagerProvider).playClick();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const GameHistoryScreen()),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 48),
+              ],
             ),
           ),
         ],
@@ -200,57 +166,154 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildMenuButton(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
+  Widget _buildHeader(BuildContext context, WidgetRef ref, dynamic user) {
+    final displayName = user?.displayName ?? 'لاعب مجهول';
+    final email = user?.email ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: isPrimary
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                )
-              ]
-            : null,
-      ),
-      child: Material(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: () {
-            ref.read(audioManagerProvider).playClick();
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.white, size: 28),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isPrimary ? 22 : 18,
-                      fontWeight: isPrimary ? FontWeight.bold : FontWeight.w600,
-                      fontFamily: 'Cairo',
-                    ),
+                // Settings Button
+                IconButton(
+                  onPressed: () {
+                    ref.read(audioManagerProvider).playClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.settings, color: Colors.white70),
+                  splashRadius: 24,
+                ),
+                const Spacer(),
+                
+                // Profile Info
+                GestureDetector(
+                  onTap: () {
+                    ref.read(audioManagerProvider).playClick();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Cairo',
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (email.isNotEmpty)
+                            Text(
+                              email,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                fontSize: 11,
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.surface,
+                          border: Border.all(color: AppTheme.mafiaPrimary, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.mafiaPrimary.withValues(alpha: 0.4),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.person, color: AppTheme.textSecondary),
+                      ),
+                    ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 20),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLuxuriousButton({
+    required BuildContext context,
+    required WidgetRef ref,
+    required IconData icon,
+    required String label,
+    required bool primary,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: primary
+              ? const LinearGradient(
+                  colors: [Color(0xFF8B0000), Color(0xFF4A0000)], // Mafia Red to Dark Red
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: primary ? null : Colors.white.withValues(alpha: 0.05),
+          border: Border.all(
+            color: primary ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: primary
+              ? [
+                  BoxShadow(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo',
+              ),
+            ),
+          ],
         ),
       ),
     );

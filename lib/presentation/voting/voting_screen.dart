@@ -161,8 +161,8 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
         accused: accused,
         votesCount: votesCount,
         onConfirmElimination: () {
-          ref.read(audioManagerProvider).stopMusic(); // stop heartbeat
-          ref.read(audioManagerProvider).playGunshot();
+          ref.read(audioManagerProvider).playClick(); // stop heartbeat
+          ref.read(audioManagerProvider).playKill();
           Navigator.pop(ctx);
           // 1. Submit final votes
           ref.read(gameOrchestratorProvider.notifier).submitFinalVotes(_votes);
@@ -587,7 +587,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
   void _startTimer() async {
     setState(() => _isRunning = true);
     // Start heartbeat
-    ref.read(audioManagerProvider).playHeartbeat();
+    ref.read(audioManagerProvider).playClick();
     while (_secondsLeft > 0 && _isRunning) {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted || !_isRunning) return;
@@ -595,14 +595,14 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
     }
     if (_secondsLeft == 0 && mounted) {
       setState(() => _isRunning = false);
-      ref.read(audioManagerProvider).stopMusic();
+      ref.read(audioManagerProvider).playClick();
     }
   }
 
   @override
   void dispose() {
     _isRunning = false;
-    ref.read(audioManagerProvider).stopMusic();
+    ref.read(audioManagerProvider).playClick();
     super.dispose();
   }
 

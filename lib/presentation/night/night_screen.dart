@@ -50,7 +50,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       _buildActiveSteps();
       _initialized = true;
       // Start night music
-      Future.microtask(() => ref.read(audioManagerProvider).playNightMusic());
+      Future.microtask(() => ref.read(audioManagerProvider).playClick());
     }
   }
 

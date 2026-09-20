@@ -1,4 +1,4 @@
-﻿import 'package:audioplayers/audioplayers.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final audioManagerProvider = Provider<AudioManager>((ref) {
@@ -8,100 +8,62 @@ final audioManagerProvider = Provider<AudioManager>((ref) {
 });
 
 class AudioManager {
-  // Players for different types of audio
-  final AudioPlayer _musicPlayer = AudioPlayer();
   final AudioPlayer _sfxPlayer = AudioPlayer();
-  final AudioPlayer _voicePlayer = AudioPlayer();
 
   AudioManager() {
-    _init();
+    _sfxPlayer.setReleaseMode(ReleaseMode.stop);
   }
 
-  void _init() async {
-    // Configure players
-    await _musicPlayer.setReleaseMode(ReleaseMode.loop);
-    await _sfxPlayer.setReleaseMode(ReleaseMode.stop);
-    await _voicePlayer.setReleaseMode(ReleaseMode.stop);
-  }
-
-  // Play background suspense/heartbeat
-  Future<void> playHeartbeat() async {
-    try {
-      await _musicPlayer.play(AssetSource('audio/heartbeat.mp3'), volume: 0.5);
-    } catch (e) {
-      // Ignore if file doesn't exist yet
-    }
-  }
-  
-  Future<void> playNightMusic() async {
-    try {
-      await _musicPlayer.play(AssetSource('audio/night_music.mp3'), volume: 0.3);
-    } catch (e) {
-      // Ignore
-    }
-  }
-
-  Future<void> stopMusic() async {
-    await _musicPlayer.stop();
-  }
-
-  // Play SFX (Gunshot, etc)
-  Future<void> playGunshot() async {
-    try {
-      await _sfxPlayer.play(AssetSource('audio/gunshot.mp3'), volume: 1.0);
-    } catch (e) {
-      // Ignore
-    }
-  }
-  
-  Future<void> playSuccess() async {
-    try {
-      await _sfxPlayer.play(AssetSource('audio/success.mp3'), volume: 1.0);
-    } catch (e) {
-      // Ignore
-    }
-  }
-
-  // Play Voiceovers
-  Future<void> playVoiceover(String filename) async {
-    try {
-      await _voicePlayer.play(AssetSource('audio/$filename'), volume: 1.0);
-    } catch (e) {
-      // Ignore
-    }
-  }
-
-  Future<void> stopVoiceover() async {
-    await _voicePlayer.stop();
-  }
-
+  /// نقرة زر عادية
   Future<void> playClick() async {
     try {
-      await _sfxPlayer.play(AssetSource('audio/click.mp3'), volume: 1.0);
-    } catch (e) {}
-  }
-  
-  Future<void> playSplashIntro() async {
-    try {
-      await _sfxPlayer.play(AssetSource('audio/intro.mp3'), volume: 1.0);
-    } catch (e) {}
+      await _sfxPlayer.play(AssetSource('audio/click.wav'), volume: 0.9);
+    } catch (_) {}
   }
 
+  /// مؤثر الاغتيال - صوت عميق ومرعب
   Future<void> playKill() async {
     try {
-      await _sfxPlayer.play(AssetSource('audio/kill.mp3'), volume: 1.0);
-    } catch (e) {}
+      await _sfxPlayer.play(AssetSource('audio/kill.wav'), volume: 1.0);
+    } catch (_) {}
   }
 
+  /// مؤثر الحماية - صوت درع لطيف
   Future<void> playProtect() async {
     try {
-      await _sfxPlayer.play(AssetSource('audio/protect.mp3'), volume: 1.0);
-    } catch (e) {}
+      await _sfxPlayer.play(AssetSource('audio/protect.wav'), volume: 1.0);
+    } catch (_) {}
+  }
+
+  /// مؤثر التصويت - نغمة تصاعدية مثيرة
+  Future<void> playVote() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/vote.wav'), volume: 0.8);
+    } catch (_) {}
+  }
+
+  /// مؤثر كشف الدور
+  Future<void> playReveal() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/reveal.wav'), volume: 0.9);
+    } catch (_) {}
+  }
+
+  /// مؤثر الافتتاحية
+  Future<void> playSplashIntro() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/intro.wav'), volume: 1.0);
+    } catch (_) {}
+  }
+
+  /// تشغيل أصوات الحكم (اختياري - لو حبيت تضيف)
+  Future<void> playVoiceover(String filename) async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/$filename'), volume: 1.0);
+    } catch (_) {}
   }
 
   void dispose() {
-    _musicPlayer.dispose();
     _sfxPlayer.dispose();
-    _voicePlayer.dispose();
   }
 }

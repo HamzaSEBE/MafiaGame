@@ -71,11 +71,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _loginWithGoogle() async {
     setState(() => _isGoogleLoading = true);
     try {
-      await ref.read(authServiceProvider).signInWithGoogle();
+      final result = await ref.read(authServiceProvider).signInWithGoogle();
+      if (result == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إلغاء تسجيل الدخول', style: TextStyle(fontFamily: 'Cairo'))),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل تسجيل الدخول عبر جوجل', style: TextStyle(fontFamily: 'Cairo'))),
+          SnackBar(content: Text('فشل تسجيل الدخول عبر جوجل: ${e.toString()}', style: const TextStyle(fontFamily: 'Cairo'))),
         );
       }
     } finally {
@@ -176,22 +181,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text('دخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // Google Sign In Button
-                    OutlinedButton.icon(
-                      onPressed: _isGoogleLoading ? null : _loginWithGoogle,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Colors.white54),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: _isGoogleLoading 
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Image.network('https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg', width: 24, height: 24),
-                      label: const Text('تسجيل الدخول باستخدام جوجل', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                    const SizedBox(height: 20),
+
+                    // Divider
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('أو', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 14)),
+                        ),
+                        Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
+                      ],
                     ),
-                    
+                    const SizedBox(height: 20),
+
+                    // Google Sign In Button - Premium Design
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isGoogleLoading ? null : _loginWithGoogle,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_isGoogleLoading)
+                                  const SizedBox(
+                                    width: 24, height: 24,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                else
+                                  // Google "G" icon drawn with colors
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'G',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF4285F4), // Google Blue
+                                          fontFamily: 'Arial',
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'تسجيل الدخول باستخدام جوجل',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

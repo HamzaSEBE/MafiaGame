@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
@@ -28,8 +28,8 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(audioManagerProvider).stopMusic();
-      ref.read(audioManagerProvider).playSuccess();
+      ref.read(audioManagerProvider).playClick();
+      ref.read(audioManagerProvider).playReveal();
     });
     _saveGameToHistory();
   }

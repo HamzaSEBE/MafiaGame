@@ -27,7 +27,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       if (summaryEvent != null) {
         final deadIds = (summaryEvent.metadata['assassinatedIds'] as List?)?.cast<String>() ?? [];
         if (deadIds.isNotEmpty) {
-          ref.read(audioManagerProvider).playGunshot();
+          ref.read(audioManagerProvider).playKill();
         }
       }
     });

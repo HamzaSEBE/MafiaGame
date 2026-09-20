@@ -4,7 +4,6 @@ import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/reveal/role_reveal_screen.dart';
-
 import 'package:mafia_nightfall/data/repositories/player_profiles_repository.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
@@ -14,14 +13,13 @@ class SetupScreen extends ConsumerStatefulWidget {
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends ConsumerState<SetupScreen> {
+class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _nameController = TextEditingController();
   int _currentTab = 0; // 0 = players, 1 = roles
   
   List<String> _savedPlayers = [];
   final PlayerProfilesRepository _profilesRepo = PlayerProfilesRepository();
 
-  // Role config: how many of each role
   final Map<Role, int> _roleConfig = {
     Role.mafiaSheikh:    0,
     Role.mafiaGirl:      0,
@@ -39,46 +37,24 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     super.initState();
     _loadProfiles();
   }
-
+  
   Future<void> _loadProfiles() async {
-    final loaded = await _profilesRepo.loadSavedPlayers();
+    final profiles = await _profilesRepo.loadSavedPlayers();
     setState(() {
-      _savedPlayers = loaded;
+      _savedPlayers = profiles;
     });
-  }
-
-  Future<void> _addSavedPlayer(String name) async {
-    if (!_savedPlayers.contains(name)) {
-      setState(() {
-        _savedPlayers.add(name);
-      });
-      await _profilesRepo.savePlayers(_savedPlayers);
-    }
-  }
-
-  Future<void> _removeSavedPlayer(String name) async {
-    setState(() {
-      _savedPlayers.remove(name);
-    });
-    await _profilesRepo.savePlayers(_savedPlayers);
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  void _addPlayer() {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-    ref.read(gameOrchestratorProvider.notifier).addPlayer(name);
-    _addSavedPlayer(name);
-    _nameController.clear();
   }
   
-  void _addPlayerDirectly(String name) {
-    ref.read(gameOrchestratorProvider.notifier).addPlayer(name);
+  void _addPlayer(String name) {
+    if (name.trim().isEmpty) return;
+    ref.read(gameOrchestratorProvider.notifier).addPlayer(name.trim());
+    _nameController.clear();
+    FocusScope.of(context).unfocus();
+  }
+
+  void _removePlayer(int index) {
+    final players = ref.read(gameOrchestratorProvider).players;
+    ref.read(gameOrchestratorProvider.notifier).removePlayer(players[index].id);
   }
 
   void _startGame() {
@@ -104,94 +80,154 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
-        backgroundColor: AppTheme.mafiaAccent,
+        content: Text(msg, style: const TextStyle(fontFamily: 'Cairo')),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final gameState = ref.watch(gameOrchestratorProvider);
-    final players = gameState.players;
+    final players = ref.watch(gameOrchestratorProvider).players;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إعداد اللعبة'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Column(
+      backgroundColor: const Color(0xFF07070B),
+      body: Stack(
         children: [
-          // Tab switcher
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              children: [
-                _TabButton(label: 'اللاعبون (${players.length})', selected: _currentTab == 0, onTap: () => setState(() => _currentTab = 0)),
-                const SizedBox(width: 10),
-                _TabButton(label: 'الأدوار ($_totalRoles)', selected: _currentTab == 1, onTap: () => setState(() => _currentTab = 1)),
-              ],
+          // Elegant Background
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.8),
+                  radius: 1.5,
+                  colors: [Color(0xFF261D15), Color(0xFF100C09), Color(0xFF07070B)],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _currentTab == 0
-                ? _NamesTab(
-                    players: players.map((p) => p.name).toList(),
-                    savedPlayers: _savedPlayers,
-                    nameController: _nameController,
-                    onAdd: _addPlayer,
-                    onAddSaved: _addPlayerDirectly,
-                    onRemoveSaved: _removeSavedPlayer,
-                    onRemove: (index) {
-                      final player = players[index];
-                      ref.read(gameOrchestratorProvider.notifier).removePlayer(player.id);
-                    },
-                  )
-                : _RolesTab(
-                    roleConfig: _roleConfig,
-                    playerCount: players.length,
-                    totalRoles: _totalRoles,
-                    onChanged: (role, value) {
-                      setState(() => _roleConfig[role] = value);
-                    },
-                  ),
-          ),
-          // Bottom Action
-          Padding(
-            padding: const EdgeInsets.all(16),
+          
+          SafeArea(
             child: Column(
               children: [
-                if (players.isNotEmpty && _totalRoles == players.length)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 12),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.orangeAccent),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'تجهيز المعركة',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            fontFamily: 'Cairo',
+                            shadows: [Shadow(color: Colors.orangeAccent, blurRadius: 10)],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 48), // Balance
+                    ],
+                  ),
+                ),
+                
+                // Tabs
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.success.withValues(alpha: 0.4)),
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle, color: AppTheme.success, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${players.length} لاعب · $_totalRoles دور — جاهز للبدء',
-                          style: const TextStyle(color: AppTheme.success, fontSize: 14),
+                        _TabButton(
+                          label: 'اللاعبين (${players.length})',
+                          icon: Icons.people,
+                          selected: _currentTab == 0,
+                          onTap: () => setState(() => _currentTab = 0),
+                        ),
+                        _TabButton(
+                          label: 'الأدوار ($_totalRoles)',
+                          icon: Icons.admin_panel_settings,
+                          selected: _currentTab == 1,
+                          onTap: () => setState(() => _currentTab = 1),
                         ),
                       ],
                     ),
                   ),
-                ElevatedButton(
-                  onPressed: (players.length >= 4 && _totalRoles == players.length) ? _startGame : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.mafiaPrimary,
-                    disabledBackgroundColor: AppTheme.surface,
+                ),
+                
+                // Content
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _currentTab == 0 
+                      ? _PlayersTab(
+                          players: players,
+                          savedPlayers: _savedPlayers,
+                          nameController: _nameController,
+                          onAdd: _addPlayer,
+                          onRemove: _removePlayer,
+                        )
+                      : _RolesTab(
+                          roleConfig: _roleConfig,
+                          playerCount: players.length,
+                          totalRoles: _totalRoles,
+                          onChanged: (r, c) => setState(() => _roleConfig[r] = c),
+                        ),
                   ),
-                  child: const Text('توزيع الأدوار والبدء'),
+                ),
+                
+                // Start Button
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: double.infinity,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: (players.length >= 4 && _totalRoles == players.length)
+                            ? [const Color(0xFFFF512F), const Color(0xFFDD2476)] // Glowing active
+                            : [Colors.grey.shade800, Colors.grey.shade900], // Inactive
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: (players.length >= 4 && _totalRoles == players.length)
+                          ? [const BoxShadow(color: Color(0xFFFF512F), blurRadius: 20, spreadRadius: 2)]
+                          : [],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(30),
+                        onTap: (players.length >= 4 && _totalRoles == players.length) ? _startGame : () {
+                           if (players.length < 4) _showError('يجب إضافة 4 لاعبين على الأقل');
+                           else _showError('عدد الأدوار لا يطابق عدد اللاعبين');
+                        },
+                        child: const Center(
+                          child: Text(
+                            'بدء اللعبة',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Cairo',
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -202,25 +238,58 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   }
 }
 
+class _TabButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  const _TabButton({required this.label, required this.icon, required this.selected, required this.onTap});
 
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: selected ? Colors.orangeAccent.withValues(alpha: 0.15) : Colors.transparent,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: selected ? Colors.orangeAccent.withValues(alpha: 0.5) : Colors.transparent),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: selected ? Colors.orangeAccent : Colors.white54),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.bold,
+                    color: selected ? Colors.orangeAccent : Colors.white54,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
 
-// ─── Players Tab ──────────────────────────────────────────────────────────────
-class _NamesTab extends StatelessWidget {
-  final List<String> players;
+class _PlayersTab extends StatelessWidget {
+  final List players;
   final List<String> savedPlayers;
   final TextEditingController nameController;
-  final VoidCallback onAdd;
-  final void Function(String) onAddSaved;
-  final void Function(String) onRemoveSaved;
+  final void Function(String) onAdd;
   final void Function(int) onRemove;
 
-  const _NamesTab({
+  const _PlayersTab({
     required this.players,
     required this.savedPlayers,
     required this.nameController,
     required this.onAdd,
-    required this.onAddSaved,
-    required this.onRemoveSaved,
     required this.onRemove,
   });
 
@@ -231,118 +300,99 @@ class _NamesTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Name input
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: nameController,
-                  autofocus: false,
-                  decoration: const InputDecoration(hintText: 'اسم اللاعب الجديد'),
-                  style: const TextStyle(fontFamily: 'Cairo'),
-                  onSubmitted: (_) => onAdd(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Material(
-                color: AppTheme.mafiaPrimary,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: onAdd,
-                  borderRadius: BorderRadius.circular(12),
-                  child: const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Icon(Icons.add, color: Colors.white),
+          // Text Field
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: nameController,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                    decoration: InputDecoration(
+                      hintText: 'أدخل اسم اللاعب...',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontFamily: 'Cairo'),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    onSubmitted: onAdd,
                   ),
                 ),
-              ),
-            ],
+                Container(
+                  margin: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.add, color: Colors.black),
+                    onPressed: () => onAdd(nameController.text),
+                  ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(height: 12),
           
+          // Saved Players
           if (savedPlayers.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Text('لاعبون محفوظون (اضغط للإضافة):', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontFamily: 'Cairo')),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: savedPlayers.map((name) {
-                  final isAlreadyAdded = players.contains(name);
+            Text('اللاعبون المحفوظون:', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12, fontFamily: 'Cairo')),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: savedPlayers.length,
+                itemBuilder: (ctx, i) {
+                  final sp = savedPlayers[i];
                   return Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: GestureDetector(
-                      onLongPress: () {
-                        onRemoveSaved(name);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('تم حذف "$name" من المحفوظات', style: const TextStyle(fontFamily: 'Cairo')), backgroundColor: AppTheme.death),
-                        );
-                      },
-                      child: ActionChip(
-                        label: Text(name, style: TextStyle(color: isAlreadyAdded ? AppTheme.textSecondary : Colors.white, fontFamily: 'Cairo')),
-                        backgroundColor: isAlreadyAdded ? AppTheme.surfaceHigh.withValues(alpha: 0.5) : AppTheme.surface,
-                        onPressed: isAlreadyAdded ? null : () => onAddSaved(name),
-                        tooltip: 'اضغط مطولاً للحذف',
-                      ),
+                    padding: const EdgeInsets.only(left: 8),
+                    child: ActionChip(
+                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      label: Text(sp, style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                      onPressed: () => onAdd(sp),
                     ),
                   );
-                }).toList(),
+                },
               ),
             ),
+            const SizedBox(height: 12),
           ],
           
-          const SizedBox(height: 16),
-          // Players list
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 8),
+          
+          // Player List
           Expanded(
-            child: players.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.people_outline, size: 60, color: AppTheme.textSecondary.withValues(alpha: 0.3)),
-                        const SizedBox(height: 12),
-                        const Text('لم يُضَف أي لاعب بعد', style: TextStyle(color: AppTheme.textSecondary)),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: players.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.surfaceHigh),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceHigh,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text('${index + 1}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(players[index], style: const TextStyle(fontSize: 16, fontFamily: 'Cairo')),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, color: AppTheme.death, size: 20),
-                              onPressed: () => onRemove(index),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+            child: ListView.builder(
+              itemCount: players.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.orangeAccent.withValues(alpha: 0.2),
+                      child: Text('${index + 1}', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                    ),
+                    title: Text(players[index].name, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 18)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: () => onRemove(index),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -350,7 +400,6 @@ class _NamesTab extends StatelessWidget {
   }
 }
 
-// ─── Roles Tab ────────────────────────────────────────────────────────────────
 class _RolesTab extends StatelessWidget {
   final Map<Role, int> roleConfig;
   final int playerCount;
@@ -371,44 +420,49 @@ class _RolesTab extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // Counter header
+          // Counter
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: remaining == 0 ? AppTheme.success.withValues(alpha: 0.5) : AppTheme.warning.withValues(alpha: 0.4),
-              ),
+              color: remaining == 0 ? Colors.greenAccent.withValues(alpha: 0.1) : Colors.orangeAccent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: remaining == 0 ? Colors.greenAccent.withValues(alpha: 0.3) : Colors.orangeAccent.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('إجمالي الأدوار: $totalRoles / $playerCount', style: const TextStyle(fontFamily: 'Cairo')),
+                const Text('الأدوار الموزعة:', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
                 Text(
-                  remaining > 0 ? 'متبقٍ $remaining' : remaining < 0 ? 'زيادة ${-remaining}' : '✓ مكتمل',
+                  '$totalRoles / $playerCount',
                   style: TextStyle(
-                    color: remaining == 0 ? AppTheme.success : AppTheme.warning,
+                    color: remaining == 0 ? Colors.greenAccent : Colors.orangeAccent,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Expanded(
             child: ListView(
               children: [
-                const _SectionLabel('فريق المافيا'),
-                _RoleRow(role: Role.mafiaSheikh,    count: roleConfig[Role.mafiaSheikh]!,    onChanged: onChanged),
-                _RoleRow(role: Role.mafiaGirl,       count: roleConfig[Role.mafiaGirl]!,       onChanged: onChanged),
-                _RoleRow(role: Role.normalMafia,     count: roleConfig[Role.normalMafia]!,     onChanged: onChanged),
-                const SizedBox(height: 8),
-                const _SectionLabel('فريق المواطنين'),
-                _RoleRow(role: Role.citizensSheikh,  count: roleConfig[Role.citizensSheikh]!,  onChanged: onChanged),
-                _RoleRow(role: Role.citizensGirl,    count: roleConfig[Role.citizensGirl]!,    onChanged: onChanged),
-                _RoleRow(role: Role.citizensBoy,     count: roleConfig[Role.citizensBoy]!,     onChanged: onChanged),
-                _RoleRow(role: Role.goodCitizen,     count: roleConfig[Role.goodCitizen]!,     onChanged: onChanged),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('فريق المافيا', style: TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                ),
+                _buildRoleRow(Role.mafiaSheikh),
+                _buildRoleRow(Role.mafiaGirl),
+                _buildRoleRow(Role.normalMafia),
+                const Divider(color: Colors.white10, height: 32),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('فريق المواطنين', style: TextStyle(color: Colors.blueAccent, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                ),
+                _buildRoleRow(Role.citizensSheikh),
+                _buildRoleRow(Role.citizensGirl),
+                _buildRoleRow(Role.citizensBoy),
+                _buildRoleRow(Role.goodCitizen),
               ],
             ),
           ),
@@ -416,138 +470,55 @@ class _RolesTab extends StatelessWidget {
       ),
     );
   }
-}
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8, top: 4),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 12,
-            letterSpacing: 1,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-}
-
-class _RoleRow extends StatelessWidget {
-  final Role role;
-  final int count;
-  final void Function(Role, int) onChanged;
-
-  const _RoleRow({required this.role, required this.count, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppTheme.roleColor(role);
+  Widget _buildRoleRow(Role role) {
+    final count = roleConfig[role]!;
+    final color = role.team == Team.mafia ? Colors.redAccent : Colors.blueAccent;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: count > 0 ? color.withValues(alpha: 0.5) : AppTheme.surfaceHigh,
-        ),
+        color: count > 0 ? color.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: count > 0 ? color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
-          Icon(AppTheme.roleIcon(role), color: color, size: 22),
+          Icon(role.team == Team.mafia ? Icons.local_fire_department : Icons.shield, color: color, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppTheme.roleArabicName(role), style: TextStyle(color: color, fontWeight: FontWeight.w600, fontFamily: 'Cairo')),
-                Text(AppTheme.roleAbilityDescription(role), style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontFamily: 'Cairo')),
+                Text(AppTheme.roleArabicName(role), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                Text(AppTheme.roleAbilityDescription(role), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11, fontFamily: 'Cairo')),
               ],
             ),
           ),
-          // Stepper
-          Row(
-            children: [
-              _StepBtn(
-                icon: Icons.remove,
-                onTap: count > 0 ? () => onChanged(role, count - 1) : null,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: count > 0 ? color : AppTheme.textSecondary,
-                  ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove, size: 18),
+                  color: Colors.white54,
+                  onPressed: count > 0 ? () => onChanged(role, count - 1) : null,
                 ),
-              ),
-              _StepBtn(
-                icon: Icons.add,
-                onTap: () => onChanged(role, count + 1),
-              ),
-            ],
+                Text('$count', style: TextStyle(color: count > 0 ? color : Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.add, size: 18),
+                  color: Colors.white,
+                  onPressed: () => onChanged(role, count + 1),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-}
-
-class _StepBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  const _StepBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: onTap != null ? AppTheme.surfaceHigh : AppTheme.surface,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 16, color: onTap != null ? AppTheme.textPrimary : AppTheme.textSecondary),
-        ),
-      );
-}
-
-class _TabButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _TabButton({required this.label, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: selected ? AppTheme.mafiaPrimary : AppTheme.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: selected ? AppTheme.mafiaPrimary : AppTheme.surfaceHigh),
-            ),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppTheme.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-      );
 }

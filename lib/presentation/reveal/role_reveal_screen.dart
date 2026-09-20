@@ -1,12 +1,12 @@
-import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
+import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
-import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/night/night_screen.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
+import 'dart:async';
 
 class RoleRevealScreen extends ConsumerStatefulWidget {
   const RoleRevealScreen({super.key});
@@ -15,209 +15,289 @@ class RoleRevealScreen extends ConsumerStatefulWidget {
   ConsumerState<RoleRevealScreen> createState() => _RoleRevealScreenState();
 }
 
-class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen>
-    with SingleTickerProviderStateMixin {
+class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
-  bool _isRevealed = false;
-  late final AnimationController _fadeCtrl;
-  late final Animation<double> _fadeAnim;
+  
+  // States: 0 = Lock Screen (Swipe to receive), 1 = Fingerprint Screen, 2 = Alarm Screen
+  int _screenState = 0; 
+  
+  bool _isHolding = false;
+  int _suspiciousTaps = 0;
+  
+  late final AnimationController _pulseCtrl;
 
   @override
   void initState() {
     super.initState();
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _fadeCtrl.dispose();
+    _pulseCtrl.dispose();
     super.dispose();
   }
 
   List<Player> get _players => ref.read(gameOrchestratorProvider).players;
+  Player get _currentPlayer => _players[_currentIndex];
 
-  void _reveal() {
-    setState(() => _isRevealed = true);
-    _fadeCtrl.forward();
-  }
-
-  void _hide() {
-    _fadeCtrl.reverse().then((_) {
-      setState(() => _isRevealed = false);
+  void _onSwipeComplete() {
+    ref.read(audioManagerProvider).playClick();
+    setState(() {
+      _screenState = 1;
+      _suspiciousTaps = 0;
     });
   }
-
-  void _next() {
-    _fadeCtrl.reverse().then((_) {
-      if (_currentIndex < _players.length - 1) {
+  
+  void _triggerAlarm() {
+    ref.read(audioManagerProvider).playKill();
+    setState(() => _screenState = 2);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
         setState(() {
-          _currentIndex++;
-          _isRevealed = false;
+          _screenState = 0;
+          _suspiciousTaps = 0;
         });
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const NightScreen()),
-        );
       }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final players = _players;
-    if (players.isEmpty) {
-      return const Scaffold(body: Center(child: Text('لا يوجد لاعبون')));
+  void _handleSuspiciousTap() {
+    if (_screenState == 0) {
+      _suspiciousTaps++;
+      if (_suspiciousTaps >= 2) {
+        _triggerAlarm();
+      }
     }
+  }
 
-    final player = players[_currentIndex];
-    final role = player.role;
-    final color = AppTheme.roleColor(role);
-    final isLastPlayer = _currentIndex == players.length - 1;
+  void _onFingerDown(PointerDownEvent event) {
+    if (_screenState == 1) {
+      ref.read(audioManagerProvider).playReveal();
+      setState(() => _isHolding = true);
+    }
+  }
 
-    return GamePopScope(child: Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              // Progress
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(players.length, (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _currentIndex ? 24 : 8,
-                  height: 8,
+  void _onFingerUp(PointerUpEvent event) {
+    if (_screenState == 1 && _isHolding) {
+      setState(() => _isHolding = false);
+      _nextPlayer();
+    }
+  }
+
+  void _nextPlayer() {
+    if (_currentIndex < _players.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _screenState = 0; // Back to lock screen
+        _suspiciousTaps = 0;
+      });
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const NightScreen()),
+      );
+    }
+  }
+
+  Widget _buildLockScreen() {
+    return GestureDetector(
+      onTap: _handleSuspiciousTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.4),
+            radius: 1.5,
+            colors: [Color(0xFF261D15), Color(0xFF130E0A), Color(0xFF07070B)],
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.screen_lock_portrait, size: 80, color: Colors.white24),
+            const SizedBox(height: 30),
+            Text(
+              'مرر الهاتف إلى',
+              style: TextStyle(fontSize: 20, color: Colors.white.withValues(alpha: 0.6), fontFamily: 'Cairo'),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _currentPlayer.name,
+              style: const TextStyle(
+                fontSize: 42, 
+                fontWeight: FontWeight.w900, 
+                color: Colors.orangeAccent, 
+                fontFamily: 'Cairo',
+                shadows: [Shadow(color: Colors.orangeAccent, blurRadius: 20)],
+              ),
+            ),
+            const SizedBox(height: 60),
+            // Custom Swipe Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Dismissible(
+                key: ValueKey('swipe_$_currentIndex'),
+                direction: DismissDirection.startToEnd,
+                onDismissed: (_) => _onSwipeComplete(),
+                child: Container(
+                  height: 60,
                   decoration: BoxDecoration(
-                    color: i <= _currentIndex ? AppTheme.mafiaPrimary : AppTheme.surfaceHigh,
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5), width: 1.5),
                   ),
-                )),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.orangeAccent,
+                        ),
+                        child: const Icon(Icons.arrow_forward_ios, color: Colors.black),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'اسحب لاستلام الهاتف',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 60),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'تحذير: لا تحاول كشف الدور قبل تسليم الهاتف!',
+              style: TextStyle(color: Colors.redAccent.withValues(alpha: 0.5), fontSize: 12, fontFamily: 'Cairo'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRevealScreen() {
+    return Listener(
+      onPointerDown: _onFingerDown,
+      onPointerUp: _onFingerUp,
+      child: Container(
+        width: double.infinity,
+        color: Colors.transparent, // Capture touches
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!_isHolding) ...[
+              FadeTransition(
+                opacity: _pulseCtrl,
+                child: const Icon(Icons.fingerprint, size: 120, color: Colors.orangeAccent),
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                'اضغط باستمرار لرؤية بطاقتك',
+                style: TextStyle(fontSize: 22, color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
               Text(
-                'اللاعب ${_currentIndex + 1} من ${players.length}',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                'بمجرد رفع إصبعك، سيتم قفل الشاشة.',
+                style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.5), fontFamily: 'Cairo'),
               ),
-              const Spacer(flex: 2),
-              // Pass phone instruction
-              AnimatedOpacity(
-                opacity: _isRevealed ? 0 : 1,
-                duration: const Duration(milliseconds: 200),
+            ] else ...[
+              // The Card
+              Container(
+                width: 280,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: (_currentPlayer.role.name.toLowerCase().contains('mafia')) 
+                        ? [const Color(0xFF3A1515), const Color(0xFF1A0A0A)]
+                        : [const Color(0xFF15223A), const Color(0xFF0A101A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent : Colors.blueAccent,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent.withValues(alpha: 0.3) : Colors.blueAccent.withValues(alpha: 0.3),
+                      blurRadius: 40,
+                    )
+                  ],
+                ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.smartphone, color: AppTheme.textSecondary, size: 36),
-                    const SizedBox(height: 8),
-                    const Text('مرّر الهاتف إلى', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
-                    const SizedBox(height: 16),
+                    Icon(
+                      (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Icons.local_fire_department : Icons.shield, 
+                      size: 64, 
+                      color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent : Colors.blueAccent
+                    ),
+                    const SizedBox(height: 20),
                     Text(
-                      player.name,
-                      style: Theme.of(context).textTheme.displayMedium?.copyWith(color: AppTheme.textPrimary),
+                      _currentPlayer.name,
+                      style: const TextStyle(fontSize: 20, color: Colors.white70, fontFamily: 'Cairo'),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppTheme.roleArabicName(_currentPlayer.role),
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo'),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
-              // Role reveal card
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: _isRevealed
-                    ? Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: color, width: 3),
-                                boxShadow: [
-                                  BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 5),
-                                ],
-                              ),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  AppTheme.roleImage(role),
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'أنتَ',
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              AppTheme.roleArabicName(role),
-                              style: Theme.of(context).textTheme.displayMedium?.copyWith(color: color),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              AppTheme.roleAbilityDescription(role),
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: role.team == Team.mafia
-                                    ? AppTheme.mafiaPrimary.withValues(alpha: 0.15)
-                                    : AppTheme.citizensPrimary.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                role.team == Team.mafia ? '⚫ فريق المافيا' : '🔵 فريق المواطنين',
-                                style: TextStyle(
-                                  color: role.team == Team.mafia ? AppTheme.mafiaAccent : AppTheme.citizensAccent,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              const Spacer(flex: 2),
-              // Buttons
-              if (!_isRevealed)
-                ElevatedButton.icon(
-                  onPressed: _reveal,
-                  icon: const Icon(Icons.visibility),
-                  label: const Text('اكشف دوري'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.mafiaPrimary),
-                )
-              else ...[
-                OutlinedButton.icon(
-                  onPressed: _hide,
-                  icon: const Icon(Icons.visibility_off),
-                  label: const Text('أخفِ الدور'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: _next,
-                  icon: Icon(isLastPlayer ? Icons.nights_stay : Icons.arrow_forward),
-                  label: Text(isLastPlayer ? 'ابدأ الليل الأول' : 'اللاعب التالي'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isLastPlayer ? AppTheme.specialAction : AppTheme.citizensPrimary,
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
-    ));
+    );
+  }
+
+  Widget _buildAlarmScreen() {
+    return Container(
+      width: double.infinity,
+      color: Colors.red.shade900,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.warning_amber_rounded, size: 120, color: Colors.white),
+          const SizedBox(height: 20),
+          const Text(
+            'محاولة غش!',
+            style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo'),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'اللاعب السابق يحاول كشف دور ${_currentPlayer.name}!',
+            style: const TextStyle(fontSize: 20, color: Colors.white70, fontFamily: 'Cairo'),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GamePopScope(
+      child: Scaffold(
+        backgroundColor: const Color(0xFF07070B),
+        body: Stack(
+          children: [
+            if (_screenState == 0) _buildLockScreen(),
+            if (_screenState == 1) _buildRevealScreen(),
+            if (_screenState == 2) _buildAlarmScreen(),
+          ],
+        ),
+      ),
+    );
   }
 }

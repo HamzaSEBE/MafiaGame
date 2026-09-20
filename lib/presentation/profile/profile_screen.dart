@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
 import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
 import 'package:mafia_nightfall/domain/entities/player_stats.dart';
@@ -23,6 +26,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Map<String, dynamic>? _profileData;
   PlayerStats? _userStats;
   bool _isLoading = true;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -52,6 +56,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       // ignore
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    
+    if (pickedFile != null) {
+      setState(() => _isUploading = true);
+      try {
+        final uid = _auth.currentUser?.uid;
+        if (uid == null) return;
+        
+        final storageRef = FirebaseStorage.instance.ref().child('avatars/\.jpg');
+        await storageRef.putFile(File(pickedFile.path));
+        final downloadUrl = await storageRef.getDownloadURL();
+        
+        await _auth.currentUser?.updatePhotoURL(downloadUrl);
+        await _firestore.collection('users').doc(uid).update({'photoUrl': downloadUrl});
+        
+        setState(() {
+          _profileData?['photoUrl'] = downloadUrl;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('فشل رفع الصورة')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -91,8 +127,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       try {
         final uid = _auth.currentUser?.uid;
         if (uid != null) {
-          // Note: Full deletion of subcollections requires Cloud Functions or recursive delete, 
-          // doing a simple user doc delete here for prototype.
           await _firestore.collection('users').doc(uid).delete();
           await _auth.currentUser?.delete();
         }
@@ -106,7 +140,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('فشل حذف الحساب: يرجى تسجيل الدخول مجدداً ثم المحاولة')),
+            const SnackBar(content: Text('فشل حذف الحساب: يرجى تسجيل الدخول مجدداً ثم المحاولة')),
           );
         }
       }
@@ -125,6 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = _auth.currentUser;
     final displayName = _profileData?['displayName'] as String? ?? 'مستخدم';
     final username = _profileData?['username'] as String? ?? '';
+    final photoUrl = user?.photoURL ?? _profileData?['photoUrl'] as String?;
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
     
     final gamesPlayed = _userStats?.gamesPlayed ?? 0;
@@ -148,12 +183,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppTheme.surfaceHigh,
-                    child: Text(
-                      initial,
-                      style: const TextStyle(fontSize: 40, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold),
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: AppTheme.surfaceHigh,
+                          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                          child: photoUrl == null 
+                            ? Text(initial, style: const TextStyle(fontSize: 40, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold))
+                            : null,
+                        ),
+                        if (_isUploading)
+                          const Positioned(
+                            bottom: 0, left: 0, right: 0, top: 0,
+                            child: CircularProgressIndicator(),
+                          ),
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: AppTheme.mafiaPrimary,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(6),
+                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -163,7 +219,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   if (username.isNotEmpty)
                     Text(
-                      '@',
+                      '@$username',
                       style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontFamily: 'Cairo'),
                     ),
                   const SizedBox(height: 8),

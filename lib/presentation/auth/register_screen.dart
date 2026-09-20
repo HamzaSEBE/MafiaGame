@@ -106,7 +106,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'مطلوب' : null,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return 'مطلوب';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -120,7 +123,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'مطلوب' : null,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return 'مطلوب';
+                        if (value.contains(' ')) return 'اسم المستخدم لا يمكن أن يحتوي على مسافات';
+                        if (value.length < 3) return '3 حروف على الأقل';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -135,7 +143,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'مطلوب' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'مطلوب';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}\$').hasMatch(value)) {
+                          return 'صيغة البريد الإلكتروني غير صحيحة';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -150,7 +164,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.length < 6 ? '6 حروف على الأقل' : null,
+                      validator: (value) {
+                        if (value == null || value.length < 8) return '8 حروف على الأقل';
+                        if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}\$').hasMatch(value)) {
+                          return 'يجب أن تحتوي على حرف ورقم واحد على الأقل';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -165,7 +185,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'مطلوب' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'مطلوب';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(

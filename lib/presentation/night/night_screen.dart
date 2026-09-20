@@ -295,7 +295,32 @@ class _NightScreenState extends ConsumerState<NightScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (_stepIndex > 0) {
+          _goBack();
+        } else {
+          final exit = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              backgroundColor: const Color(0xFF1A1A2E),
+              title: const Text('إنهاء اللعبة؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+              content: const Text('هل تريد الخروج من اللعبة والعودة للرئيسية؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.white))),
+                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('خروج', style: TextStyle(color: Colors.red))),
+              ],
+            ),
+          );
+          if (exit == true && mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Builder(builder: (context) {
+
     final gameState = ref.watch(gameOrchestratorProvider);
     final round = gameState.round;
 
@@ -583,6 +608,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       ),
       ],
       ),
+    );
+  
+      }),
     );
   }
 }

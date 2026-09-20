@@ -89,7 +89,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'مطلوب' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'مطلوب';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}\$').hasMatch(value)) {
+                          return 'صيغة البريد الإلكتروني غير صحيحة';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -104,7 +110,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      validator: (value) => value == null || value.isEmpty ? 'مطلوب' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'مطلوب';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 8),
                     Align(

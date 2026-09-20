@@ -17,8 +17,10 @@ dependencies:
   firebase_core: ^3.12.1
   firebase_auth: ^5.6.1
   cloud_firestore: ^5.6.6
+  firebase_storage: ^12.4.10
 
   # Utils
+  image_picker: ^1.1.2
   google_fonts: ^6.2.1
   uuid: ^4.3.3
   equatable: ^2.1.0

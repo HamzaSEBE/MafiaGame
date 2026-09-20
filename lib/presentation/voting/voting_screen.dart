@@ -409,10 +409,6 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () => Navigator.maybePop(context),
-          ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('لوحة التصويت الشاملة', style: TextStyle(fontWeight: FontWeight.bold)),

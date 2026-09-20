@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -79,16 +79,16 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     Player? assassinationActor = sheikh ?? girl ?? normal;
     
     if (assassinationActor != null) {
-      String title = 'الاغتيال';
+      String title = 'Ø§Ù„Ø§ØºØªÙŠØ§Ù„';
       String subtitle = assassinationActor.role == Role.mafiaSheikh 
-          ? 'بواسطة شيخ المافيا' 
-          : (assassinationActor.role == Role.mafiaGirl ? 'بواسطة بنت المافيا (بالنيابة)' : 'بواسطة المافيا العادية (بالنيابة)');
+          ? 'Ø¨ÙˆØ§Ø³Ø·Ø© Ø´ÙŠØ® Ø§Ù„Ù…Ø§ÙÙŠØ§' 
+          : (assassinationActor.role == Role.mafiaGirl ? 'Ø¨ÙˆØ§Ø³Ø·Ø© Ø¨Ù†Øª Ø§Ù„Ù…Ø§ÙÙŠØ§ (Ø¨Ø§Ù„Ù†ÙŠØ§Ø¨Ø©)' : 'Ø¨ÙˆØ§Ø³Ø·Ø© Ø§Ù„Ù…Ø§ÙÙŠØ§ Ø§Ù„Ø¹Ø§Ø¯ÙŠØ© (Ø¨Ø§Ù„Ù†ÙŠØ§Ø¨Ø©)');
       
       String prompt = assassinationActor.role == Role.mafiaSheikh 
-          ? 'بصوت عالي: "شيخ المافيا يفتح.. شيخ المافيا يغتال.. شيخ المافيا يغمض"' 
+          ? 'Ø¨ØµÙˆØª Ø¹Ø§Ù„ÙŠ: "Ø´ÙŠØ® Ø§Ù„Ù…Ø§ÙÙŠØ§ ÙŠÙØªØ­.. Ø´ÙŠØ® Ø§Ù„Ù…Ø§ÙÙŠØ§ ÙŠØºØªØ§Ù„.. Ø´ÙŠØ® Ø§Ù„Ù…Ø§ÙÙŠØ§ ÙŠØºÙ…Ø¶"' 
           : (assassinationActor.role == Role.mafiaGirl 
-              ? 'بصوت عالي: "بنت المافيا تفتح.. بنت المافيا تغتال.. بنت المافيا تغمض"'
-              : 'بصوت عالي: "المافيا تفتح.. المافيا تغتال.. المافيا تغمض"');
+              ? 'Ø¨ØµÙˆØª Ø¹Ø§Ù„ÙŠ: "Ø¨Ù†Øª Ø§Ù„Ù…Ø§ÙÙŠØ§ ØªÙØªØ­.. Ø¨Ù†Øª Ø§Ù„Ù…Ø§ÙÙŠØ§ ØªØºØªØ§Ù„.. Ø¨Ù†Øª Ø§Ù„Ù…Ø§ÙÙŠØ§ ØªØºÙ…Ø¶"'
+              : 'Ø¨ØµÙˆØª Ø¹Ø§Ù„ÙŠ: "Ø§Ù„Ù…Ø§ÙÙŠØ§ ØªÙØªØ­.. Ø§Ù„Ù…Ø§ÙÙŠØ§ ØªØºØªØ§Ù„.. Ø§Ù„Ù…Ø§ÙÙŠØ§ ØªØºÙ…Ø¶"');
       
       _activeSteps.add(_DynamicNightStep(
         actor: assassinationActor,
@@ -104,9 +104,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     if (girl != null) {
       _activeSteps.add(_DynamicNightStep(
         actor: girl,
-        arabicTitle: 'الإسكات',
-        arabicSubtitle: 'بواسطة بنت المافيا',
-        arabicAction: '"يا بنت المافيا افتحي عينيكِ... اختاري من ستُسكتين... أغمضي عينيكِ"',
+        arabicTitle: 'Ø§Ù„Ø¥Ø³ÙƒØ§Øª',
+        arabicSubtitle: 'Ø¨ÙˆØ§Ø³Ø·Ø© Ø¨Ù†Øª Ø§Ù„Ù…Ø§ÙÙŠØ§',
+        arabicAction: '"ÙŠØ§ Ø¨Ù†Øª Ø§Ù„Ù…Ø§ÙÙŠØ§ Ø§ÙØªØ­ÙŠ Ø¹ÙŠÙ†ÙŠÙƒÙ... Ø§Ø®ØªØ§Ø±ÙŠ Ù…Ù† Ø³ØªÙØ³ÙƒØªÙŠÙ†... Ø£ØºÙ…Ø¶ÙŠ Ø¹ÙŠÙ†ÙŠÙƒÙ"',
         color: AppTheme.mafiaPrimary,
         eventType: EventType.silence,
       ));
@@ -117,9 +117,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     if (citizenSheikh != null) {
       _activeSteps.add(_DynamicNightStep(
         actor: citizenSheikh,
-        arabicTitle: 'التحقيق',
-        arabicSubtitle: 'بواسطة شيخ المواطنين',
-        arabicAction: '"يا شيخ المواطنين افتح عينيك... اختر من تريد التحقيق عنه... أغمض عينيك"',
+        arabicTitle: 'Ø§Ù„ØªØ­Ù‚ÙŠÙ‚',
+        arabicSubtitle: 'Ø¨ÙˆØ§Ø³Ø·Ø© Ø´ÙŠØ® Ø§Ù„Ù…ÙˆØ§Ø·Ù†ÙŠÙ†',
+        arabicAction: '"ÙŠØ§ Ø´ÙŠØ® Ø§Ù„Ù…ÙˆØ§Ø·Ù†ÙŠÙ† Ø§ÙØªØ­ Ø¹ÙŠÙ†ÙŠÙƒ... Ø§Ø®ØªØ± Ù…Ù† ØªØ±ÙŠØ¯ Ø§Ù„ØªØ­Ù‚ÙŠÙ‚ Ø¹Ù†Ù‡... Ø£ØºÙ…Ø¶ Ø¹ÙŠÙ†ÙŠÙƒ"',
         color: AppTheme.citizensAccent,
         eventType: EventType.investigation,
       ));
@@ -130,9 +130,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     if (citizenGirl != null) {
       _activeSteps.add(_DynamicNightStep(
         actor: citizenGirl,
-        arabicTitle: 'الحماية',
-        arabicSubtitle: 'بواسطة بنت المواطنين',
-        arabicAction: '"يا بنت المواطنين افتحي عينيكِ... اختاري من ستحمين... أغمضي عينيكِ"',
+        arabicTitle: 'Ø§Ù„Ø­Ù…Ø§ÙŠØ©',
+        arabicSubtitle: 'Ø¨ÙˆØ§Ø³Ø·Ø© Ø¨Ù†Øª Ø§Ù„Ù…ÙˆØ§Ø·Ù†ÙŠÙ†',
+        arabicAction: '"ÙŠØ§ Ø¨Ù†Øª Ø§Ù„Ù…ÙˆØ§Ø·Ù†ÙŠÙ† Ø§ÙØªØ­ÙŠ Ø¹ÙŠÙ†ÙŠÙƒÙ... Ø§Ø®ØªØ§Ø±ÙŠ Ù…Ù† Ø³ØªØ­Ù…ÙŠÙ†... Ø£ØºÙ…Ø¶ÙŠ Ø¹ÙŠÙ†ÙŠÙƒÙ"',
         color: AppTheme.citizensPrimary,
         eventType: EventType.protection,
       ));
@@ -183,22 +183,22 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         return AlertDialog(
           backgroundColor: AppTheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('تأكيد الإجراء', style: TextStyle(fontFamily: 'Cairo')),
+          title: const Text('ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡', style: TextStyle(fontFamily: 'Cairo')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _InfoRow(label: 'الإجراء', value: step.arabicTitle, color: step.color),
+              _InfoRow(label: 'Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡', value: step.arabicTitle, color: step.color),
               const SizedBox(height: 4),
-              _InfoRow(label: 'بواسطة', value: step.actor.name, color: AppTheme.textSecondary),
+              _InfoRow(label: 'Ø¨ÙˆØ§Ø³Ø·Ø©', value: step.actor.name, color: AppTheme.textSecondary),
               const SizedBox(height: 12),
-              _InfoRow(label: 'الهدف', value: target?.name ?? '—', color: AppTheme.textPrimary),
+              _InfoRow(label: 'Ø§Ù„Ù‡Ø¯Ù', value: target?.name ?? 'â€”', color: AppTheme.textPrimary),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء', style: TextStyle(color: AppTheme.textSecondary)),
+              child: const Text('Ø¥Ù„ØºØ§Ø¡', style: TextStyle(color: AppTheme.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -216,7 +216,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: step.color),
-              child: const Text('تأكيد'),
+              child: const Text('ØªØ£ÙƒÙŠØ¯'),
             ),
           ],
         );
@@ -237,16 +237,16 @@ class _NightScreenState extends ConsumerState<NightScreen> {
           children: [
             Icon(isMafia ? Icons.warning_amber_rounded : Icons.verified_user, color: isMafia ? AppTheme.mafiaPrimary : AppTheme.citizensPrimary),
             const SizedBox(width: 8),
-            Text('نتيجة التحقيق', style: TextStyle(color: isMafia ? AppTheme.mafiaPrimary : AppTheme.citizensPrimary, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            Text('Ù†ØªÙŠØ¬Ø© Ø§Ù„ØªØ­Ù‚ÙŠÙ‚', style: TextStyle(color: isMafia ? AppTheme.mafiaPrimary : AppTheme.citizensPrimary, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('اللاعب ${target.name}', style: const TextStyle(fontSize: 20, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            Text('Ø§Ù„Ù„Ø§Ø¹Ø¨ ${target.name}', style: const TextStyle(fontSize: 20, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Text(
-              isMafia ? 'من المافيا! (أومئ برأسك بنعم)' : 'مواطن بريء! (أومئ برأسك بلا)',
+              isMafia ? 'Ù…Ù† Ø§Ù„Ù…Ø§ÙÙŠØ§! (Ø£ÙˆÙ…Ø¦ Ø¨Ø±Ø£Ø³Ùƒ Ø¨Ù†Ø¹Ù…)' : 'Ù…ÙˆØ§Ø·Ù† Ø¨Ø±ÙŠØ¡! (Ø£ÙˆÙ…Ø¦ Ø¨Ø±Ø£Ø³Ùƒ Ø¨Ù„Ø§)',
               style: TextStyle(
                 fontSize: 18, 
                 color: isMafia ? AppTheme.mafiaPrimary : AppTheme.citizensPrimary, 
@@ -263,7 +263,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
               _advance();
             },
             style: ElevatedButton.styleFrom(backgroundColor: isMafia ? AppTheme.mafiaPrimary : AppTheme.citizensPrimary),
-            child: const Text('فهمت، متابعة'),
+            child: const Text('ÙÙ‡Ù…ØªØŒ Ù…ØªØ§Ø¨Ø¹Ø©'),
           ),
         ],
       ),
@@ -306,7 +306,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     if (_activeSteps.isEmpty) {
       if (round == 1) {
         return Scaffold(
-          appBar: AppBar(title: const Text('الليل 1 (تعارف)')),
+          appBar: AppBar(title: const Text('Ø§Ù„Ù„ÙŠÙ„ 1 (ØªØ¹Ø§Ø±Ù)')),
           body: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -320,7 +320,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'بصوت عالي احكي:\n\nالكل يغمض عينيه\nالمافيا تفتح عينيها (للتعارف فقط)\nالمافيا تغمض\nالكل يفتح',
+                  'Ø¨ØµÙˆØª Ø¹Ø§Ù„ÙŠ Ø§Ø­ÙƒÙŠ:\n\nØ§Ù„ÙƒÙ„ ÙŠØºÙ…Ø¶ Ø¹ÙŠÙ†ÙŠÙ‡\nØ§Ù„Ù…Ø§ÙÙŠØ§ ØªÙØªØ­ Ø¹ÙŠÙ†ÙŠÙ‡Ø§ (Ù„Ù„ØªØ¹Ø§Ø±Ù ÙÙ‚Ø·)\nØ§Ù„Ù…Ø§ÙÙŠØ§ ØªØºÙ…Ø¶\nØ§Ù„ÙƒÙ„ ÙŠÙØªØ­',
                   style: TextStyle(fontSize: 22, fontFamily: 'Cairo', height: 1.8, color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
@@ -334,7 +334,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                     backgroundColor: AppTheme.mafiaAccent,
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                   ),
-                  child: const Text('متابعة إلى النهار', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: const Text('Ù…ØªØ§Ø¨Ø¹Ø© Ø¥Ù„Ù‰ Ø§Ù„Ù†Ù‡Ø§Ø±', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -343,14 +343,14 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       }
 
       return Scaffold(
-        appBar: AppBar(title: Text('الليل $round')),
+        appBar: AppBar(title: Text('Ø§Ù„Ù„ÙŠÙ„ $round')),
         body: Center(
           child: ElevatedButton(
             onPressed: () {
               ref.read(gameOrchestratorProvider.notifier).resolveNight();
               Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightSummaryScreen()));
             },
-            child: const Text('إنهاء الليل'),
+            child: const Text('Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„Ù„ÙŠÙ„'),
           ),
         ),
       );
@@ -365,13 +365,13 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(icon: Icon(_stepIndex > 0 ? Icons.undo : Icons.exit_to_app, color: Colors.white), onPressed: () { if (_stepIndex > 0) { _goBack(); } else { Navigator.maybePop(context); } }),
+        leading: _stepIndex > 0 ? IconButton(icon: const Icon(Icons.undo, color: Colors.white), onPressed: _goBack) : null,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.nights_stay, size: 18),
             const SizedBox(width: 6),
-            Text('الليل $round', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('Ø§Ù„Ù„ÙŠÙ„ $round', style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -396,7 +396,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.exit_to_app, color: AppTheme.error, size: 20),
-                  tooltip: 'إنهاء اللعبة',
+                  tooltip: 'Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„Ù„Ø¹Ø¨Ø©',
                   onPressed: () => _confirmExit(context, ref),
                 ),
               ],
@@ -487,7 +487,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
             const SizedBox(height: 24),
             const Align(
               alignment: Alignment.centerRight,
-              child: Text('اختر الهدف:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, fontWeight: FontWeight.bold)),
+              child: Text('Ø§Ø®ØªØ± Ø§Ù„Ù‡Ø¯Ù:', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -542,12 +542,12 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                                children: [
                                  Icon(Icons.shield, color: AppTheme.success.withValues(alpha: 0.8), size: 10),
                                  const SizedBox(width: 2),
-                                 Text('تلقى حماية سابقة', style: TextStyle(color: AppTheme.success.withValues(alpha: 0.8), fontSize: 9, fontFamily: 'Cairo')),
+                                 Text('ØªÙ„Ù‚Ù‰ Ø­Ù…Ø§ÙŠØ© Ø³Ø§Ø¨Ù‚Ø©', style: TextStyle(color: AppTheme.success.withValues(alpha: 0.8), fontSize: 9, fontFamily: 'Cairo')),
                                ],
                              ),
                           if (!canSelect)
                              Text(
-                              'غير متاح',
+                              'ØºÙŠØ± Ù…ØªØ§Ø­',
                               style: TextStyle(color: AppTheme.error.withValues(alpha: 0.6), fontSize: 10),
                             ),
                         ],
@@ -569,7 +569,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('تأكيد الإجراء', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text('ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -609,12 +609,12 @@ class _InfoRow extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('إنهاء اللعبة؟', style: TextStyle(color: AppTheme.error, fontFamily: 'Cairo')),
-        content: const Text('هل أنت متأكد أنك تريد إنهاء هذه اللعبة والعودة للقائمة الرئيسية؟', style: TextStyle(fontFamily: 'Cairo')),
+        title: const Text('Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„Ù„Ø¹Ø¨Ø©ØŸ', style: TextStyle(color: AppTheme.error, fontFamily: 'Cairo')),
+        content: const Text('Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ø£Ù†Ùƒ ØªØ±ÙŠØ¯ Ø¥Ù†Ù‡Ø§Ø¡ Ù‡Ø°Ù‡ Ø§Ù„Ù„Ø¹Ø¨Ø© ÙˆØ§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©ØŸ', style: TextStyle(fontFamily: 'Cairo')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo')),
+            child: const Text('Ø¥Ù„ØºØ§Ø¡', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -626,7 +626,7 @@ class _InfoRow extends StatelessWidget {
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
-            child: const Text('نعم، إنهاء', style: TextStyle(fontFamily: 'Cairo')),
+            child: const Text('Ù†Ø¹Ù…ØŒ Ø¥Ù†Ù‡Ø§Ø¡', style: TextStyle(fontFamily: 'Cairo')),
           ),
         ],
       ),

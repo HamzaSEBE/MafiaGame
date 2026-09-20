@@ -69,20 +69,13 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    // Force complete sign out by re-instantiating if needed
     try {
-      final googleSignIn = GoogleSignIn();
-      if (await googleSignIn.isSignedIn()) {
-        await googleSignIn.disconnect();
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.disconnect();
       }
-      await googleSignIn.signOut();
-    } catch (e) {
-      print('Google SignOut Error: $e');
-    }
+    } catch (_) {}
     
-    // Fallback using class instance
     try {
-      await _googleSignIn.disconnect();
       await _googleSignIn.signOut();
     } catch (_) {}
     

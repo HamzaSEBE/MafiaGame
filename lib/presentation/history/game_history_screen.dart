@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/widgets/newspaper_widget.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/data/repositories/history_repository.dart';
@@ -54,142 +55,29 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     return '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')} - ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildRichText(String text) {
-    List<TextSpan> spans = [];
-    final lines = text.split('\n');
-    
-    for (String line in lines) {
-      if (line.trim().isEmpty) {
-        spans.add(const TextSpan(text: '\n'));
-        continue;
-      }
-      
-      if (line.startsWith('[ أحداث الليلة') || line.startsWith('[ نهار اليوم')) {
-        spans.add(TextSpan(
-          text: '$line\n',
-          style: const TextStyle(
-            color: Colors.amber, 
-            fontSize: 18, 
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
-            height: 2,
-          ),
-        ));
-      } else if (line.startsWith('النتيجة النهائية:')) {
-        spans.add(TextSpan(
-          text: '$line\n',
-          style: const TextStyle(
-            color: Colors.redAccent, 
-            fontSize: 20, 
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Cairo',
-            height: 2,
-          ),
-        ));
-      } else {
-        // Highlight names in parentheses like ($name)
-        final RegExp exp = RegExp(r'\(\$(.*?)\)');
-        int start = 0;
-        final matches = exp.allMatches(line);
-        
-        for (final match in matches) {
-          if (match.start > start) {
-            spans.add(TextSpan(text: line.substring(start, match.start)));
-          }
-          spans.add(TextSpan(
-            text: match.group(1),
-            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-          ));
-          start = match.end;
-        }
-        
-        if (start < line.length) {
-          spans.add(TextSpan(text: line.substring(start)));
-        }
-        spans.add(const TextSpan(text: '\n'));
-      }
-    }
-
-    return RichText(
-      textAlign: TextAlign.justify,
-      textDirection: TextDirection.rtl,
-      text: TextSpan(
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontFamily: 'Cairo',
-          height: 1.8,
-        ),
-        children: spans,
-      ),
-    );
-  }
-
   void _showNewspaperDialog(BuildContext context, String? text) {
     if (text == null || text.isEmpty) return;
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF261D15), Color(0xFF130E0A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              NewspaperWidget(narrative: text),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E1E24),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('إغلاق الجريدة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
               ),
-              border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3), width: 1.5),
-              boxShadow: [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.1), blurRadius: 20)],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.history_edu, size: 40, color: Colors.orangeAccent),
-                      const SizedBox(width: 12),
-                      Column(
-                        children: [
-                          const Text(
-                            'أرشيف المدينة',
-                            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, fontFamily: 'Cairo', letterSpacing: 1),
-                          ),
-                          Text(
-                            'سجلات سرية',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13, fontFamily: 'Cairo', letterSpacing: 2),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const Divider(color: Colors.white24, thickness: 1),
-                  const SizedBox(height: 16),
-                  
-                  // Elegant Rich Text Narrative
-                  _buildRichText(text),
-                  
-                  const SizedBox(height: 24),
-                  const Divider(color: Colors.white24, thickness: 1),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white10,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('إغلاق الأرشيف', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
       ),

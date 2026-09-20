@@ -12,7 +12,20 @@
           "package_name": "com.example.mafia_nightfall"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "282187037912-qqokkmdsignnqh8jphot4dsolei8d65t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mafia_nightfall",
+            "certificate_hash": "5474c18bc0a07574932f745241ab909b4c70ff94"
+          }
+        },
+        {
+          "client_id": "282187037912-qsfkdrg5654ca30mrbfn2evkpci85a6e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDqMKflIR64NXIWvmlOIu8CtHuO6XXWebU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "282187037912-qsfkdrg5654ca30mrbfn2evkpci85a6e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

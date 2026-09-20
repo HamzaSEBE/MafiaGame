@@ -1,4 +1,4 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -32,23 +32,26 @@ class AuthService {
   }
 
   Future<UserCredential?> signInWithGoogle() async {
-    // Trigger the authentication flow
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) return null; // The user canceled the sign-in
+    if (googleUser == null) return null;
 
-    // Obtain the auth details from the request
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-    // Create a new credential
     final OAuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
-    // Once signed in, return the UserCredential
-    final UserCredential userCredential = await _auth.signInWithCredential(credential);
+    UserCredential userCredential;
+    try {
+      userCredential = await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential') {
+        throw Exception('هذا البريد الإلكتروني مسجل مسبقاً بطريقة مختلفة. قم بتسجيل الدخول بكلمة المرور.');
+      }
+      rethrow;
+    }
     
-    // Create firestore record if it doesn't exist
     final user = userCredential.user;
     if (user != null) {
       final doc = await _firestore.collection('users').doc(user.uid).get();
@@ -66,7 +69,12 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.disconnect();
+    } catch (_) {}
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
 

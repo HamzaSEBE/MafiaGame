@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+import 'package:mafia_nightfall/presentation/auth/auth_wrapper.dart';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,7 +135,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await _auth.signOut();
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const AuthWrapper()),
         (route) => false,
       );
     }

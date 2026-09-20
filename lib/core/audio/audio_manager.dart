@@ -9,9 +9,27 @@ final audioManagerProvider = Provider<AudioManager>((ref) {
 
 class AudioManager {
   final AudioPlayer _sfxPlayer = AudioPlayer();
+  final AudioPlayer _ambiencePlayer = AudioPlayer();
 
   AudioManager() {
     _sfxPlayer.setReleaseMode(ReleaseMode.stop);
+    _ambiencePlayer.setReleaseMode(ReleaseMode.loop);
+  }
+
+  /// Start playing wind/night ambient sounds (No music)
+  Future<void> startAmbience() async {
+    try {
+      if (_ambiencePlayer.state != PlayerState.playing) {
+        await _ambiencePlayer.play(AssetSource('audio/ambience.wav'), volume: 0.6);
+      }
+    } catch (_) {}
+  }
+
+  /// Stop ambience
+  Future<void> stopAmbience() async {
+    try {
+      await _ambiencePlayer.stop();
+    } catch (_) {}
   }
 
   /// نقرة زر عادية
@@ -65,5 +83,6 @@ class AudioManager {
 
   void dispose() {
     _sfxPlayer.dispose();
+    _ambiencePlayer.dispose();
   }
 }

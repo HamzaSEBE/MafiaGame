@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:mafia_nightfall/presentation/stats/stats_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -10,11 +13,24 @@ import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
 import 'dart:ui';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(audioManagerProvider).startAmbience();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authServiceProvider).currentUser;
     
     return Scaffold(
@@ -143,6 +159,21 @@ class HomeScreen extends ConsumerWidget {
                       _buildLuxuriousButton(
                         context: context,
                         ref: ref,
+                        icon: Icons.leaderboard,
+                        label: 'إحصائيات اللاعبين',
+                        primary: false,
+                        onTap: () {
+                          ref.read(audioManagerProvider).playClick();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const StatsScreen()),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLuxuriousButton(
+                        context: context,
+                        ref: ref,
                         icon: Icons.history_edu,
                         label: 'سجل المباريات',
                         primary: false,
@@ -167,10 +198,29 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref, dynamic user) {
-    final displayName = user?.displayName ?? 'لاعب مجهول';
-    final email = user?.email ?? '';
+    if (user == null) return const SizedBox.shrink();
+    
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        String displayName = user.displayName ?? 'لاعب مجهول';
+        String email = user.email ?? '';
+        String? base64Photo;
 
-    return Padding(
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          displayName = data['displayName'] ?? displayName;
+          base64Photo = data['photoBase64'] as String?;
+        }
+
+        ImageProvider? avatarImage;
+        if (base64Photo != null && base64Photo.isNotEmpty) {
+          try {
+            avatarImage = MemoryImage(base64Decode(base64Photo));
+          } catch (_) {}
+        }
+
+        return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -248,8 +298,9 @@ class HomeScreen extends ConsumerWidget {
                               blurRadius: 10,
                             ),
                           ],
+                          image: avatarImage != null ? DecorationImage(image: avatarImage, fit: BoxFit.cover) : null,
                         ),
-                        child: const Icon(Icons.person, color: AppTheme.textSecondary),
+                        child: avatarImage == null ? const Icon(Icons.person, color: AppTheme.textSecondary) : null,
                       ),
                     ],
                   ),
@@ -259,6 +310,8 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 

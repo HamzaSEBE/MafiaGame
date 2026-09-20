@@ -205,6 +205,10 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       appBar: AppBar(
         title: const Text('ملخص الليل (للحكم فقط)'),
         automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.maybePop(context),
+          ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),

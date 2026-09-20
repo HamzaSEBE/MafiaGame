@@ -297,7 +297,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
 
   @override
   Widget build(BuildContext context) {    return GamePopScope(
-      onBackStep: _stepIndex > 0 ? _goBack : null,
+      
       child: Builder(builder: (context) {
 
     final gameState = ref.watch(gameOrchestratorProvider);
@@ -365,13 +365,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: _stepIndex > 0
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary),
-                onPressed: _goBack,
-                tooltip: 'تراجع عن الإجراء السابق',
-              )
-            : null,
+        leading: IconButton(icon: Icon(_stepIndex > 0 ? Icons.undo : Icons.exit_to_app, color: Colors.white), onPressed: () { if (_stepIndex > 0) { _goBack(); } else { Navigator.maybePop(context); } }),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

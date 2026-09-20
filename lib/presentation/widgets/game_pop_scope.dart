@@ -3,9 +3,8 @@ import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 
 class GamePopScope extends StatelessWidget {
   final Widget child;
-  final VoidCallback? onBackStep; // Optional: To step back inside the screen if needed
 
-  const GamePopScope({super.key, required this.child, this.onBackStep});
+  const GamePopScope({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -13,11 +12,6 @@ class GamePopScope extends StatelessWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        
-        if (onBackStep != null) {
-          onBackStep!();
-          return;
-        }
 
         final exit = await showDialog<bool>(
           context: context,

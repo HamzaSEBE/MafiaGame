@@ -24,6 +24,10 @@ class DayScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.maybePop(context),
+          ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Row(

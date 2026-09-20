@@ -1,11 +1,10 @@
-﻿import 'dart:io';
+﻿import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
 import 'package:mafia_nightfall/presentation/auth/login_screen.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 
@@ -49,7 +48,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery, 
+      imageQuality: 30,
+      maxWidth: 250,
+      maxHeight: 250,
+    );
     
     if (pickedFile != null) {
       setState(() => _isUploading = true);
@@ -57,15 +61,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         final uid = _auth.currentUser?.uid;
         if (uid == null) return;
         
-        final storageRef = FirebaseStorage.instance.ref().child('avatars/$uid.jpg');
-        await storageRef.putFile(File(pickedFile.path));
-        final downloadUrl = await storageRef.getDownloadURL();
+        final bytes = await File(pickedFile.path).readAsBytes();
+        final base64String = base64Encode(bytes);
         
-        await _auth.currentUser?.updatePhotoURL(downloadUrl);
-        await _firestore.collection('users').doc(uid).update({'photoUrl': downloadUrl});
+        await _firestore.collection('users').doc(uid).update({'photoBase64': base64String});
         
         setState(() {
-          _profileData?['photoUrl'] = downloadUrl;
+          _profileData?['photoBase64'] = base64String;
         });
         
         if (mounted) {
@@ -76,7 +78,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('فشل رفع الصورة. تأكد من تفعيل Storage في Firebase', style: TextStyle(fontFamily: 'Cairo'))),
+            const SnackBar(content: Text('فشل تحديث الصورة', style: TextStyle(fontFamily: 'Cairo'))),
           );
         }
       } finally {
@@ -138,6 +140,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  ImageProvider? _getProfileImage() {
+    final base64String = _profileData?['photoBase64'] as String?;
+    if (base64String != null && base64String.isNotEmpty) {
+      try {
+        return MemoryImage(base64Decode(base64String));
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -150,7 +164,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = _auth.currentUser;
     final displayName = _profileData?['displayName'] ?? 'لاعب';
     final username = _profileData?['username'] ?? '';
-    final photoUrl = user?.photoURL ?? _profileData?['photoUrl'];
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
     final gamesPlayed = _statsData?['gamesPlayed'] ?? 0;
@@ -158,6 +171,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final citizenWins = _statsData?['citizenWins'] ?? 0;
     final wins = mafiaWins + citizenWins;
     final winRate = gamesPlayed > 0 ? ((wins / gamesPlayed) * 100).toStringAsFixed(1) : '0.0';
+
+    final imageProvider = _getProfileImage();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
@@ -179,8 +194,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: AppTheme.surfaceHigh,
-                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                    child: photoUrl == null 
+                    backgroundImage: imageProvider,
+                    child: imageProvider == null 
                       ? Text(initial, style: const TextStyle(fontSize: 40, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold))
                       : null,
                   ),
@@ -227,7 +242,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 40),
             
-            // Stats Grid
             Row(
               children: [
                 _StatCard(title: 'المباريات', value: '$gamesPlayed', color: Colors.blue),

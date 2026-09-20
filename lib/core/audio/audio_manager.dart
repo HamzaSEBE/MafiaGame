@@ -1,4 +1,4 @@
-import 'package:audioplayers/audioplayers.dart';
+﻿import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final audioManagerProvider = Provider<AudioManager>((ref) {
@@ -73,6 +73,18 @@ class AudioManager {
 
   Future<void> stopVoiceover() async {
     await _voicePlayer.stop();
+  }
+
+  Future<void> playClick() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/click.mp3'), volume: 1.0);
+    } catch (e) {}
+  }
+  
+  Future<void> playSplashIntro() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/intro.mp3'), volume: 1.0);
+    } catch (e) {}
   }
 
   void dispose() {

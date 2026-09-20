@@ -1,11 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
 import 'package:mafia_nightfall/presentation/auth/register_screen.dart';
 import 'package:mafia_nightfall/presentation/auth/forgot_password_screen.dart';
-import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,59 +16,78 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailOrUserController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
-  @override
-  void dispose() {
-    _emailOrUserController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  Future<String?> _getEmailFromUsername(String username) async {
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) {
+        return query.docs.first.data()['email'] as String?;
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        String loginValue = _emailController.text.trim();
+        String password = _passwordController.text;
+        String? emailToUse = loginValue;
 
-    setState(() => _isLoading = true);
-    
-    try {
-      String loginIdentifier = _emailOrUserController.text.trim();
-      String emailToUse = loginIdentifier;
-
-      // If it doesn't look like an email, assume it's a username and fetch the email
-      if (!loginIdentifier.contains('@')) {
-        final query = await FirebaseFirestore.instance
-            .collection('users')
-            .where('username', isEqualTo: loginIdentifier)
-            .limit(1)
-            .get();
-            
-        if (query.docs.isEmpty) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('اسم المستخدم غير موجود', style: TextStyle(fontFamily: 'Cairo'))),
-            );
-            setState(() => _isLoading = false);
+        if (!loginValue.contains('@')) {
+          emailToUse = await _getEmailFromUsername(loginValue);
+          if (emailToUse == null) {
+            throw Exception('اسم المستخدم غير موجود');
           }
-          return;
         }
-        emailToUse = query.docs.first.data()['email'] as String;
-      }
 
-      await ref.read(authServiceProvider).signIn(
-        email: emailToUse,
-        password: _passwordController.text,
-      );
+        await ref.read(authServiceProvider).signIn(
+              email: emailToUse,
+              password: password,
+            );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطأ في تسجيل الدخول: ${e.toString()}', style: const TextStyle(fontFamily: 'Cairo'))),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      await ref.read(authServiceProvider).signInWithGoogle();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('البريد الإلكتروني أو كلمة المرور غير صحيحة', style: TextStyle(fontFamily: 'Cairo'))),
+          const SnackBar(content: Text('فشل تسجيل الدخول عبر جوجل', style: TextStyle(fontFamily: 'Cairo'))),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -83,28 +102,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'مافيا عالشوارب',
+                    const Icon(Icons.security, size: 80, color: AppTheme.mafiaPrimary),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'تسجيل الدخول',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            color: Colors.white,
-                            fontFamily: 'Cairo',
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                            shadows: [
-                              Shadow(color: AppTheme.mafiaPrimary, blurRadius: 20),
-                            ],
-                          ),
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                      ),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 40),
                     TextFormField(
-                      controller: _emailOrUserController,
-                      style: const TextStyle(color: Colors.white),
+                      controller: _emailController,
+                      style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
                       decoration: InputDecoration(
                         labelText: 'البريد الإلكتروني أو اسم المستخدم',
                         labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
@@ -122,7 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
                       decoration: InputDecoration(
                         labelText: 'كلمة المرور',
                         labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
@@ -157,15 +174,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('تسجيل الدخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                          : const Text('دخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                     ),
-                    const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                    const SizedBox(height: 16),
+                    
+                    // Google Sign In Button
+                    OutlinedButton.icon(
+                      onPressed: _isGoogleLoading ? null : _loginWithGoogle,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: Colors.white54),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('مستخدم جديد؟ أنشئ حساب', style: TextStyle(color: AppTheme.textPrimary, fontFamily: 'Cairo')),
+                      icon: _isGoogleLoading 
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Image.network('https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg', width: 24, height: 24),
+                      label: const Text('تسجيل الدخول باستخدام جوجل', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('ليس لديك حساب؟', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo')),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                          ),
+                          child: const Text('إنشاء حساب', style: TextStyle(color: AppTheme.citizensPrimary, fontFamily: 'Cairo')),
+                        ),
+                      ],
                     ),
                   ],
                 ),

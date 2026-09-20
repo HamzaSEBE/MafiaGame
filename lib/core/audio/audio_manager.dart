@@ -87,6 +87,18 @@ class AudioManager {
     } catch (e) {}
   }
 
+  Future<void> playKill() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/kill.mp3'), volume: 1.0);
+    } catch (e) {}
+  }
+
+  Future<void> playProtect() async {
+    try {
+      await _sfxPlayer.play(AssetSource('audio/protect.mp3'), volume: 1.0);
+    } catch (e) {}
+  }
+
   void dispose() {
     _musicPlayer.dispose();
     _sfxPlayer.dispose();

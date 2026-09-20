@@ -1,4 +1,3 @@
-﻿import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +10,7 @@ import 'package:mafia_nightfall/presentation/settings/settings_screen.dart';
 import 'package:mafia_nightfall/presentation/profile/profile_screen.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
+import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -56,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = _profileData?['displayName'] ?? 'Ù„Ø§Ø¹Ø¨';
+    final displayName = _profileData?['displayName'] ?? 'لاعب';
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
     final imageProvider = _getProfileImage();
 
@@ -66,48 +66,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           const AnimatedBackground(),
           
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
-                          .then((_) => _loadProfile()); // Reload if changed
-                    },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: AppTheme.surfaceHigh,
-                          backgroundImage: imageProvider,
-                          child: imageProvider == null 
-                            ? Text(initial, style: const TextStyle(fontSize: 20, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold))
-                            : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Ù…Ø±Ø­Ø¨Ø§Ù‹ Ø¨ÙƒØŒ', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontFamily: 'Cairo')),
-                            Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings, color: Colors.white),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -143,7 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    'Ù…Ø§ÙÙŠØ§\nØ¹Ø§Ù„Ø´ÙˆØ§Ø±Ø¨',
+                    'مافيا\nعالشوارب',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                           color: Colors.white,
@@ -160,26 +118,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                   ),
                   const SizedBox(height: 64),
-                  _buildMenuButton(ref, context,
-                    title: 'Ù„Ø¹Ø¨Ø© Ø¬Ø¯ÙŠØ¯Ø©',
+                  _buildMenuButton(
+                    context,
+                    title: 'لعبة جديدة',
                     icon: Icons.play_arrow_rounded,
                     color: AppTheme.mafiaPrimary,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen())),
                     isPrimary: true,
                   ),
                   const SizedBox(height: 16),
-                  _buildMenuButton(ref, context,
-                    title: 'Ø³Ø¬Ù„ Ø§Ù„Ù…Ø¨Ø§Ø±ÙŠØ§Øª',
+                  _buildMenuButton(
+                    context,
+                    title: 'سجل المباريات',
                     icon: Icons.history_rounded,
                     color: AppTheme.surfaceHigh,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GameHistoryScreen())),
                   ),
                   const SizedBox(height: 16),
-                  _buildMenuButton(ref, context,
-                    title: 'Ø§Ù„Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª ÙˆØ§Ù„Ø£Ù„Ù‚Ø§Ø¨',
+                  _buildMenuButton(
+                    context,
+                    title: 'الإحصائيات والألقاب',
                     icon: Icons.leaderboard_rounded,
                     color: AppTheme.surfaceHigh,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatsScreen())),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+          
+          // MOVED TO TOP OF STACK SO IT IS CLICKABLE
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      ref.read(audioManagerProvider).playClick();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))
+                          .then((_) => _loadProfile());
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: AppTheme.surfaceHigh,
+                          backgroundImage: imageProvider,
+                          child: imageProvider == null 
+                            ? Text(initial, style: const TextStyle(fontSize: 20, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold))
+                            : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('مرحباً بك،', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontFamily: 'Cairo')),
+                            Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings, color: Colors.white),
+                    onPressed: () {
+                      ref.read(audioManagerProvider).playClick();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                    },
                   ),
                 ],
               ),
@@ -190,7 +200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildMenuButton(WidgetRef ref, 
+  Widget _buildMenuButton(
     BuildContext context, {
     required String title,
     required IconData icon,
@@ -216,7 +226,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: () {
-            // Play sound asynchronously without awaiting
             ref.read(audioManagerProvider).playClick();
             onTap();
           },

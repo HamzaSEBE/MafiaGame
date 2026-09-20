@@ -21,6 +21,77 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isCapturing = false;
 
+    Widget _buildRichText(String text) {
+    List<TextSpan> spans = [];
+    final lines = text.split('\n');
+    
+    for (String line in lines) {
+      if (line.trim().isEmpty) {
+        spans.add(const TextSpan(text: '\n'));
+        continue;
+      }
+      
+      if (line.startsWith('[ أحداث الليلة') || line.startsWith('[ نهار اليوم')) {
+        spans.add(TextSpan(
+          text: '$line\n',
+          style: const TextStyle(
+            color: Colors.amber, 
+            fontSize: 18, 
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Cairo',
+            height: 2,
+          ),
+        ));
+      } else if (line.startsWith('النتيجة النهائية:')) {
+        spans.add(TextSpan(
+          text: '$line\n',
+          style: const TextStyle(
+            color: Colors.redAccent, 
+            fontSize: 20, 
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Cairo',
+            height: 2,
+          ),
+        ));
+      } else {
+        final RegExp exp = RegExp(r'\(\$(.*?)\)');
+        int start = 0;
+        final matches = exp.allMatches(line);
+        
+        for (final match in matches) {
+          if (match.start > start) {
+            spans.add(TextSpan(text: line.substring(start, match.start)));
+          }
+          spans.add(TextSpan(
+            text: match.group(1),
+            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+          ));
+          start = match.end;
+        }
+        
+        if (start < line.length) {
+          spans.add(TextSpan(text: line.substring(start)));
+        }
+        spans.add(const TextSpan(text: '\n'));
+      }
+    }
+
+    return RichText(
+      textAlign: TextAlign.justify,
+      textDirection: TextDirection.rtl,
+      text: TextSpan(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontFamily: 'Cairo',
+          height: 1.8,
+        ),
+        children: spans,
+      ),
+    );
+  }
+
+
   void _shareReport() async {
     setState(() => _isCapturing = true);
     
@@ -157,18 +228,7 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
                                 const SizedBox(height: 24),
                                 
                                 // Dynamic Narrative
-                                Text(
-                                  narrative,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                    fontFamily: 'Cairo',
-                                    height: 1.8,
-                                    wordSpacing: 1,
-                                  ),
-                                  textAlign: TextAlign.justify,
-                                  textDirection: TextDirection.rtl,
-                                ),
+                                _buildRichText(narrative),
                                 
                                 const SizedBox(height: 40),
                                 const Divider(color: Colors.white24, thickness: 1),

@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/data/services/auth_service.dart';
 import 'package:mafia_nightfall/presentation/auth/auth_wrapper.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -132,7 +133,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _signOut() async {
-    await _auth.signOut();
+    await ref.read(authServiceProvider).signOut();
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const AuthWrapper()),

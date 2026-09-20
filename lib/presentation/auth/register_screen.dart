@@ -130,7 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       controller: _usernameController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        labelText: 'اسم المستخدم (English)',
+                        labelText: 'اسم المستخدم بالإنجليزية',
                         labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
                         prefixIcon: const Icon(Icons.alternate_email, color: AppTheme.textSecondary),
                         filled: true,

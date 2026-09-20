@@ -1,4 +1,4 @@
-﻿import 'package:mafia_nightfall/domain/events/game_event.dart';
+import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
@@ -42,7 +42,7 @@ class TimelineGenerator {
           buffer.writeln('استيقظت المدينة على فاجعة.. تم العثور على جثة: $names!');
         }
       } else if (event.type == EventType.assassination) {
-         buffer.writeln('🔫 قرر ${getPlayerName(event.actorId)} (المافيا) اغتيال ${getPlayerName(event.targetId)}.');
+         buffer.writeln('🔫 قرر ${getPlayerName(event.actorId)} المافيا اغتيال ${getPlayerName(event.targetId)}.');
       } else if (event.type == EventType.protection) {
          buffer.writeln('🛡️ حاولت الطبيبة ${getPlayerName(event.actorId)} حماية ${getPlayerName(event.targetId)}.');
       } else if (event.type == EventType.silence) {

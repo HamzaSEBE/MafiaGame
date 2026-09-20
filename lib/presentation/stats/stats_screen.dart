@@ -1,174 +1,207 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
-import 'package:mafia_nightfall/domain/entities/player_stats.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'package:mafia_nightfall/domain/entities/player_stats.dart';
+import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
+import 'dart:ui';
 
-class StatsScreen extends ConsumerStatefulWidget {
+class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
   @override
-  ConsumerState<StatsScreen> createState() => _StatsScreenState();
-}
-
-class _StatsScreenState extends ConsumerState<StatsScreen> {
-  List<PlayerStats> _stats = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStats();
-  }
-
-  Future<void> _loadStats() async {
-    final repo = ref.read(playerStatsRepoProvider);
-    final stats = await repo.loadStats();
+  Widget build(BuildContext context, WidgetRef ref) {
     
-    // Sort logic: Best to worst
-    // 1. Total Wins
-    // 2. Win Rate
-    // 3. Games Played
-    stats.sort((a, b) {
-      final winsA = a.mafiaWins + a.citizenWins;
-      final winsB = b.mafiaWins + b.citizenWins;
-      
-      if (winsA != winsB) {
-        return winsB.compareTo(winsA);
-      }
-      
-      final rateA = a.gamesPlayed == 0 ? 0 : winsA / a.gamesPlayed;
-      final rateB = b.gamesPlayed == 0 ? 0 : winsB / b.gamesPlayed;
-      if (rateA != rateB) {
-        return rateB.compareTo(rateA);
-      }
-      
-      return b.gamesPlayed.compareTo(a.gamesPlayed);
-    });
 
-    setState(() {
-      _stats = stats;
-      _isLoading = false;
-    });
-  }
-
-  String _getBadge(PlayerStats stat) {
-    if (stat.gamesPlayed < 3) return 'مبتدئ 👶';
-    if (stat.killedFirstNight > 0 && stat.killedFirstNight >= stat.gamesPlayed * 0.3) return 'المنحوس 💀';
-    
-    final totalWins = stat.mafiaWins + stat.citizenWins;
-    final winRate = stat.gamesPlayed == 0 ? 0 : totalWins / stat.gamesPlayed;
-    
-    if (stat.mafiaWins >= 2 && stat.mafiaWins > stat.citizenWins) return 'العرّاب 👑';
-    if (stat.citizenWins >= 2 && stat.citizenWins > stat.mafiaWins) return 'المحقق 🕵️';
-    if (winRate >= 0.6) return 'محترف 🌟';
-    
-    return 'لاعب عادي 👤';
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إحصائيات اللاعبين الأساطير'),
-        backgroundColor: AppTheme.surface,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _stats.isEmpty
-              ? const Center(child: Text('لا توجد إحصائيات بعد. العب جولة لتسجيل البيانات!'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _stats.length,
-                  itemBuilder: (context, index) {
-                    final stat = _stats[index];
-                    final losses = stat.gamesPlayed - (stat.mafiaWins + stat.citizenWins);
-                    final rankColor = index == 0 ? Colors.amber : (index == 1 ? Colors.grey[400] : (index == 2 ? Colors.brown[300] : AppTheme.surfaceHigh));
-                    final isTop3 = index < 3;
-                    
-                    return Card(
-                      color: AppTheme.surfaceHigh,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: isTop3 ? BorderSide(color: rankColor!, width: 2) : BorderSide.none,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    if (isTop3) ...[
-                                      Icon(Icons.emoji_events, color: rankColor, size: 28),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    Text(
-                                      '${index + 1}. ${stat.name}',
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.background,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppTheme.mafiaAccent.withValues(alpha: 0.3)),
-                                  ),
-                                  child: Text(
-                                    _getBadge(stat),
-                                    style: const TextStyle(color: AppTheme.mafiaAccent, fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppTheme.background.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  _StatItem(label: 'لعب', value: stat.gamesPlayed.toString(), color: Colors.blueAccent),
-                                  _StatItem(label: 'فاز مافيا', value: stat.mafiaWins.toString(), color: AppTheme.mafiaPrimary),
-                                  _StatItem(label: 'فاز مواطن', value: stat.citizenWins.toString(), color: AppTheme.citizensPrimary),
-                                  _StatItem(label: 'خسارة', value: losses.toString(), color: AppTheme.error),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+      backgroundColor: const Color(0xFF0A0A0F),
+      body: Stack(
+        children: [
+          // Background Gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.8),
+                  radius: 1.5,
+                  colors: [Color(0xFF2A1115), Color(0xFF0F0811), Color(0xFF07070B)],
                 ),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: FutureBuilder<List<PlayerStats>>(
+                    future: ref.read(playerStatsRepoProvider).loadStats(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary));
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('خطأ في تحميل البيانات', style: const TextStyle(color: Colors.white, fontFamily: 'Cairo')));
+                      }
+                      final players = snapshot.data ?? [];
+                      if (players.isEmpty) {
+                        return const Center(child: Text('لا توجد إحصائيات بعد', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 18)));
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: players.length,
+                        itemBuilder: (context, index) {
+                          final p = players[index];
+                          return _buildStatCard(p, index + 1);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
-}
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'إحصائيات اللاعبين',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontFamily: 'Cairo',
+              shadows: [Shadow(color: AppTheme.mafiaAccent, blurRadius: 20)],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  const _StatItem({required this.label, required this.value, required this.color});
+  Widget _buildStatCard(PlayerStats p, int rank) {
+    final winRate = p.gamesPlayed > 0 ? ((p.mafiaWins + p.citizenWins) / p.gamesPlayed * 100).toStringAsFixed(1) : '0.0';
+    
+    // Premium glow for top 3
+    final bool isTop = rank <= 3;
+    final Color rankColor = rank == 1 ? const Color(0xFFFFD700) : rank == 2 ? const Color(0xFFC0C0C0) : rank == 3 ? const Color(0xFFCD7F32) : Colors.white24;
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
-      ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isTop ? rankColor.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05), width: 1.5),
+        boxShadow: isTop ? [BoxShadow(color: rankColor.withValues(alpha: 0.1), blurRadius: 15, spreadRadius: -5)] : [],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Rank Badge
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isTop ? rankColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                    border: Border.all(color: rankColor.withValues(alpha: 0.5)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '#$rank',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: isTop ? rankColor : Colors.white54,
+                        fontFamily: 'Arial',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // Player Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.sports_esports, size: 14, color: Colors.white.withValues(alpha: 0.5)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${p.gamesPlayed} مباراة',
+                            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6), fontFamily: 'Cairo'),
+                          ),
+                          const SizedBox(width: 16),
+                          Icon(Icons.emoji_events, size: 14, color: AppTheme.citizensPrimary.withValues(alpha: 0.8)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${(p.mafiaWins + p.citizenWins)} فوز',
+                            style: TextStyle(fontSize: 13, color: AppTheme.citizensPrimary.withValues(alpha: 0.8), fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Win Rate
+                Column(
+                  children: [
+                    Text(
+                      '$winRate%',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        fontFamily: 'Arial',
+                      ),
+                    ),
+                    Text(
+                      'نسبة الفوز',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

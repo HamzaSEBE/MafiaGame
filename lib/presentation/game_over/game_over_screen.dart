@@ -149,8 +149,8 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                         indicatorColor: AppTheme.mafiaAccent,
                         labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600),
                         tabs: [
-                          Tab(text: 'المافيا (${mafiaPlayers.length})'),
-                          Tab(text: 'المواطنون (${citiPlayers.length})'),
+                          Tab(text: 'المافيا: ${mafiaPlayers.length}'),
+                          Tab(text: 'المواطنون: ${citiPlayers.length}'),
                         ],
                       ),
                       Expanded(

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
@@ -8,6 +8,7 @@ import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/engine/timeline_generator.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'dart:ui';
 
 class TimelineReportScreen extends ConsumerStatefulWidget {
   const TimelineReportScreen({super.key});
@@ -30,14 +31,13 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
         final file = await File('${dir.path}/report_${DateTime.now().millisecondsSinceEpoch}.png').create();
         await file.writeAsBytes(image);
         
-        // ignore: deprecated_member_use
         await Share.shareXFiles(
           [XFile(file.path)],
-          text: 'جريدة المدينة - نتائج لعبة مافيا عالشوارب 🔥',
+          text: 'جريدة المدينة - اقرأ تفاصيل هذه المباراة الطاحنة!',
         );
       }
     } finally {
-      setState(() => _isCapturing = false);
+      if (mounted) setState(() => _isCapturing = false);
     }
   }
 
@@ -48,53 +48,153 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
     final narrative = TimelineGenerator.generateNarrative(gameState, winnerStr);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('جريدة المدينة'),
-        actions: [
-          if (!_isCapturing)
-            IconButton(
-              icon: const Icon(Icons.share, color: Colors.amber),
-              onPressed: _shareReport,
-              tooltip: 'مشاركة',
-            ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Screenshot(
-          controller: _screenshotController,
-          child: Container(
-            color: AppTheme.background, // Ensure background is captured
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.menu_book_rounded, size: 64, color: AppTheme.citizensAccent),
-                const SizedBox(height: 16),
-                Text(
-                  narrative,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 18,
-                    fontFamily: 'Cairo',
-                    height: 1.6,
-                  ),
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
+      backgroundColor: const Color(0xFF07070B),
+      body: Stack(
+        children: [
+          // Elegant Background
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.6),
+                  radius: 1.2,
+                  colors: [Color(0xFF2E2215), Color(0xFF100B07), Color(0xFF07070B)], // Vintage dark newspaper feel
                 ),
-                const SizedBox(height: 24),
-                const Divider(color: AppTheme.surfaceHigh),
-                const SizedBox(height: 8),
-                const Text(
-                  'تم الإنشاء بواسطة: تطبيق مافيا عالشوارب 🕵️‍♂️',
-                  style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 12),
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.rtl,
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        'جريدة المدينة',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                          shadows: [Shadow(color: Colors.orangeAccent, blurRadius: 15)],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.ios_share, color: Colors.white70),
+                        onPressed: _shareReport,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Screenshot(
+                      controller: _screenshotController,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF16120E).withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3), width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orangeAccent.withValues(alpha: 0.05),
+                                  blurRadius: 30,
+                                  spreadRadius: 5,
+                                )
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Newspaper Logo/Header
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.local_library, size: 40, color: Colors.orangeAccent),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      children: [
+                                        const Text(
+                                          'أخبار المافيا العاجلة',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                            fontFamily: 'Cairo',
+                                          ),
+                                        ),
+                                        Text(
+                                          'العدد الخاص - الحقيقة تكشف',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(alpha: 0.6),
+                                            fontSize: 12,
+                                            fontFamily: 'Cairo',
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                const Divider(color: Colors.white24, thickness: 1),
+                                const SizedBox(height: 24),
+                                
+                                // Dynamic Narrative
+                                Text(
+                                  narrative,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontFamily: 'Cairo',
+                                    height: 1.8,
+                                    wordSpacing: 1,
+                                  ),
+                                  textAlign: TextAlign.justify,
+                                  textDirection: TextDirection.rtl,
+                                ),
+                                
+                                const SizedBox(height: 40),
+                                const Divider(color: Colors.white24, thickness: 1),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'تم توثيق هذه الأحداث رسمياً في أرشيف المدينة',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    fontFamily: 'Cairo',
+                                    fontSize: 11,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  textDirection: TextDirection.rtl,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

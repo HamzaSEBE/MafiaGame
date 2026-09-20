@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/data/repositories/history_repository.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
@@ -26,8 +27,27 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
   }
   
   Future<void> _clearHistory() async {
-    await _repo.clearHistory();
-    _loadHistory();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('مسح السجل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+        content: const Text('هل أنت متأكد أنك تريد مسح جميع السجلات؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('مسح', style: TextStyle(color: Colors.white, fontFamily: 'Cairo'))
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await _repo.clearHistory();
+      _loadHistory();
+    }
   }
 
   String _formatDate(DateTime d) {
@@ -36,42 +56,76 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
 
   void _showNewspaperDialog(BuildContext context, String? text) {
     if (text == null || text.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('جريدة هذه المباراة غير متوفرة (لعبة قديمة).')));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الجريدة غير متوفرة لهذه المباراة', style: TextStyle(fontFamily: 'Cairo'))));
        return;
     }
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        backgroundColor: AppTheme.background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.menu_book_rounded, size: 64, color: AppTheme.citizensAccent),
-                const SizedBox(height: 16),
-                const Text('جريدة المدينة', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.amber)),
-                const Divider(),
-                Text(
-                  text,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontFamily: 'Cairo',
-                    height: 1.6,
-                  ),
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF16120E).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.3), width: 1.5),
+                boxShadow: [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.05), blurRadius: 30, spreadRadius: 5)],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.local_library, size: 36, color: Colors.orangeAccent),
+                        const SizedBox(width: 12),
+                        Column(
+                          children: [
+                            const Text(
+                              'أخبار المافيا العاجلة',
+                              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, fontFamily: 'Cairo'),
+                            ),
+                            Text(
+                              'أرشيف الجرائم',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12, fontFamily: 'Cairo', letterSpacing: 1.5),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(color: Colors.white24, thickness: 1),
+                    const SizedBox(height: 24),
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontFamily: 'Cairo',
+                        height: 1.8,
+                        wordSpacing: 1,
+                      ),
+                      textAlign: TextAlign.justify,
+                      textDirection: TextDirection.rtl,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white10,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('إغلاق الأرشيف', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.surface),
-                  child: const Text('إغلاق'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -82,133 +136,109 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF07070B),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('سجل المباريات', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+        title: const Text('سجل المباريات', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
-            tooltip: 'مسح السجل',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: AppTheme.surface,
-                  title: const Text('مسح السجل بالكامل؟', style: TextStyle(color: AppTheme.error, fontFamily: 'Cairo')),
-                  content: const Text('سيتم حذف جميع المباريات السابقة ولن تتمكن من استعادتها.', style: TextStyle(fontFamily: 'Cairo')),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _clearHistory();
-                      },
-                      child: const Text('نعم، امسح'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          )
+            icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+            onPressed: _clearHistory,
+          ),
         ],
       ),
       body: Stack(
         children: [
           const AnimatedBackground(),
-          SafeArea(
-            child: _history == null 
-              ? const Center(child: CircularProgressIndicator())
-              : _history!.isEmpty 
-                ? const Center(child: Text('لا يوجد مباريات سابقة حتى الآن', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 18)))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _history!.length,
-                    itemBuilder: (context, index) {
-                      final game = _history![index];
-                      final isMafiaWin = game.winningTeam == 'المافيا';
-                      final color = isMafiaWin ? AppTheme.mafiaAccent : AppTheme.citizensAccent;
-                      
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        color: AppTheme.surface.withValues(alpha: 0.8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: color.withValues(alpha: 0.5), width: 1.5)
-                        ),
-                        child: ExpansionTile(
-                          collapsedIconColor: color,
-                          iconColor: color,
-                          title: Row(
-                            children: [
-                              Icon(isMafiaWin ? Icons.local_fire_department : Icons.shield, color: color),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('فاز ${game.winningTeam}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 16)),
-                                    Text(_formatDate(game.date), style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontFamily: 'Cairo')),
-                                  ],
-                                ),
-                              ),
-                            ],
+          _history == null
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary))
+              : _history!.isEmpty
+                  ? const Center(child: Text('لا يوجد سجل بعد', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 18)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _history!.length,
+                      itemBuilder: (context, index) {
+                        final record = _history![index];
+                        final isMafiaWin = record.winningTeam == 'المافيا' || record.winningTeam == 'mafia';
+                        
+                        return Card(
+                          color: const Color(0xFF1E1E24).withValues(alpha: 0.6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: isMafiaWin ? Colors.red.withValues(alpha: 0.3) : Colors.blue.withValues(alpha: 0.3)),
                           ),
-                          children: [
-                            Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () => _showNewspaperDialog(context, record.newspaperText),
+                            child: Padding(
                               padding: const EdgeInsets.all(16),
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: AppTheme.background.withValues(alpha: 0.5),
-                                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16))
-                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (game.newspaperText != null) ...[
-                                     ElevatedButton.icon(
-                                        onPressed: () => _showNewspaperDialog(context, game.newspaperText),
-                                        icon: const Icon(Icons.menu_book, color: Colors.black),
-                                        label: const Text('قراءة جريدة المدينة', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, minimumSize: const Size(double.infinity, 40)),
-                                     ),
-                                     const SizedBox(height: 16),
-                                  ],
-                                  const Text('اللاعبون في هذه المباراة:', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: AppTheme.textSecondary)),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: game.players.map((p) {
-                                      final pColor = p.team == 'المافيا' ? AppTheme.mafiaPrimary : AppTheme.citizensPrimary;
-                                      return Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _formatDate(record.date),
+                                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: pColor.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(color: pColor.withValues(alpha: 0.3)),
+                                          color: isMafiaWin ? Colors.red.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: Text('${p.name} (${p.roleName})', style: TextStyle(color: pColor, fontSize: 12, fontFamily: 'Cairo')),
-                                      );
-                                    }).toList(),
+                                        child: Text(
+                                          'الفائز: ${isMafiaWin ? 'المافيا' : 'المواطنون'}',
+                                          style: TextStyle(
+                                            color: isMafiaWin ? Colors.redAccent : Colors.blueAccent,
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'Cairo',
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _buildStatColumn('اللاعبين', '${record.players.length}', Icons.people),
+                                      _buildStatColumn('الجولات', 'N/A', Icons.autorenew),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Divider(color: Colors.white10),
+                                  const Center(
+                                    child: Text(
+                                      'اضغط لقراءة الجريدة',
+                                      style: TextStyle(color: Colors.orangeAccent, fontSize: 12, fontFamily: 'Cairo'),
+                                    ),
                                   ),
                                 ],
                               ),
-                            )
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatColumn(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white54, size: 20),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12, fontFamily: 'Cairo')),
+      ],
     );
   }
 }

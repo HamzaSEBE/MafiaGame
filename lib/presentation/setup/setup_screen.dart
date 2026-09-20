@@ -46,6 +46,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
   }
   
   void _addPlayer(String name) {
+    final players = ref.read(gameOrchestratorProvider).players;
+    if (players.any((p) => p.name == name.trim())) {
+      _showError('هذا اللاعب مضاف مسبقاً!');
+      return;
+    }
     if (name.trim().isEmpty) return;
     ref.read(gameOrchestratorProvider.notifier).addPlayer(name.trim());
     _nameController.clear();
@@ -351,11 +356,16 @@ class _PlayersTab extends StatelessWidget {
                   final sp = savedPlayers[i];
                   return Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: ActionChip(
-                      backgroundColor: Colors.white.withValues(alpha: 0.05),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-                      label: Text(sp, style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
-                      onPressed: () => onAdd(sp),
+                    child: Builder(
+                      builder: (ctx) {
+                        final isAdded = players.any((p) => p.name == sp);
+                        return ActionChip(
+                          backgroundColor: isAdded ? Colors.orangeAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                          side: BorderSide(color: isAdded ? Colors.orangeAccent : Colors.white.withValues(alpha: 0.1)),
+                          label: Text(sp, style: TextStyle(color: isAdded ? Colors.orangeAccent : Colors.white70, fontFamily: 'Cairo', fontWeight: isAdded ? FontWeight.bold : FontWeight.normal)),
+                          onPressed: isAdded ? null : () => onAdd(sp),
+                        );
+                      },
                     ),
                   );
                 },

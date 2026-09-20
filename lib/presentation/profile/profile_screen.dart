@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mafia_nightfall/presentation/auth/login_screen.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -33,101 +32,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid != null) {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      final statsDoc = await _firestore.collection('users').doc(uid).collection('stats').doc('main').get();
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
       
-      if (mounted) {
-        setState(() {
-          _profileData = doc.data();
-          _statsData = statsDoc.data();
-          _isLoading = false;
-        });
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        setState(() => _profileData = doc.data());
       }
+      
+      final statsDoc = await _firestore.collection('users').doc(user.uid).collection('stats').doc('career').get();
+      if (statsDoc.exists) {
+        setState(() => _statsData = statsDoc.data());
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickAndUploadImage() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery, 
-      imageQuality: 30,
-      maxWidth: 250,
-      maxHeight: 250,
-    );
-    
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512, imageQuality: 70);
+
     if (pickedFile != null) {
       setState(() => _isUploading = true);
       try {
-        final uid = _auth.currentUser?.uid;
-        if (uid == null) return;
+        final bytes = await pickedFile.readAsBytes();
+        final base64Image = base64Encode(bytes);
         
-        final bytes = await File(pickedFile.path).readAsBytes();
-        final base64String = base64Encode(bytes);
+        await _firestore.collection('users').doc(user.uid).set({
+          'avatarBase64': base64Image,
+        }, SetOptions(merge: true));
         
-        await _firestore.collection('users').doc(uid).update({'photoBase64': base64String});
-        
-        setState(() {
-          _profileData?['photoBase64'] = base64String;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تحديث الصورة بنجاح', style: TextStyle(fontFamily: 'Cairo'))),
-          );
-        }
+        await _loadProfileData();
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('فشل تحديث الصورة', style: TextStyle(fontFamily: 'Cairo'))),
-          );
-        }
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('فشل تحديث الصورة')));
       } finally {
         if (mounted) setState(() => _isUploading = false);
-      }
-    }
-  }
-
-  Future<void> _editName() async {
-    final TextEditingController nameController = TextEditingController(text: _profileData?['displayName'] ?? '');
-    
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('تغيير الاسم', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-          content: TextField(
-            controller: nameController,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: 'أدخل الاسم الجديد',
-              hintStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo')),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, nameController.text.trim()),
-              child: const Text('حفظ', style: TextStyle(color: AppTheme.citizensPrimary, fontFamily: 'Cairo')),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (newName != null && newName.isNotEmpty) {
-      final uid = _auth.currentUser?.uid;
-      if (uid != null) {
-        await _auth.currentUser?.updateDisplayName(newName);
-        await _firestore.collection('users').doc(uid).update({'displayName': newName});
-        setState(() {
-          _profileData?['displayName'] = newName;
-        });
       }
     }
   }
@@ -143,166 +89,212 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   ImageProvider? _getProfileImage() {
-    final base64String = _profileData?['photoBase64'] as String?;
-    if (base64String != null && base64String.isNotEmpty) {
+    if (_profileData != null && _profileData!['avatarBase64'] != null) {
       try {
-        return MemoryImage(base64Decode(base64String));
-      } catch (e) {
-        return null;
-      }
+        return MemoryImage(base64Decode(_profileData!['avatarBase64']));
+      } catch (_) {}
     }
     return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A0A0F),
-        body: Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary)),
-      );
-    }
-
-    final user = _auth.currentUser;
-    final displayName = _profileData?['displayName'] ?? 'لاعب';
-    final username = _profileData?['username'] ?? '';
-    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
-
-    final gamesPlayed = _statsData?['gamesPlayed'] ?? 0;
-    final mafiaWins = _statsData?['mafiaWins'] ?? 0;
-    final citizenWins = _statsData?['citizenWins'] ?? 0;
-    final wins = mafiaWins + citizenWins;
-    final winRate = gamesPlayed > 0 ? ((wins / gamesPlayed) * 100).toStringAsFixed(1) : '0.0';
-
-    final imageProvider = _getProfileImage();
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        title: const Text('الملف الشخصي', style: TextStyle(fontFamily: 'Cairo')),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: _pickImage,
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppTheme.surfaceHigh,
-                    backgroundImage: imageProvider,
-                    child: imageProvider == null 
-                      ? Text(initial, style: const TextStyle(fontSize: 40, color: AppTheme.mafiaPrimary, fontWeight: FontWeight.bold))
-                      : null,
-                  ),
-                  if (_isUploading)
-                    const Positioned(
-                      bottom: 0, left: 0, right: 0, top: 0,
-                      child: CircularProgressIndicator(),
-                    ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppTheme.mafiaPrimary,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(6),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  displayName,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: AppTheme.textSecondary, size: 20),
-                  onPressed: _editName,
-                  tooltip: 'تعديل الاسم',
-                ),
-              ],
-            ),
-            if (username.isNotEmpty)
-              Text(
-                '@$username',
-                style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              user?.email ?? '',
-              style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-            ),
-            const SizedBox(height: 40),
-            
-            Row(
-              children: [
-                _StatCard(title: 'المباريات', value: '$gamesPlayed', color: Colors.blue),
-                const SizedBox(width: 16),
-                _StatCard(title: 'الانتصارات', value: '$wins', color: AppTheme.citizensPrimary),
-                const SizedBox(width: 16),
-                _StatCard(title: 'نسبة الفوز', value: '$winRate%', color: Colors.amber),
-              ],
-            ),
-            
-            const SizedBox(height: 60),
-            ElevatedButton.icon(
-              onPressed: _signOut,
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text('تسجيل الخروج', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.error,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+  void _showEditNameDialog() {
+    final TextEditingController nameController = TextEditingController(text: _profileData?['displayName'] ?? '');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        title: const Text('تعديل الاسم', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
+        content: TextField(
+          controller: nameController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'الاسم الجديد',
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            onPressed: () async {
+              if (nameController.text.trim().isNotEmpty) {
+                final user = _auth.currentUser;
+                if (user != null) {
+                  await _firestore.collection('users').doc(user.uid).update({'displayName': nameController.text.trim()});
+                  await user.updateDisplayName(nameController.text.trim());
+                  _loadProfileData();
+                }
+              }
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text('حفظ', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
-}
-
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final Color color;
-
-  const _StatCard({required this.title, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color, fontFamily: 'Cairo'),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-            ),
-          ],
-        ),
+    return Scaffold(
+      backgroundColor: const Color(0xFF07070B),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('الملف الشخصي', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: _signOut,
+          ),
+        ],
       ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.6),
+                  radius: 1.5,
+                  colors: [Color(0xFF261D15), Color(0xFF130E0A), Color(0xFF07070B)],
+                ),
+              ),
+            ),
+          ),
+          _isLoading 
+            ? const Center(child: CircularProgressIndicator(color: Colors.orangeAccent))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    // Avatar Section
+                    Center(
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: Colors.orangeAccent.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)],
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.black45,
+                              backgroundImage: _getProfileImage(),
+                              child: _getProfileImage() == null ? const Icon(Icons.person, size: 60, color: Colors.white54) : null,
+                            ),
+                          ),
+                          if (_isUploading)
+                            const Positioned.fill(child: CircularProgressIndicator(color: Colors.orangeAccent)),
+                          GestureDetector(
+                            onTap: _pickAndUploadImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
+                              child: const Icon(Icons.camera_alt, color: Colors.black, size: 24),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Name and Username
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _profileData?['displayName'] ?? 'لاعب',
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo'),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20, color: Colors.orangeAccent),
+                          onPressed: _showEditNameDialog,
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '@${_profileData?['username'] ?? 'user'}',
+                      style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.5)),
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Glassmorphic Stats Section
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20)],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'الإحصائيات الشخصية',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orangeAccent, fontFamily: 'Cairo'),
+                            textAlign: TextAlign.center,
+                          ),
+                          const Divider(color: Colors.white10, height: 32),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStatItem('لعب', _statsData?['gamesPlayed']?.toString() ?? '0', Icons.sports_esports, Colors.white),
+                              _buildStatItem('فوز مافيا', _statsData?['mafiaWins']?.toString() ?? '0', Icons.local_fire_department, Colors.redAccent),
+                              _buildStatItem('فوز مواطن', _statsData?['citizenWins']?.toString() ?? '0', Icons.shield, Colors.blueAccent),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Account info
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.email, color: Colors.white54),
+                          const SizedBox(width: 16),
+                          Text(
+                            _profileData?['email'] ?? '',
+                            style: const TextStyle(color: Colors.white70, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5), fontFamily: 'Cairo')),
+      ],
     );
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "282187037912",
+    "project_id": "mafiagame-351f8",
+    "storage_bucket": "mafiagame-351f8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:282187037912:android:f75b581248c6d96ff96bad",
+        "android_client_info": {
+          "package_name": "com.example.mafia_nightfall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqMKflIR64NXIWvmlOIu8CtHuO6XXWebU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

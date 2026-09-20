@@ -1,35 +1,53 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PlayerProfilesRepository {
-  static const String _fileName = 'player_profiles.json';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<File> get _file async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_fileName');
-  }
+  String? get _uid => _auth.currentUser?.uid;
 
   Future<List<String>> loadSavedPlayers() async {
     try {
-      final file = await _file;
-      if (!await file.exists()) {
-        return [];
+      final uid = _uid;
+      if (uid == null) return [];
+
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('savedPlayers')
+          .doc('list')
+          .get();
+
+      if (doc.exists && doc.data()!.containsKey('names')) {
+        final names = doc.data()!['names'] as List<dynamic>;
+        return names.map((e) => e.toString()).toList();
       }
-      final String contents = await file.readAsString();
-      final List<dynamic> jsonList = jsonDecode(contents);
-      return jsonList.cast<String>();
+      return [];
     } catch (e) {
+      print('Error loading saved players: $e');
       return [];
     }
   }
 
   Future<void> savePlayers(List<String> players) async {
     try {
-      final file = await _file;
-      await file.writeAsString(jsonEncode(players));
+      final uid = _uid;
+      if (uid == null) return;
+
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('savedPlayers')
+          .doc('list')
+          .set({'names': players});
     } catch (e) {
-      // Ignore
+      print('Error saving players: $e');
     }
   }
 }
+
+final playerProfilesRepositoryProvider = Provider<PlayerProfilesRepository>((ref) {
+  return PlayerProfilesRepository();
+});

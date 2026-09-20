@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mafia_nightfall/data/repositories/settings_repository.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
-import 'package:mafia_nightfall/presentation/home/home_screen.dart';
+import 'package:mafia_nightfall/presentation/auth/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load custom role names
-  final settingsRepo = SettingsRepository();
-  AppTheme.customRoleNames = await settingsRepo.loadCustomRoleNames();
+  await Firebase.initializeApp();
 
   runApp(const ProviderScope(child: MafiaNightfallApp()));
 }
@@ -26,7 +23,7 @@ class MafiaNightfallApp extends StatelessWidget {
       title: 'مافيا عالشوارب',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme.copyWith(textTheme: cairoTextTheme),
-      home: const HomeScreen(),
+      home: const AuthWrapper(),
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,
         child: child!,

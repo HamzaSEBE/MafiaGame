@@ -1,9 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mafia_nightfall/presentation/setup/setup_screen.dart';
 import 'package:mafia_nightfall/presentation/history/game_history_screen.dart';
 import 'package:mafia_nightfall/presentation/settings/settings_screen.dart';
 import 'package:mafia_nightfall/presentation/stats/stats_screen.dart';
+import 'package:mafia_nightfall/presentation/profile/profile_screen.dart';
+import 'package:mafia_nightfall/presentation/auth/auth_wrapper.dart';
 import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 
@@ -24,7 +27,7 @@ class HomeScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Spacer(flex: 2),
+                    const Spacer(flex: 1),
                     // Epic Logo
                     Stack(
                       alignment: Alignment.center,
@@ -88,7 +91,7 @@ class HomeScreen extends ConsumerWidget {
                         letterSpacing: 1.5,
                       ),
                     ),
-                    const Spacer(flex: 2),
+                    const Spacer(flex: 1),
                     // Glassmorphism Buttons
                     _EpicButton(
                       label: 'بدء لعبة جديدة',
@@ -125,10 +128,34 @@ class HomeScreen extends ConsumerWidget {
                         MaterialPageRoute(builder: (_) => const StatsScreen()),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    _EpicButton(
+                      label: 'الملف الشخصي',
+                      icon: Icons.person,
+                      color: Colors.cyan,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _EpicButton(
+                      label: 'تسجيل الخروج',
+                      icon: Icons.logout,
+                      color: AppTheme.error,
+                      onTap: () async {
+                        await FirebaseAuth.instance.signOut();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                            (route) => false,
+                          );
+                        }
+                      },
+                    ),
                     const Spacer(),
                     // Footer version or text
                     const Text(
-                      'V 1.0.0 - EPIC EDITION',
+                      'V 2.0.0 - CLOUD EDITION',
                       style: TextStyle(
                         color: Colors.white24,
                         fontSize: 12,

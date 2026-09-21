@@ -4,7 +4,7 @@ import 'package:mafia_nightfall/domain/enums/role.dart';
 
 class TimelineGenerator {
   static String generateNarrative(GameState state, String winnerTeam) {
-    if (state.eventHistory.isEmpty) return 'لا يوجد أحداث تذكر. مرّت الأيام بسلام.';
+    if (state.eventHistory.isEmpty) return 'لا يوجد أحداث مسجلة. مرت الأيام بسلام.';
     
     final StringBuffer buffer = StringBuffer();
     
@@ -19,31 +19,76 @@ class TimelineGenerator {
       }
     }
 
+    // Group events by round
+    final eventsByRound = <int, List<GameEvent>>{};
     for (final event in state.eventHistory) {
-      if (event.round > currentRound) {
-        currentRound = event.round;
-      }
+      eventsByRound.putIfAbsent(event.round, () => []).add(event);
+    }
+    
+    final sortedRounds = eventsByRound.keys.toList()..sort();
+    
+    for (final r in sortedRounds) {
+      final events = eventsByRound[r]!;
       
-      if (event.type == EventType.nightResolutionSummary) {
-        buffer.writeln('\n[ أحداث الليلة $currentRound ]');
+      // Night Summary
+      final nightSummary = events.where((e) => e.type == EventType.nightResolutionSummary).lastOrNull;
+      if (nightSummary != null) {
+        buffer.writeln('\n[ أحداث الليلة $r ]');
         
-        final deadIds = (event.metadata['assassinatedIds'] as List?)?.cast<String>() ?? [];
+        final deadIds = (nightSummary.metadata['assassinatedIds'] as List?)?.cast<String>() ?? [];
+        final silencedIds = (nightSummary.metadata['silencedIds'] as List?)?.cast<String>() ?? [];
+        final protectedIds = (nightSummary.metadata['protectedIds'] as List?)?.cast<String>() ?? [];
+        final successfulProtections = (nightSummary.metadata['successfulProtections'] as List?)?.cast<String>() ?? [];
+
         if (deadIds.isEmpty) {
-          buffer.writeln('خيم الهدوء على المدينة هذه الليلة. لم تُسفك الدماء بفضل حنكة الأطباء، أو ربما أخطأت المافيا هدفها.');
+          buffer.writeln('خيم الهدوء على المدينة هذه الليلة. لم يُسفك أي دم بفضل العناية الإلهية أو حكمة الطبيب.');
         } else {
           final names = deadIds.map((id) => getPlayerName(id)).join(' و ');
-          buffer.writeln('في جنح الظلام، تحركت الأيادي الخفية ونفذت حكم الإعدام بحق ($names). استيقظت المدينة على فاجعة هزت الأرجاء!');
+          buffer.writeln('في عتمة الليل، نفذت المافيا حكمها القاسي، واستيقظت المدينة على جثة ($names).');
         }
-      } else if (event.type == EventType.elimination) {
-        buffer.writeln('\n[ نهار اليوم $currentRound ]');
-        buffer.writeln('بعد نقاشات حادة واتهامات متبادلة، أجمعت الأغلبية الغاضبة على شنق (${getPlayerName(event.targetId)}). تم تنفيذ الحكم بلا رحمة.');
-      } else if (event.type == EventType.citizenBoyRetaliation) {
-        buffer.writeln('مفاجأة دموية! في لحظاته الأخيرة، سحب ولد المواطنين (${getPlayerName(event.actorId)}) مسدسه وأردى (${getPlayerName(event.targetId)}) قتيلاً قبل أن يلفظ أنفاسه الأخيرة.');
+        
+        if (successfulProtections.isNotEmpty) {
+           final protectedNames = successfulProtections.map((id) => getPlayerName(id)).join(' و ');
+           buffer.writeln('وقد تدخلت العناية لإنقاذ ($protectedNames) من موت محقق بفضل الحماية!');
+        }
+
+        if (silencedIds.isNotEmpty) {
+          final sNames = silencedIds.map((id) => getPlayerName(id)).join(' و ');
+          buffer.writeln('كما قامت المافيا بتكميم أفواه ($sNames)، ولن يتمكنوا من الدفاع عن أنفسهم نهاراً.');
+        }
+      }
+      
+      // Voting Activity
+      final votes = events.where((e) => e.type == EventType.vote).toList();
+      if (votes.isNotEmpty) {
+        buffer.writeln('\n[ قاعة المحكمة - النهار $r ]');
+        buffer.writeln('احتد النقاش في قاعة المحكمة وتوزعت الأصوات كالتالي:');
+        
+        // Count who voted for who
+        final voteMap = <String, List<String>>{}; // candidateId -> [voterNames]
+        for (final v in votes) {
+           if (v.targetId != null) voteMap.putIfAbsent(v.targetId!, () => []).add(getPlayerName(v.actorId));
+        }
+        
+        voteMap.forEach((candidateId, voters) {
+           buffer.writeln('- ($voters) قاموا بالتصويت ضد (${getPlayerName(candidateId)})');
+        });
+      }
+
+      // Eliminations
+      final elimination = events.where((e) => e.type == EventType.elimination).lastOrNull;
+      if (elimination != null) {
+        buffer.writeln('وبعد تصويت حاسم، قررت الأغلبية إعدام (${getPlayerName(elimination.targetId)}).');
+      }
+
+      // Retaliations
+      final retaliation = events.where((e) => e.type == EventType.citizenBoyRetaliation).lastOrNull;
+      if (retaliation != null) {
+        buffer.writeln('مفاجأة صادمة! المواطن الشجاع (${getPlayerName(retaliation.actorId)}) رفض الموت وحيداً، وقام بسحب (${getPlayerName(retaliation.targetId)}) معه إلى القبر في لحظاته الأخيرة!');
       }
     }
     
-    buffer.writeln('\nالنتيجة النهائية: انتصر $winnerTeam وسيطروا على المدينة بالكامل.');
-    
+    buffer.writeln('\nالنتيجة النهائية: انتصار ساحق لـ $winnerTeam!');
     return buffer.toString();
   }
 }

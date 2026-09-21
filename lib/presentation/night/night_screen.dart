@@ -305,7 +305,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
 
     if (_activeSteps.isEmpty) {
       if (round == 1) {
-        return Scaffold(backgroundColor: const Color(0xFF07070B),
+        return Scaffold(
           appBar: AppBar(title: const Text('الليل 1 (تعارف)')),
           body: Padding(
             padding: const EdgeInsets.all(24),
@@ -342,7 +342,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         );
       }
 
-      return Scaffold(backgroundColor: const Color(0xFF07070B),
+      return Scaffold(
         appBar: AppBar(title: Text('الليل $round')),
         body: Center(
           child: ElevatedButton(
@@ -359,7 +359,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     final step = _activeSteps[_stepIndex];
     final targets = gameState.alivePlayers;
 
-    return Scaffold(backgroundColor: const Color(0xFF07070B),
+    return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,

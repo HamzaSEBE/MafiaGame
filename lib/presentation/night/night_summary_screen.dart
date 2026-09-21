@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -131,7 +131,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.redAccent, width: 3),
+                border: Border.all(color: AppTheme.roleColor(target.role), width: 3),
               ),
               child: ClipOval(
                 child: Image.asset(
@@ -256,7 +256,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5), width: 2),
+                            border: Border.all(color: AppTheme.roleColor(player.role).withValues(alpha: 0.5), width: 2),
                           ),
                           child: Column(
                             children: [
@@ -266,7 +266,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.redAccent, width: 3),
+                                  border: Border.all(color: AppTheme.roleColor(player.role), width: 3),
                                 ),
                                 child: ClipOval(
                                   child: Image.asset(

@@ -235,10 +235,29 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Icons.local_fire_department : Icons.shield, 
-                      size: 64, 
-                      color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent : Colors.blueAccent
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent : Colors.blueAccent,
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent.withValues(alpha: 0.5) : Colors.blueAccent.withValues(alpha: 0.5),
+                            blurRadius: 20,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          AppTheme.roleImage(_currentPlayer.role),
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -250,6 +269,19 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                       AppTheme.roleArabicName(_currentPlayer.role),
                       style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo'),
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        AppTheme.roleAbilityDescription(_currentPlayer.role),
+                        style: const TextStyle(fontSize: 13, color: Colors.white54, fontFamily: 'Cairo'),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),

@@ -3,6 +3,7 @@ import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
+import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
@@ -152,7 +153,11 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _routeAfterRetaliation();
+              if (target.role == Role.citizensBoy) {
+                _showCitizenBoyDialog(target.id);
+              } else {
+                _routeAfterRetaliation();
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,

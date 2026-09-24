@@ -338,7 +338,11 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _routeAfterRetaliation();
+              if (target.role == Role.citizensBoy) {
+                _showCitizenBoyDialog(target.id);
+              } else {
+                _routeAfterRetaliation();
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             child: const Text('متابعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
@@ -427,10 +431,19 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    const Icon(Icons.gavel, size: 64, color: Colors.redAccent),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.redAccent.withValues(alpha: 0.1),
+                        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3), width: 2),
+                        boxShadow: [BoxShadow(color: Colors.redAccent.withValues(alpha: 0.15), blurRadius: 30)],
+                      ),
+                      child: const Icon(Icons.gavel, size: 48, color: Colors.redAccent),
+                    ),
                     const SizedBox(height: 16),
-                    const Text('حان وقت التصويت', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
-                    const Text('اضغط على اسم اللاعب لاختيار من سيصوت ضده', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                    const Text('⚖️ قاعة المحاكمة', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo')),
+                    const Text('اضغط على اسم اللاعب لاختيار من سيصوت ضده', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo', fontSize: 13)),
                     const SizedBox(height: 24),
                     Expanded(
                       child: ListView.builder(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -55,12 +55,12 @@ class _DayScreenState extends ConsumerState<DayScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('╪Ñ┘å┘ç╪º╪í ╪º┘ä┘ä╪╣╪¿╪⌐╪ƒ', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo')),
-        content: const Text('┘ç┘ä ╪ú┘å╪¬ ┘à╪¬╪ú┘â╪» ╪ú┘å┘â ╪¬╪▒┘è╪» ╪Ñ┘å┘ç╪º╪í ╪º┘ä┘ä╪╣╪¿╪⌐ ┘ê╪º┘ä╪╣┘ê╪»╪⌐ ┘ä┘ä╪▒╪ª┘è╪│┘è╪⌐╪ƒ', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
+        title: const Text('إنهاء اللعبة؟', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo')),
+        content: const Text('هل أنت متأكد أنك تريد إنهاء اللعبة والعودة للرئيسية؟', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('╪Ñ┘ä╪║╪º╪í', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -72,7 +72,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('┘å╪╣┘à╪î ╪Ñ┘å┘ç╪º╪í', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+            child: const Text('نعم، إنهاء', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
           ),
         ],
       ),
@@ -99,13 +99,13 @@ class _DayScreenState extends ConsumerState<DayScreen> {
             children: [
               const Icon(Icons.wb_sunny, color: Colors.orangeAccent),
               const SizedBox(width: 8),
-              Text('╪º┘ä┘å┘ç╪º╪▒ $round', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+              Text('النهار $round', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
             ],
           ),
           actions: [
             IconButton(
               icon: const Icon(Icons.exit_to_app, color: Colors.redAccent),
-              tooltip: '╪Ñ┘å┘ç╪º╪í ╪º┘ä┘ä╪╣╪¿╪⌐',
+              tooltip: 'إنهاء اللعبة',
               onPressed: () => _confirmExit(context, ref),
             ),
           ],
@@ -129,21 +129,21 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                       ),
                       child: Column(
                         children: [
-                          const Text('┘ê┘é╪¬ ╪º┘ä┘å┘é╪º╪┤ ╪º┘ä┘à╪¬╪¿┘é┘è', style: TextStyle(color: Colors.white70, fontSize: 16, fontFamily: 'Cairo')),
+                          const Text('وقت النقاش المتبقي', style: TextStyle(color: Colors.white70, fontSize: 16, fontFamily: 'Cairo')),
                           const SizedBox(height: 8),
                           Text(
                             _formattedTime,
                             style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, fontFamily: 'Courier', color: _timeLeft < 60 ? Colors.redAccent : Colors.orangeAccent),
                           ),
                           const SizedBox(height: 8),
-                          const Text('╪¬╪¡╪»╪½┘ê╪º ┘ê╪¬╪┤╪º┘ê╪▒┘ê╪º ┘ä┘à╪╣╪▒┘ü╪⌐ ╪º┘ä┘é╪º╪¬┘ä!', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                          const Text('تحدثوا وتشاوروا لمعرفة القاتل!', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
                     const Align(
                       alignment: Alignment.centerRight,
-                      child: Text('╪º┘ä╪ú╪¡┘è╪º╪í (┘è╪¡┘é ┘ä┘ç┘à ╪º┘ä┘å┘é╪º╪┤):', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                      child: Text('الأحياء (يحق لهم النقاش):', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                     ),
                     const SizedBox(height: 12),
                     Expanded(
@@ -165,7 +165,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                               children: [
                                 Text(player.name, style: TextStyle(color: isSilenced ? Colors.redAccent : Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Cairo')),
                                 if (isSilenced)
-                                  const Text('╪¬┘à ╪Ñ╪│┘â╪º╪¬┘ç', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'Cairo')),
+                                  const Text('تم إسكاته', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'Cairo')),
                               ],
                             ),
                           );
@@ -175,7 +175,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                     if (dead.isNotEmpty) ...[
                       const Align(
                         alignment: Alignment.centerRight,
-                        child: Text('╪º┘ä╪ú┘à┘ê╪º╪¬ (┘ä╪º ┘è╪¡┘é ┘ä┘ç┘à ╪º┘ä┘â┘ä╪º┘à):', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                        child: Text('الأموات (لا يحق لهم الكلام):', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -211,7 +211,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                           shadowColor: Colors.orangeAccent.withValues(alpha: 0.5),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        child: const Text('╪º┘ä╪º┘å╪¬┘é╪º┘ä ┘ä┘ä╪¬╪╡┘ê┘è╪¬', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black, fontFamily: 'Cairo')),
+                        child: const Text('الانتقال للتصويت', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black, fontFamily: 'Cairo')),
                       ),
                     ),
                   ],

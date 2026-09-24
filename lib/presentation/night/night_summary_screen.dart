@@ -53,14 +53,14 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
             children: [
               Icon(Icons.bolt, color: Colors.orangeAccent),
               SizedBox(width: 8),
-              Text('╪▒╪» ┘ü╪╣┘ä ╪º┘ä┘à┘ê╪º╪╖┘å ╪º┘ä╪┤╪¼╪º╪╣!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+              Text('رد فعل المواطن الشجاع!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('╪¿┘à╪º ╪ú┘å┘â ┘é┘Å╪¬┘ä╪¬╪î ┘è┘à┘â┘å┘â ╪ú╪«╪░ ┘ä╪º╪╣╪¿ ┘à╪╣┘â:', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
+              const Text('بما أنك قُتلت، يمكنك أخذ لاعب معك:', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
               const SizedBox(height: 12),
               ...alive.map((p) => RadioListTile<String>(
                     title: Text(p.name, style: const TextStyle(fontFamily: 'Cairo', color: Colors.white)),
@@ -77,7 +77,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                 Navigator.pop(ctx);
                 _goToDay();
               },
-              child: const Text('╪¬╪«╪╖┘æ┘è', style: TextStyle(color: Colors.white54)),
+              child: const Text('تخطّي', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               onPressed: selectedId != null
@@ -99,7 +99,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                     }
                   : null,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
-              child: const Text('╪¬╪ú┘â┘è╪» ┘ê╪º╪║╪¬┘è╪º┘ä', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+              child: const Text('تأكيد واغتيال', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -123,7 +123,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.redAccent, width: 2)),
-        title: const Text('╪╢╪¡┘è╪⌐ ╪º┘ä┘à┘ê╪º╪╖┘å ╪º┘ä╪┤╪¼╪º╪╣!', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        title: const Text('ضحية المواطن الشجاع!', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -131,7 +131,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.roleColor(target.role), width: 3),
+                border: Border.all(color: Colors.redAccent, width: 3),
               ),
               child: ClipOval(
                 child: Image.asset(
@@ -145,7 +145,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
             const SizedBox(height: 16),
             Text(target.name, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
             const SizedBox(height: 4),
-            Text('┘â╪º┘å: ${AppTheme.roleArabicName(target.role)}', style: const TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+            Text('كان: ${AppTheme.roleArabicName(target.role)}', style: const TextStyle(color: Colors.redAccent, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
           ],
         ),
         actions: [
@@ -159,7 +159,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('┘à╪¬╪º╪¿╪╣╪⌐', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+            child: const Text('متابعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
           ),
         ],
       ),
@@ -195,15 +195,15 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
     final successfulProtections = (summaryEvent.metadata['successfulProtections'] as List<dynamic>?)?.cast<String>() ?? [];
 
     String getNames(List<String> ids) {
-      if (ids.isEmpty) return '┘ä╪º ╪ú╪¡╪»';
-      return ids.map((id) => state.getPlayerById(id)?.name ?? '┘à╪¼┘ç┘ê┘ä').join('╪î ');
+      if (ids.isEmpty) return 'لا أحد';
+      return ids.map((id) => state.getPlayerById(id)?.name ?? 'مجهول').join('، ');
     }
 
     return GamePopScope(
       child: Scaffold(
         backgroundColor: const Color(0xFF07070B),
         appBar: AppBar(
-          title: const Text('┘à┘ä╪«╪╡ ╪º┘ä┘ä┘è┘ä (┘ä┘ä╪¡┘â┘à ┘ü┘é╪╖)', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+          title: const Text('ملخص الليل (للحكم فقط)', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
@@ -220,7 +220,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                     const Icon(Icons.wb_twilight, size: 80, color: Colors.orangeAccent),
                     const SizedBox(height: 16),
                     const Text(
-                      '╪º┘å╪¬┘ç┘ë ╪º┘ä┘ä┘è┘ä╪î ┘ê╪Ñ┘ä┘è┘â ┘à╪º ╪¡╪»╪½ ┘ü┘è ╪º┘ä╪╣╪¬┘à╪⌐:',
+                      'انتهى الليل، وإليك ما حدث في العتمة:',
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
@@ -240,7 +240,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                             Icon(Icons.shield_moon, color: Colors.greenAccent, size: 40),
                             SizedBox(width: 16),
                             Expanded(
-                              child: Text('╪¿┘å╪¬ ╪º┘ä┘à┘ê╪º╪╖┘å┘è┘å ╪¡┘à╪¬ ╪º┘ä┘ç╪»┘ü ╪¿┘å╪¼╪º╪¡! ┘ä┘à ┘è┘Å┘é╪¬┘ä ╪ú╪¡╪».', style: TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                              child: Text('بنت المواطنين حمت الهدف بنجاح! لم يُقتل أحد.', style: TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                             ),
                           ],
                         ),
@@ -256,17 +256,17 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.roleColor(player.role).withValues(alpha: 0.5), width: 2),
+                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5), width: 2),
                           ),
                           child: Column(
                             children: [
-                              const Text('╪╢╪¡┘è╪⌐ ╪º┘ä┘ä┘è┘ä (╪¬┘à ╪º╪║╪¬┘è╪º┘ä┘ç):', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                              const Text('ضحية الليل (تم اغتياله):', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: AppTheme.roleColor(player.role), width: 3),
+                                  border: Border.all(color: Colors.redAccent, width: 3),
                                 ),
                                 child: ClipOval(
                                   child: Image.asset(
@@ -293,7 +293,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
 
                     if (silencedIds.isNotEmpty)
                       _SummaryCard(
-                        title: '╪¬┘à ╪Ñ╪│┘â╪º╪¬┘ç┘à (┘ä╪º ┘è╪¡┘é ┘ä┘ç┘à ╪º┘ä┘â┘ä╪º┘à):',
+                        title: 'تم إسكاتهم (لا يحق لهم الكلام):',
                         names: getNames(silencedIds),
                         icon: Icons.volume_off,
                         color: Colors.blueAccent,
@@ -317,7 +317,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         child: Text(
-                          state.phase == Phase.triggeredAbility ? '╪▒╪» ┘ü╪╣┘ä ╪º┘ä┘à┘ê╪º╪╖┘å ╪º┘ä╪┤╪¼╪º╪╣!' : '╪¿╪»╪í ╪º┘ä┘å┘ç╪º╪▒', 
+                          state.phase == Phase.triggeredAbility ? 'رد فعل المواطن الشجاع!' : 'بدء النهار', 
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.black)
                         ),
                       ),

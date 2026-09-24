@@ -67,11 +67,11 @@ class TimelineGenerator {
         // Count who voted for who
         final voteMap = <String, List<String>>{}; // candidateId -> [voterNames]
         for (final v in votes) {
-           if (v.targetId != null) voteMap.putIfAbsent(v.targetId!, () => []).add(getPlayerName(v.actorId));
+           voteMap.putIfAbsent(v.targetId ?? 'تخطي', () => []).add(getPlayerName(v.actorId));
         }
         
         voteMap.forEach((candidateId, voters) {
-           buffer.writeln('- ($voters) قاموا بالتصويت ضد (${getPlayerName(candidateId)})');
+           buffer.writeln('- ($voters) قاموا بالتصويت ضد (${candidateId == 'تخطي' ? 'تخطي التصويت' : getPlayerName(candidateId)})');
         });
       }
 

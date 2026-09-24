@@ -38,7 +38,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -72,157 +72,288 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
     );
   }
 
-  void _confirmExecution() {
-    ref.read(gameOrchestratorProvider.notifier).submitFinalVotes(_votes);
-    final result = ref.read(gameOrchestratorProvider.notifier).resolveVote();
-    
-    if (result['isTie'] == true) {
-      _showTieDialog(result['tiedPlayers']);
-    } else if (result['eliminatedId'] != null) {
-      _showExecutionDialog(result['eliminatedId']);
+  void _calculateLocalResult() {
+    if (_votes.isEmpty) {
+      ref.read(gameOrchestratorProvider.notifier).skipElimination();
+      _goToNight();
+      return;
+    }
+
+    final voteCounts = <String, int>{};
+    for (var target in _votes.values) {
+      voteCounts[target] = (voteCounts[target] ?? 0) + 1;
+    }
+
+    int maxVotes = voteCounts.values.reduce((a, b) => a > b ? a : b);
+    final topCandidates = voteCounts.entries.where((e) => e.value == maxVotes).map((e) => e.key).toList();
+
+    if (topCandidates.length > 1) {
+      _showTieDialog(topCandidates);
     } else {
-      _showNoEliminationDialog();
+      _showDefenseDialog(topCandidates.first, maxVotes);
     }
   }
 
-  void _showTieDialog(List<dynamic>? tiedIds) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.orangeAccent, width: 2)),
-        title: const Text('تعادل في التصويت!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-        content: const Text(
-          'تعادل الأشخاص في الأصوات. هل تريد إعادة التصويت أم إنهاء النهار بلا إعدام؟',
-          style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _votes.clear());
-              ref.read(gameOrchestratorProvider.notifier).revote();
-            },
-            child: const Text('إعادة التصويت', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _transitionToNextPhase(null);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('إنهاء بدون إعدام', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  void _showNoEliminationDialog() {
+  void _showTieDialog(List<String> tiedIds) {
+    final state = ref.read(gameOrchestratorProvider);
+    final names = tiedIds.map((id) => state.getPlayerById(id)?.name ?? id).join(' و ');
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('لا إعدام', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-        content: const Text(
-          'لم يتم التصويت ضد أحد. هل تريد إنهاء النهار؟',
-          style: TextStyle(color: Colors.white70, fontSize: 16, fontFamily: 'Cairo'),
+        title: const Row(
+          children: [
+            Icon(Icons.balance, color: Colors.orangeAccent),
+            SizedBox(width: 8),
+            Text('تعادل!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+          ],
         ),
+        content: Text('تعادل بين: $names\nماذا تريد أن تفعل؟', style: const TextStyle(fontFamily: 'Cairo', color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              setState(() => _votes.clear());
-              ref.read(gameOrchestratorProvider.notifier).revote();
+              ref.read(gameOrchestratorProvider.notifier).skipElimination();
+              _goToNight();
             },
-            child: const Text('رجوع للتصويت', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            child: const Text('تخطي الإقصاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _transitionToNextPhase(null);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('إنهاء النهار', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showExecutionDialog(String eliminatedId) {
-    final executedPlayer = ref.read(gameOrchestratorProvider).getPlayerById(eliminatedId);
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.redAccent, width: 2)),
-        title: const Text('تأكيد الإعدام', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-        content: Text(
-          'تم اختيار ${executedPlayer?.name} للإعدام. هل ترغب في منحه 40 ثانية للدفاع عن نفسه؟',
-          style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _votes.clear());
+              // Keep existing votes during re-vote
               ref.read(gameOrchestratorProvider.notifier).revote();
-            },
-            child: const Text('تغيير التصويت', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showDefenseTimer(executedPlayer, eliminatedId);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
-            child: const Text('وقت الدفاع', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _transitionToNextPhase(eliminatedId);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('إعدام فوري', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            child: const Text('إعادة التصويت', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  void _showDefenseTimer(Player? executedPlayer, String eliminatedId) {
+  void _showDefenseDialog(String accusedId, int votesCount) {
+    final state = ref.read(gameOrchestratorProvider);
+    final accused = state.getPlayerById(accusedId);
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => _DefenseTimerDialog(
-        accused: executedPlayer,
+        accused: accused,
+        votesCount: votesCount,
         onConfirmElimination: () {
+          ref.read(audioManagerProvider).playClick();
+          ref.read(audioManagerProvider).playKill();
           Navigator.pop(ctx);
-          _transitionToNextPhase(eliminatedId);
+          ref.read(gameOrchestratorProvider.notifier).submitFinalVotes(_votes);
+          ref.read(gameOrchestratorProvider.notifier).resolveVote();
+          _handleElimination(accusedId);
         },
         onChangeVotes: () {
           Navigator.pop(ctx);
-          setState(() => _votes.clear());
+          // Keep existing votes - only players who want to change will tap again
           ref.read(gameOrchestratorProvider.notifier).revote();
         },
       ),
     );
   }
 
-  void _transitionToNextPhase(String? eliminatedId) {
+  void _handleElimination(String? eliminatedId) {
     final state = ref.read(gameOrchestratorProvider);
+
     if (state.phase == Phase.winCheck) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const GameOverScreen()));
-    } else {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightScreen()));
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const GameOverScreen()),
+        (route) => false,
+      );
+      return;
     }
+
+    if (eliminatedId != null) {
+      final eliminated = state.getPlayerById(eliminatedId);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppTheme.roleColor(eliminated!.role), width: 2)),
+          title: const Text('تم الإقصاء - الهوية الحقيقية', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppTheme.roleColor(eliminated.role), width: 3),
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    AppTheme.roleImage(eliminated.role),
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(eliminated.name, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+              const SizedBox(height: 4),
+              Text('كان: ${AppTheme.roleArabicName(eliminated.role)}', style: TextStyle(color: AppTheme.roleColor(eliminated.role), fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                if (eliminated.role == Role.citizensBoy) {
+                  _showCitizenBoyDialog(eliminatedId);
+                } else {
+                  _goToNight();
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.roleColor(eliminated.role)),
+              child: const Text('متابعة إلى الليل', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _goToNight();
+    }
+  }
+
+  void _showCitizenBoyDialog(String actorId) {
+    final state = ref.read(gameOrchestratorProvider);
+    final alive = state.alivePlayers;
+    String? selectedId;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.orangeAccent)),
+          title: const Row(
+            children: [
+              Icon(Icons.bolt, color: Colors.orangeAccent),
+              SizedBox(width: 8),
+              Text('انتقام المواطن الشجاع!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('بما أنك قُتلت، يمكنك اختيار لاعب لتأخذه معك كضحية:', style: TextStyle(fontFamily: 'Cairo', color: Colors.white70)),
+              const SizedBox(height: 16),
+              ...alive.map((p) => RadioListTile<String>(
+                    title: Text(p.name, style: const TextStyle(fontFamily: 'Cairo', color: Colors.white, fontWeight: FontWeight.bold)),
+                    value: p.id,
+                    groupValue: selectedId,
+                    activeColor: Colors.orangeAccent,
+                    onChanged: (val) => setDialogState(() => selectedId = val),
+                  )),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref.read(gameOrchestratorProvider.notifier).advanceToNight();
+                _routeAfterRetaliation();
+              },
+              child: const Text('تخطي', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            ),
+            ElevatedButton(
+              onPressed: selectedId == null
+                  ? null
+                  : () {
+                      ref.read(audioManagerProvider).playKill();
+                      final targetPlayer = state.getPlayerById(selectedId!);
+                      ref.read(gameOrchestratorProvider.notifier).citizenBoyRetaliation(actorId: actorId, targetId: selectedId!, nextPhase: Phase.night);
+                      Navigator.pop(ctx);
+                      _showRetaliationResultDialog(targetPlayer!);
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('انتقام!', style: TextStyle(fontFamily: 'Cairo', color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _routeAfterRetaliation() {
+    final newState = ref.read(gameOrchestratorProvider);
+    if (newState.phase == Phase.winCheck) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const GameOverScreen()),
+        (route) => false,
+      );
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const NightScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  void _showRetaliationResultDialog(Player target) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppTheme.roleColor(target.role), width: 2)),
+        title: const Text('ضحية المواطن الشجاع!', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.roleColor(target.role), width: 3),
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  AppTheme.roleImage(target.role),
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(target.name, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+            const SizedBox(height: 4),
+            Text('كان: ${AppTheme.roleArabicName(target.role)}', style: TextStyle(color: AppTheme.roleColor(target.role), fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _routeAfterRetaliation();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('متابعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _goToNight() {
+    ref.read(gameOrchestratorProvider.notifier).advanceToNight();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const NightScreen()),
+      (route) => false,
+    );
   }
 
   void _confirmExit(BuildContext context, WidgetRef ref) {
@@ -248,7 +379,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('نعم، إنهاء', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+            child: const Text('تأكيد الإنهاء', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -257,6 +388,15 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final alive = _alive;
+    if (alive.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
+    // Calculate votes for each candidate for the badges
+    final voteCounts = <String, int>{};
+    for (var target in _votes.values) {
+      voteCounts[target] = (voteCounts[target] ?? 0) + 1;
+    }
+
     return GamePopScope(
       child: Scaffold(
         backgroundColor: const Color(0xFF07070B),
@@ -266,6 +406,13 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           elevation: 0,
           title: const Text('قاعة المحكمة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
           actions: [
+            TextButton(
+              onPressed: () {
+                ref.read(gameOrchestratorProvider.notifier).skipElimination();
+                _goToNight();
+              },
+              child: const Text('تخطي التصويت', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            ),
             IconButton(
               icon: const Icon(Icons.exit_to_app, color: Colors.redAccent),
               onPressed: () => _confirmExit(context, ref),
@@ -283,28 +430,44 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                     const Icon(Icons.gavel, size: 64, color: Colors.redAccent),
                     const SizedBox(height: 16),
                     const Text('حان وقت التصويت', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
-                    const Text('اضغط على اسم كل لاعب لاختيار من سيصوت ضده', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                    const Text('اضغط على اسم اللاعب لاختيار من سيصوت ضده', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
                     const SizedBox(height: 24),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: _alive.length,
+                        itemCount: alive.length,
                         itemBuilder: (context, index) {
-                          final voter = _alive[index];
+                          final voter = alive[index];
                           final votedId = _votes[voter.id];
                           final votedPlayer = votedId != null ? ref.read(gameOrchestratorProvider).getPlayerById(votedId) : null;
+                          final votesReceived = voteCounts[voter.id] ?? 0;
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
+                              color: Colors.white.withOpacity(0.05),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: votedPlayer != null ? Colors.orangeAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1)),
+                              border: Border.all(color: votedPlayer != null ? Colors.orangeAccent.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                              title: Text(voter.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
-                              subtitle: Text(votedPlayer != null ? 'يصوت ضد: ${votedPlayer.name}' : 'لم يصوت', style: TextStyle(color: votedPlayer != null ? Colors.redAccent : Colors.white54, fontFamily: 'Cairo')),
-                              trailing: Icon(Icons.touch_app, color: Colors.white.withValues(alpha: 0.3)),
+                              title: Row(
+                                children: [
+                                  Text(voter.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+                                  const Spacer(),
+                                  if (votesReceived > 0)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.redAccent),
+                                      ),
+                                      child: Text('$votesReceived صوت', style: const TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Text(votedPlayer != null ? 'يصوت ضد: ${votedPlayer.name}' : 'لم يصوت بعد', style: TextStyle(color: votedPlayer != null ? Colors.redAccent : Colors.white54, fontFamily: 'Cairo')),
+                              trailing: Icon(Icons.touch_app, color: Colors.white.withOpacity(0.3)),
                               onTap: () => _showVotePicker(voter),
                             ),
                           );
@@ -314,16 +477,16 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      height: 55,
                       child: ElevatedButton(
-                        onPressed: _confirmExecution,
+                        onPressed: _calculateLocalResult,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
                           elevation: 10,
-                          shadowColor: Colors.redAccent.withValues(alpha: 0.5),
+                          shadowColor: Colors.redAccent.withOpacity(0.5),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text('إنهاء التصويت', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+                        child: const Text('فرز الأصوات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
                       ),
                     ),
                   ],
@@ -339,11 +502,13 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
 
 class _DefenseTimerDialog extends ConsumerStatefulWidget {
   final Player? accused;
+  final int votesCount;
   final VoidCallback onConfirmElimination;
   final VoidCallback onChangeVotes;
 
   const _DefenseTimerDialog({
     required this.accused,
+    required this.votesCount,
     required this.onConfirmElimination,
     required this.onChangeVotes,
   });
@@ -373,6 +538,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
   @override
   void dispose() {
     _isRunning = false;
+    ref.read(audioManagerProvider).playClick();
     super.dispose();
   }
 
@@ -389,6 +555,8 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
             widget.accused?.name ?? '؟',
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Cairo', color: Colors.white),
           ),
+          const SizedBox(height: 4),
+          Text('حصل على ${widget.votesCount} أصوات', style: const TextStyle(color: Colors.white70, fontSize: 14, fontFamily: 'Cairo')),
           const SizedBox(height: 24),
           Text(
             '$_secondsLeft',
@@ -411,7 +579,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
             child: const Text('ابدأ الوقت', style: TextStyle(fontFamily: 'Cairo', color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         const SizedBox(height: 12),
-        const Text('بعد انتهاء الدفاع:', style: TextStyle(color: Colors.white54, fontSize: 12)),
+        const Text('بعد انتهاء الدفاع:', style: TextStyle(color: Colors.white54, fontSize: 12, fontFamily: 'Cairo')),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -422,7 +590,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
                   side: const BorderSide(color: Colors.orangeAccent),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('تغيير التصويت', style: TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+                child: const Text('تغيير التصويت', style: TextStyle(color: Colors.orangeAccent, fontSize: 12, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(width: 8),
@@ -433,7 +601,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
                   backgroundColor: Colors.redAccent,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('تأكيد الإعدام', style: TextStyle(fontSize: 12, color: Colors.white)),
+                child: const Text('تأكيد الإعدام', style: TextStyle(fontSize: 12, color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
               ),
             ),
           ],

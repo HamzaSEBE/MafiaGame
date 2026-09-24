@@ -29,6 +29,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _saveSettings() {
+    for (var role in Role.values) {
+      final text = _controllers[role]?.text.trim() ?? '';
+      if (text.isNotEmpty) {
+        AppTheme.customRoleNames[role] = text;
+      } else {
+        AppTheme.customRoleNames.remove(role);
+      }
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم حفظ الإعدادات بنجاح', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
     );

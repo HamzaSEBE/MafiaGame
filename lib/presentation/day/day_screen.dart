@@ -148,7 +148,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                     const SizedBox(height: 12),
                     Expanded(
                       child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 2.5),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.8),
                         itemCount: alive.length,
                         itemBuilder: (context, index) {
                           final player = alive[index];
@@ -157,15 +157,28 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                             decoration: BoxDecoration(
                               color: isSilenced ? Colors.red.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: isSilenced ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1)),
+                              border: Border.all(color: isSilenced ? Colors.redAccent.withValues(alpha: 0.5) : AppTheme.roleColor(player.role).withValues(alpha: 0.3)),
                             ),
                             alignment: Alignment.center,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(player.name, style: TextStyle(color: isSilenced ? Colors.redAccent : Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Cairo')),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.roleColor(player.role).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppTheme.roleColor(player.role).withValues(alpha: 0.4)),
+                                  ),
+                                  child: Text(AppTheme.roleArabicName(player.role), style: TextStyle(color: AppTheme.roleColor(player.role), fontSize: 11, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                                ),
                                 if (isSilenced)
-                                  const Text('تم إسكاته', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontFamily: 'Cairo')),
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 2),
+                                    child: Text('🔇 تم إسكاته', style: TextStyle(color: Colors.redAccent, fontSize: 10, fontFamily: 'Cairo')),
+                                  ),
                               ],
                             ),
                           );

@@ -6,7 +6,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
-import 'package:mafia_nightfall/domain/engine/timeline_generator.dart';
 import 'package:mafia_nightfall/presentation/widgets/newspaper_widget.dart';
 import 'dart:ui';
 
@@ -44,8 +43,6 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameOrchestratorProvider);
-    final winnerStr = gameState.winner == Team.mafia ? 'المافيا' : 'المواطنون';
-    final narrative = TimelineGenerator.generateNarrative(gameState, winnerStr);
 
     return Scaffold(
       backgroundColor: const Color(0xFF07070B),
@@ -98,7 +95,7 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Screenshot(
                       controller: _screenshotController,
-                      child: NewspaperWidget(narrative: narrative),
+                      child: NewspaperWidget(gameState: gameState),
                     ),
                   ),
                 ),

@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
-
+import 'package:mafia_nightfall/domain/entities/game_state.dart';
+import 'package:mafia_nightfall/domain/events/game_event.dart';
+import 'package:mafia_nightfall/domain/enums/team.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 
 class NewspaperWidget extends StatelessWidget {
-  final String narrative;
+  final GameState gameState;
 
-  const NewspaperWidget({super.key, required this.narrative});
+  const NewspaperWidget({super.key, required this.gameState});
 
   @override
   Widget build(BuildContext context) {
-    // A brilliant, realistic vintage newspaper design
     final now = DateTime.now();
     final dateStr = '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFFF4ECD8), // Vintage paper color
-        borderRadius: BorderRadius.circular(4), // Sharp edges like paper
+        color: const Color(0xFFF4ECD8),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
@@ -25,7 +27,6 @@ class NewspaperWidget extends StatelessWidget {
             offset: const Offset(0, 10),
           )
         ],
-        // Subtle paper texture overlay using gradient noise (simulated)
         gradient: const RadialGradient(
           center: Alignment.center,
           radius: 1.5,
@@ -35,10 +36,9 @@ class NewspaperWidget extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Top small header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -57,11 +57,10 @@ class NewspaperWidget extends StatelessWidget {
             Container(height: 5, margin: const EdgeInsets.only(top: 2), color: Colors.black87),
             const SizedBox(height: 16),
             
-            // Huge Title
             const Text(
               'جريدة المدينة',
               style: TextStyle(
-                fontFamily: 'Cairo', // Or a serif font if available
+                fontFamily: 'Cairo',
                 fontSize: 42,
                 fontWeight: FontWeight.w900,
                 color: Colors.black,
@@ -85,7 +84,6 @@ class NewspaperWidget extends StatelessWidget {
             Container(height: 2, color: Colors.black87),
             const SizedBox(height: 24),
             
-            // The article body
             _buildArticleBody(),
             
             const SizedBox(height: 32),
@@ -98,6 +96,7 @@ class NewspaperWidget extends StatelessWidget {
                 fontSize: 10,
                 color: Colors.black54,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -106,112 +105,362 @@ class NewspaperWidget extends StatelessWidget {
   }
 
   Widget _buildArticleBody() {
-    List<Widget> paragraphs = [];
-    final lines = narrative.split('\n');
-
-    for (int i = 0; i < lines.length; i++) {
-      String line = lines[i].trim();
-      if (line.isEmpty) continue;
-
-      if (line.startsWith('[ أحداث الليلة') || line.startsWith('[ نهار اليوم')) {
-        // Section Header (Sub-headline)
-        paragraphs.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 16, bottom: 8),
-            child: Text(
-              line.replaceAll('[', '').replaceAll(']', '').trim(),
-              style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-                decoration: TextDecoration.underline,
-              ),
-              textAlign: TextAlign.right,
-              textDirection: TextDirection.rtl,
-            ),
-          ),
-        );
-      } else if (line.startsWith('النتيجة النهائية:')) {
-        // Conclusion / Final verdict
-        paragraphs.add(
-          Container(
-            margin: const EdgeInsets.only(top: 24),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.black87, width: 2),
-            ),
-            child: Text(
-              line,
-              style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-              ),
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.rtl,
-            ),
-          ),
-        );
-      } else {
-        // Normal paragraph, but with rich text for names in parentheses ($name)
-        paragraphs.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _parseParagraph(line),
-          ),
-        );
-      }
+    if (gameState.eventHistory.isEmpty) {
+      return const Text(
+        'لا يوجد أحداث مسجلة. مرت الأيام بسلام.',
+        style: TextStyle(fontFamily: 'Cairo', fontSize: 18, color: Colors.black87),
+        textAlign: TextAlign.center,
+      );
     }
 
+    List<Widget> sections = [];
+    final eventsByRound = <int, List<GameEvent>>{};
+    for (final event in gameState.eventHistory) {
+      eventsByRound.putIfAbsent(event.round, () => []).add(event);
+    }
+    
+    final sortedRounds = eventsByRound.keys.toList()..sort();
+    
+    for (final r in sortedRounds) {
+      final events = eventsByRound[r]!;
+      sections.add(_buildRoundSection(r, events));
+    }
+    
+    sections.add(_buildConclusion());
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: paragraphs,
+      children: sections,
     );
   }
 
-  Widget _parseParagraph(String line) {
-    List<TextSpan> spans = [];
-    final RegExp exp = RegExp(r'\(\$(.*?)\)');
-    int start = 0;
-    final matches = exp.allMatches(line);
-    
-    // First letter drop cap simulation for the very first normal paragraph (optional)
-    // but Arabic typography works better with just bold highlighting.
-    
-    for (final match in matches) {
-      if (match.start > start) {
-        spans.add(TextSpan(text: line.substring(start, match.start)));
+  Widget _buildRoundSection(int round, List<GameEvent> events) {
+    List<Widget> roundWidgets = [];
+
+    // Night Summary
+    final nightSummary = events.where((e) => e.type == EventType.nightResolutionSummary).lastOrNull;
+    if (nightSummary != null) {
+      roundWidgets.add(_buildSectionHeader('أحداث الليلة $round', Icons.nights_stay));
+      
+      final deadIds = (nightSummary.metadata['assassinatedIds'] as List?)?.cast<String>() ?? [];
+      final silencedIds = (nightSummary.metadata['silencedIds'] as List?)?.cast<String>() ?? [];
+      final successfulProtections = (nightSummary.metadata['successfulProtections'] as List?)?.cast<String>() ?? [];
+
+      if (deadIds.isEmpty) {
+        roundWidgets.add(_buildInfoRow('خيم الهدوء على المدينة. لم يُسفك أي دم.', '🕊️'));
+      } else {
+        roundWidgets.add(_buildEventRow('اغتيال المافيا:', '🔫', deadIds, const Color(0xFF8B0000)));
       }
-      // Name highlighting (like bold news ink)
-      spans.add(TextSpan(
-        text: match.group(1),
-        style: const TextStyle(
-          fontWeight: FontWeight.w900, 
-          color: Color(0xFF8B0000), // Dark blood red ink for names
-          fontSize: 17,
-        ),
-      ));
-      start = match.end;
-    }
-    
-    if (start < line.length) {
-      spans.add(TextSpan(text: line.substring(start)));
+
+      if (successfulProtections.isNotEmpty) {
+        roundWidgets.add(_buildEventRow('تدخل الطبيب وأنقذ:', '🛡️', successfulProtections, const Color(0xFF006400)));
+      }
+
+      if (silencedIds.isNotEmpty) {
+        roundWidgets.add(_buildEventRow('تم تكميم أفواه:', '🤐', silencedIds, Colors.black87));
+      }
     }
 
-    return RichText(
-      textAlign: TextAlign.justify,
-      textDirection: TextDirection.rtl,
-      text: TextSpan(
-        style: const TextStyle(
-          color: Color(0xFF2C2C2C), // Dark charcoal ink
-          fontSize: 16,
-          fontFamily: 'Cairo',
-          height: 1.8,
-          fontWeight: FontWeight.w600,
+    // Voting Activity
+    final votes = events.where((e) => e.type == EventType.vote).toList();
+    if (votes.isNotEmpty) {
+      roundWidgets.add(_buildSectionHeader('قاعة المحكمة - النهار $round', Icons.gavel));
+      
+      final voteMap = <String, List<String>>{};
+      for (final v in votes) {
+        voteMap.putIfAbsent(v.targetId ?? 'تخطي', () => []).add(v.actorId ?? '');
+      }
+      
+      List<Widget> voteRows = [];
+      voteMap.forEach((candidateId, voters) {
+        voteRows.add(_buildVoteCard(candidateId, voters));
+      });
+      
+      roundWidgets.add(Column(children: voteRows));
+    }
+
+    // Eliminations
+    final elimination = events.where((e) => e.type == EventType.elimination).lastOrNull;
+    if (elimination != null) {
+      roundWidgets.add(_buildEventCard(
+        title: 'قرار المحكمة (إعدام)',
+        emoji: '⚖️',
+        targetId: elimination.targetId,
+        color: const Color(0xFF8B0000),
+      ));
+    }
+
+    // Retaliations
+    final retaliation = events.where((e) => e.type == EventType.citizenBoyRetaliation).lastOrNull;
+    if (retaliation != null) {
+      roundWidgets.add(_buildRetaliationCard(
+        actorId: retaliation.actorId,
+        targetId: retaliation.targetId,
+      ));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: roundWidgets,
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: Colors.black,
+              decoration: TextDecoration.underline,
+            ),
+            textDirection: TextDirection.rtl,
+          ),
+          const SizedBox(width: 8),
+          Icon(icon, color: Colors.black87, size: 28),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String text, String emoji) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            text,
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            textDirection: TextDirection.rtl,
+          ),
+          const SizedBox(width: 8),
+          Text(emoji, style: const TextStyle(fontSize: 20)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventRow(String title, String emoji, List<String> playerIds, Color accentColor) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.1),
+        border: Border(right: BorderSide(color: accentColor, width: 4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                title,
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: accentColor),
+              ),
+              const SizedBox(width: 8),
+              Text(emoji, style: const TextStyle(fontSize: 20)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.end,
+            children: playerIds.map((id) => _buildPlayerAvatar(id)).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoteCard(String candidateId, List<String> voters) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          if (candidateId == 'تخطي')
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'تخطي التصويت',
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+            )
+          else
+            _buildPlayerAvatar(candidateId),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.0),
+            child: Icon(Icons.how_to_vote, color: Colors.black54, size: 32),
+          ),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.start,
+              textDirection: TextDirection.rtl,
+              children: voters.map((id) => _buildPlayerAvatar(id, small: true)).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventCard({required String title, required String emoji, String? targetId, required Color color}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (targetId != null) _buildPlayerAvatar(targetId),
+          const SizedBox(width: 16),
+          Column(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 32)),
+              Text(
+                title,
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: color),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRetaliationCard({String? actorId, String? targetId}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.2)],
         ),
-        children: spans,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.deepOrange),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            '💥 انتقام المواطن الشجاع!',
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (actorId != null) _buildPlayerAvatar(actorId),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Icon(Icons.double_arrow, color: Colors.deepOrange, size: 32),
+              ),
+              if (targetId != null) _buildPlayerAvatar(targetId),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerAvatar(String id, {bool small = false}) {
+    final player = gameState.getPlayerById(id);
+    if (player == null) return const SizedBox.shrink();
+
+    final size = small ? 20.0 : 28.0;
+    final fontSize = small ? 10.0 : 12.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size * 2,
+          height: size * 2,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.black87, width: 2),
+            image: DecorationImage(
+              image: AssetImage(AppTheme.roleImage(player.role)),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          player.name,
+          style: TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConclusion() {
+    final winnerStr = gameState.winner == Team.mafia ? 'المافيا' : 'المواطنون';
+    final isMafia = gameState.winner == Team.mafia;
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isMafia ? const Color(0xFF8B0000).withValues(alpha: 0.1) : const Color(0xFF00008B).withValues(alpha: 0.1),
+        border: Border.all(color: isMafia ? const Color(0xFF8B0000) : const Color(0xFF00008B), width: 3),
+      ),
+      child: Column(
+        children: [
+          Text(
+            isMafia ? '🩸' : '🕊️',
+            style: const TextStyle(fontSize: 40),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'النتيجة النهائية',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isMafia ? const Color(0xFF8B0000) : const Color(0xFF00008B),
+            ),
+          ),
+          Text(
+            'انتصار ساحق لـ $winnerStr!',
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: isMafia ? const Color(0xFF8B0000) : const Color(0xFF00008B),
+            ),
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.rtl,
+          ),
+        ],
       ),
     );
   }

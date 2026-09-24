@@ -66,7 +66,27 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              NewspaperWidget(narrative: text),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4ECD8),
+                  border: Border.all(color: const Color(0xFFD4C4A8), width: 1),
+                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                ),
+                child: Column(
+                  children: [
+                    const Text('📰 جريدة المدينة', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Cairo')),
+                    const Divider(color: Colors.black54, thickness: 2),
+                    const SizedBox(height: 16),
+                    Text(
+                      text,
+                      style: const TextStyle(fontSize: 16, height: 1.8, color: Colors.black87, fontFamily: 'Cairo'),
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(

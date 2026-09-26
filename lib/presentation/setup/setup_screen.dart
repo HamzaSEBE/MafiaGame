@@ -124,6 +124,35 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     );
   }
 
+  void _autoDistributeRoles() {
+    final players = ref.read(gameOrchestratorProvider).players;
+    final total = players.length;
+    if (total == 0) return;
+
+    for (var r in Role.values) {
+      _roleConfig[r] = 0;
+    }
+
+    int mafiaTotal = (total / 3).floor(); 
+    if (mafiaTotal < 1 && total > 0) mafiaTotal = 1;
+    
+    int citizensTotal = total - mafiaTotal;
+
+    if (mafiaTotal >= 1) _roleConfig[Role.mafiaSheikh] = 1;
+    if (mafiaTotal >= 2) _roleConfig[Role.mafiaGirl] = 1;
+    if (mafiaTotal >= 3) _roleConfig[Role.normalMafia] = mafiaTotal - 2;
+
+    if (citizensTotal >= 1) _roleConfig[Role.citizensSheikh] = 1;
+    if (citizensTotal >= 2) _roleConfig[Role.citizensGirl] = 1;
+    if (citizensTotal >= 3) _roleConfig[Role.citizensBoy] = 1;
+    
+    if (citizensTotal > 3) {
+      _roleConfig[Role.goodCitizen] = citizensTotal - 3;
+    }
+
+    setState(() {});
+  }
+
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -231,6 +260,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                           playerCount: players.length,
                           totalRoles: _totalRoles,
                           onChanged: (r, c) => setState(() => _roleConfig[r] = c),
+                          onAutoDistribute: _autoDistributeRoles,
                         ),
                   ),
                 ),
@@ -463,12 +493,14 @@ class _RolesTab extends StatelessWidget {
   final int playerCount;
   final int totalRoles;
   final void Function(Role, int) onChanged;
+  final VoidCallback onAutoDistribute;
 
   const _RolesTab({
     required this.roleConfig,
     required this.playerCount,
     required this.totalRoles,
     required this.onChanged,
+    required this.onAutoDistribute,
   });
 
   @override
@@ -489,7 +521,25 @@ class _RolesTab extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('الأدوار الموزعة:', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Text('الأدوار الموزعة:', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
+                      const SizedBox(width: 8),
+                      if (playerCount > 0)
+                        ElevatedButton.icon(
+                          onPressed: onAutoDistribute,
+                          icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.black),
+                          label: const Text('توزيع ذكي', style: TextStyle(fontFamily: 'Cairo', color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orangeAccent,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            minimumSize: const Size(0, 30),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
                 Text(
                   '$totalRoles / $playerCount',
                   style: TextStyle(

@@ -21,6 +21,7 @@ class DayScreen extends ConsumerStatefulWidget {
 class _DayScreenState extends ConsumerState<DayScreen> {
   int _timeLeft = 300; // 5 minutes
   Timer? _timer;
+  bool _isPaused = false;
 
   @override
   void initState() {
@@ -37,9 +38,25 @@ class _DayScreenState extends ConsumerState<DayScreen> {
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted && _timeLeft > 0) {
-        setState(() => _timeLeft--);
-      } else {
+        if (!_isPaused) {
+          setState(() => _timeLeft--);
+        }
+      } else if (_timeLeft <= 0) {
         timer.cancel();
+      }
+    });
+  }
+
+  void _togglePause() {
+    setState(() => _isPaused = !_isPaused);
+  }
+
+  void _adjustTime(int seconds) {
+    setState(() {
+      _timeLeft += seconds;
+      if (_timeLeft < 0) _timeLeft = 0;
+      if (_timeLeft > 0 && !(_timer?.isActive ?? false)) {
+        _startTimer();
       }
     });
   }
@@ -141,6 +158,25 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                             _formattedTime,
                             style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, fontFamily: 'Courier', color: _timeLeft < 60 ? Colors.redAccent : Colors.orangeAccent),
                           ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, color: Colors.white54),
+                                onPressed: () => _adjustTime(-30),
+                                tooltip: 'إنقاص 30 ثانية',
+                              ),
+                              IconButton(
+                                icon: Icon(_isPaused ? Icons.play_circle_fill : Icons.pause_circle_filled, color: Colors.orangeAccent, size: 40),
+                                onPressed: _togglePause,
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: Colors.white54),
+                                onPressed: () => _adjustTime(30),
+                                tooltip: 'زيادة 30 ثانية',
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 8),
                           const Text('تحدثوا وتشاوروا لمعرفة القاتل!', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
                         ],
@@ -163,7 +199,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                             decoration: BoxDecoration(
                               color: isSilenced ? Colors.red.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: isSilenced ? Colors.redAccent.withValues(alpha: 0.5) : AppTheme.roleColor(player.role).withValues(alpha: 0.3)),
+                              border: Border.all(color: isSilenced ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.15)),
                             ),
                             alignment: Alignment.center,
                             child: Column(

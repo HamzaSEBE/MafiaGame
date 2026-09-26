@@ -29,7 +29,7 @@ class StatsScreen extends ConsumerWidget {
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(context),
+                _buildHeader(context, ref),
                 const SizedBox(height: 20),
                 Expanded(
                   child: FutureBuilder<List<PlayerStats>>(
@@ -65,7 +65,7 @@ class StatsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -75,15 +75,53 @@ class StatsScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
-          const Text(
-            'إحصائيات اللاعبين',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontFamily: 'Cairo',
-              shadows: [Shadow(color: AppTheme.mafiaAccent, blurRadius: 20)],
+          const Expanded(
+            child: Text(
+              'إحصائيات اللاعبين',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Cairo',
+                shadows: [Shadow(color: AppTheme.mafiaAccent, blurRadius: 20)],
+              ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+            tooltip: 'حذف جميع الإحصائيات',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF1A1A22),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: const Text('حذف جميع الإحصائيات؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                  content: const Text('سيتم حذف إحصائيات جميع اللاعبين نهائياً. هل أنت متأكد؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await ref.read(playerStatsRepoProvider).clearStats();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('تم حذف جميع الإحصائيات', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.redAccent),
+                          );
+                          // Force rebuild
+                          (context as Element).markNeedsBuild();
+                        }
+                      },
+                      child: const Text('حذف الكل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

@@ -55,6 +55,39 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     ref.read(gameOrchestratorProvider.notifier).addPlayer(name.trim());
     _nameController.clear();
     FocusScope.of(context).unfocus();
+
+    // Save to persistent storage immediately
+    if (!_savedPlayers.contains(name.trim())) {
+      setState(() => _savedPlayers.add(name.trim()));
+      _profilesRepo.savePlayers(_savedPlayers);
+    }
+  }
+
+  void _confirmDeleteSavedPlayer(String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('حذف اللاعب المحفوظ؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+        content: Text('هل تريد حذف "$name" من القائمة المحفوظة؟', style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() => _savedPlayers.remove(name));
+              _profilesRepo.savePlayers(_savedPlayers);
+            },
+            child: const Text('حذف', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+          ),
+        ],
+      ),
+    );
   }
 
   void _removePlayer(int index) {
@@ -190,6 +223,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                           nameController: _nameController,
                           onAdd: _addPlayer,
                           onRemove: _removePlayer,
+                          onDeleteSaved: _confirmDeleteSavedPlayer,
                         )
                       : _RolesTab(
                           roleConfig: _roleConfig,
@@ -297,6 +331,7 @@ class _PlayersTab extends StatelessWidget {
   final TextEditingController nameController;
   final void Function(String) onAdd;
   final void Function(int) onRemove;
+  final void Function(String) onDeleteSaved;
 
   const _PlayersTab({
     required this.players,
@@ -304,6 +339,7 @@ class _PlayersTab extends StatelessWidget {
     required this.nameController,
     required this.onAdd,
     required this.onRemove,
+    required this.onDeleteSaved,
   });
 
   @override
@@ -367,11 +403,14 @@ class _PlayersTab extends StatelessWidget {
                     child: Builder(
                       builder: (ctx) {
                         final isAdded = players.any((p) => p.name == sp);
-                        return ActionChip(
-                          backgroundColor: isAdded ? Colors.orangeAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
-                          side: BorderSide(color: isAdded ? Colors.orangeAccent : Colors.white.withValues(alpha: 0.1)),
-                          label: Text(sp, style: TextStyle(color: isAdded ? Colors.orangeAccent : Colors.white70, fontFamily: 'Cairo', fontWeight: isAdded ? FontWeight.bold : FontWeight.normal)),
-                          onPressed: isAdded ? null : () => onAdd(sp),
+                        return GestureDetector(
+                          onLongPress: () => onDeleteSaved(sp),
+                          child: ActionChip(
+                            backgroundColor: isAdded ? Colors.orangeAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                            side: BorderSide(color: isAdded ? Colors.orangeAccent : Colors.white.withValues(alpha: 0.1)),
+                            label: Text(sp, style: TextStyle(color: isAdded ? Colors.orangeAccent : Colors.white70, fontFamily: 'Cairo', fontWeight: isAdded ? FontWeight.bold : FontWeight.normal)),
+                            onPressed: isAdded ? null : () => onAdd(sp),
+                          ),
                         );
                       },
                     ),

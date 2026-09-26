@@ -98,6 +98,27 @@ class PlayerStatsRepository {
       // ignore
     }
   }
+
+  Future<void> clearStats() async {
+    try {
+      final uid = _uid;
+      if (uid == null) return;
+
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('stats')
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } catch (e) {
+      print('Error clearing stats: $e');
+    }
+  }
 }
 
 final playerStatsRepoProvider = Provider<PlayerStatsRepository>((ref) {

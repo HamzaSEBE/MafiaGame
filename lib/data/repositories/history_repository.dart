@@ -103,6 +103,22 @@ class HistoryRepository {
     }
   }
 
+  Future<void> deleteGame(String gameId) async {
+    try {
+      final uid = _uid;
+      if (uid == null) return;
+
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('games')
+          .doc(gameId)
+          .delete();
+    } catch (e) {
+      print('Error deleting game: $e');
+    }
+  }
+
   Future<void> clearHistory() async {
     try {
       final uid = _uid;

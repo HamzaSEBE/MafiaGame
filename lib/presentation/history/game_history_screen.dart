@@ -134,7 +134,52 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                         final record = _history![index];
                         final isMafiaWin = record.winningTeam == 'المافيا' || record.winningTeam == 'mafia';
                         
-                        return Container(
+                        return Dismissible(
+                          key: Key(record.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.only(left: 24),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.redAccent, size: 28),
+                                SizedBox(width: 8),
+                                Text('حذف', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+                              ],
+                            ),
+                          ),
+                          confirmDismiss: (_) async {
+                            return await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1A1A22),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: const Text('حذف هذه المباراة؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                                content: const Text('سيتم حذف سجل هذه المباراة نهائياً', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('حذف', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                                  ),
+                                ],
+                              ),
+                            ) ?? false;
+                          },
+                          onDismissed: (_) async {
+                            await _repo.deleteGame(record.id);
+                            setState(() => _history!.removeAt(index));
+                          },
+                          child: Container(
                           margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -253,6 +298,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                                 ],
                               ),
                             ),
+                          ),
                           ),
                         );
                       },

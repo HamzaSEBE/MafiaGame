@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/setup/role_review_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
@@ -119,7 +120,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
       return;
     }
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const RoleRevealScreen()),
+      MaterialPageRoute(builder: (_) => const RoleReviewScreen()),
     );
   }
 

@@ -10,6 +10,7 @@ import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/night/night_summary_screen.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
+import 'package:mafia_nightfall/presentation/widgets/judge_tools_sheet.dart';
 
 class _DynamicNightStep {
   final Player actor;
@@ -404,6 +405,11 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                 )
               : null,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.handyman, color: Colors.blueAccent),
+              tooltip: 'أدوات الحكم',
+              onPressed: () => JudgeToolsSheet.show(context),
+            ),
             IconButton(
               icon: const Icon(Icons.exit_to_app, color: Colors.redAccent),
               onPressed: () => _confirmExit(context, ref),

@@ -48,6 +48,12 @@ class GameOrchestrator extends Notifier<GameState> {
     );
   }
 
+  void updatePlayer(Player updatedPlayer) {
+    state = state.copyWith(
+      players: state.players.map((p) => p.id == updatedPlayer.id ? updatedPlayer : p).toList(),
+    );
+  }
+
   /// Randomly shuffle the player order so role reveal order
   /// is completely independent of the order names were added.
   void shufflePlayers() {

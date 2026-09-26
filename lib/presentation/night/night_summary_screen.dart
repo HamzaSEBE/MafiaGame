@@ -10,6 +10,8 @@ import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/day/day_screen.dart';
 import 'package:mafia_nightfall/presentation/game_over/game_over_screen.dart';
+import 'package:mafia_nightfall/presentation/widgets/judge_tools_sheet.dart';
+import 'package:mafia_nightfall/core/quotes/dramatic_quotes.dart';
 
 class NightSummaryScreen extends ConsumerStatefulWidget {
   const NightSummaryScreen({super.key});
@@ -212,6 +214,13 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.handyman, color: Colors.blueAccent),
+              tooltip: 'أدوات الحكم',
+              onPressed: () => JudgeToolsSheet.show(context),
+            ),
+          ],
         ),
         body: Stack(
           children: [

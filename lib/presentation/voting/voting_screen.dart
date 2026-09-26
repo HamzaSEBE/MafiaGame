@@ -12,6 +12,7 @@ import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 import 'dart:async';
 import 'package:mafia_nightfall/core/quotes/dramatic_quotes.dart';
+import 'package:mafia_nightfall/presentation/widgets/judge_tools_sheet.dart';
 
 class VotingScreen extends ConsumerStatefulWidget {
   const VotingScreen({super.key});
@@ -382,6 +383,11 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           elevation: 0,
           title: const Text('قاعة المحكمة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.handyman, color: Colors.blueAccent),
+              tooltip: 'أدوات الحكم',
+              onPressed: () => JudgeToolsSheet.show(context),
+            ),
             TextButton(
               onPressed: () {
                 ref.read(gameOrchestratorProvider.notifier).skipElimination();

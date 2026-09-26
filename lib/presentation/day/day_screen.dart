@@ -9,6 +9,7 @@ import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 import 'dart:async';
+import 'package:mafia_nightfall/presentation/widgets/judge_tools_sheet.dart';
 
 class DayScreen extends ConsumerStatefulWidget {
   const DayScreen({super.key});
@@ -103,6 +104,11 @@ class _DayScreenState extends ConsumerState<DayScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.handyman, color: Colors.blueAccent),
+              tooltip: 'أدوات الحكم',
+              onPressed: () => JudgeToolsSheet.show(context),
+            ),
             IconButton(
               icon: const Icon(Icons.exit_to_app, color: Colors.redAccent),
               tooltip: 'إنهاء اللعبة',

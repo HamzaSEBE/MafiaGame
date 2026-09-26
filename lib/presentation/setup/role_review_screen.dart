@@ -1,0 +1,205 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_nightfall/application/game_orchestrator.dart';
+import 'package:mafia_nightfall/domain/entities/player.dart';
+import 'package:mafia_nightfall/presentation/reveal/role_reveal_screen.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
+
+class RoleReviewScreen extends ConsumerStatefulWidget {
+  const RoleReviewScreen({super.key});
+
+  @override
+  ConsumerState<RoleReviewScreen> createState() => _RoleReviewScreenState();
+}
+
+class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
+  Player? _selectedPlayer;
+
+  void _shuffleAgain() {
+    ref.read(gameOrchestratorProvider.notifier).shufflePlayers();
+    
+    // We need to re-assign roles using the current config.
+    // The problem is we don't have the config here easily.
+    // Actually, we can just shuffle the roles among the current players.
+    
+    final players = ref.read(gameOrchestratorProvider).players;
+    final roles = players.map((p) => p.role).toList()..shuffle();
+    
+    for (int i = 0; i < players.length; i++) {
+      ref.read(gameOrchestratorProvider.notifier).updatePlayer(
+        players[i].copyWith(role: roles[i])
+      );
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم إعادة التوزيع عشوائياً 🎲', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
+    );
+  }
+
+  void _onPlayerTapped(Player p) {
+    if (_selectedPlayer == null) {
+      setState(() => _selectedPlayer = p);
+    } else {
+      if (_selectedPlayer!.id == p.id) {
+        setState(() => _selectedPlayer = null); // deselect
+      } else {
+        // Swap roles
+        final roleA = _selectedPlayer!.role;
+        final roleB = p.role;
+        
+        ref.read(gameOrchestratorProvider.notifier).updatePlayer(_selectedPlayer!.copyWith(role: roleB));
+        ref.read(gameOrchestratorProvider.notifier).updatePlayer(p.copyWith(role: roleA));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تبديل الأدوار بنجاح 🔄', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.blueAccent, duration: Duration(seconds: 1)),
+        );
+        setState(() => _selectedPlayer = null);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(gameOrchestratorProvider);
+    final players = state.players;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF07070B),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('مراجعة الأدوار (للحكم)', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Stack(
+        children: [
+          const AnimatedBackground(),
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.black45,
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.orangeAccent),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedPlayer == null
+                            ? 'اضغط على أي لاعب لتحديده، ثم اضغط على لاعب آخر لتبديل أدوارهما.'
+                            : 'تم تحديد ${_selectedPlayer!.name}. اضغط على لاعب آخر للتبديل.',
+                        style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 2.5,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: players.length,
+                  itemBuilder: (context, index) {
+                    final p = players[index];
+                    final isSelected = _selectedPlayer?.id == p.id;
+                    final roleColor = AppTheme.roleColor(p.role);
+
+                    return GestureDetector(
+                      onTap: () => _onPlayerTapped(p),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: isSelected ? roleColor.withValues(alpha: 0.2) : const Color(0xFF1A1A22),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? roleColor : roleColor.withValues(alpha: 0.3),
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: roleColor.withValues(alpha: 0.2),
+                              backgroundImage: AssetImage(AppTheme.roleImage(p.role)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    p.name,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    AppTheme.roleArabicName(p.role),
+                                    style: TextStyle(color: roleColor, fontFamily: 'Cairo', fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF13131A),
+                  border: Border(top: BorderSide(color: Colors.white10)),
+                ),
+                child: SafeArea(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _shuffleAgain,
+                          icon: const Icon(Icons.shuffle, color: Colors.orangeAccent, size: 20),
+                          label: const Text('إعادة التوزيع', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.orangeAccent),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(builder: (_) => const RoleRevealScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                          label: const Text('بدء اللعبة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.mafiaPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

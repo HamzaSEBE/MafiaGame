@@ -2,6 +2,7 @@ import 'package:mafia_nightfall/presentation/widgets/newspaper_widget.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/data/repositories/history_repository.dart';
+import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 
@@ -55,8 +56,9 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     return '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')} - ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
-  void _showNewspaperDialog(BuildContext context, String? text) {
-    if (text == null || text.isEmpty) return;
+  void _showNewspaperDialog(BuildContext context, GameRecord record) {
+    if (record.newspaperText.isEmpty) return;
+    
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -66,27 +68,30 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4ECD8),
-                  border: Border.all(color: const Color(0xFFD4C4A8), width: 1),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+              if (record.gameStateJson != null)
+                NewspaperWidget(gameState: GameState.fromJson(record.gameStateJson!))
+              else
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4ECD8),
+                    border: Border.all(color: const Color(0xFFD4C4A8), width: 1),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('📰 جريدة المدينة', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Cairo')),
+                      const Divider(color: Colors.black54, thickness: 2),
+                      const SizedBox(height: 16),
+                      Text(
+                        record.newspaperText,
+                        style: const TextStyle(fontSize: 16, height: 1.8, color: Colors.black87, fontFamily: 'Cairo'),
+                        textAlign: TextAlign.right,
+                        textDirection: TextDirection.rtl,
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    const Text('📰 جريدة المدينة', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87, fontFamily: 'Cairo')),
-                    const Divider(color: Colors.black54, thickness: 2),
-                    const SizedBox(height: 16),
-                    Text(
-                      text,
-                      style: const TextStyle(fontSize: 16, height: 1.8, color: Colors.black87, fontFamily: 'Cairo'),
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl,
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -127,14 +132,28 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
               ? const Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary))
               : _history!.isEmpty
                   ? const Center(child: Text('لا يوجد سجل بعد', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 18)))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _history!.length,
-                      itemBuilder: (context, index) {
-                        final record = _history![index];
-                        final isMafiaWin = record.winningTeam == 'المافيا' || record.winningTeam == 'mafia';
-                        
-                        return Dismissible(
+                  : Column(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.swipe_left, color: Colors.white54, size: 16),
+                              SizedBox(width: 8),
+                              Text('اسحب لليسار لحذف مباراة معينة', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo', fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            itemCount: _history!.length,
+                            itemBuilder: (context, index) {
+                              final record = _history![index];
+                              final isMafiaWin = record.winningTeam == 'المافيا' || record.winningTeam == 'mafia';
+                              
+                              return Dismissible(
                           key: Key(record.id),
                           direction: DismissDirection.endToStart,
                           background: Container(
@@ -204,7 +223,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
-                            onTap: () => _showNewspaperDialog(context, record.newspaperText),
+                            onTap: () => _showNewspaperDialog(context, record),
                             child: Padding(
                               padding: const EdgeInsets.all(20),
                               child: Column(
@@ -301,7 +320,10 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                           ),
                           ),
                         );
-                      },
+                            },
+                          ),
+                        ),
+                      ],
                     ),
         ],
       ),

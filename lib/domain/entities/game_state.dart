@@ -38,6 +38,24 @@ class GameState {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'phase': phase.name,
+        'round': round,
+        'players': players.map((p) => p.toJson()).toList(),
+        'eventHistory': eventHistory.map((e) => e.toJson()).toList(),
+        'winner': winner?.name,
+      };
+
+  factory GameState.fromJson(Map<String, dynamic> json) => GameState(
+        id: json['id'] as String,
+        phase: Phase.values.firstWhere((p) => p.name == json['phase'], orElse: () => Phase.setup),
+        round: json['round'] as int? ?? 1,
+        players: (json['players'] as List?)?.map((p) => Player.fromJson(p as Map<String, dynamic>)).toList() ?? [],
+        eventHistory: (json['eventHistory'] as List?)?.map((e) => GameEvent.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+        winner: json['winner'] != null ? Team.values.firstWhere((t) => t.name == json['winner']) : null,
+      );
+
   List<Player> get alivePlayers => players.where((p) => p.isAlive).toList();
   List<Player> get deadPlayers => players.where((p) => !p.isAlive).toList();
 

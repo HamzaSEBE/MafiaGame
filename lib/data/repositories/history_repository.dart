@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,7 @@ class GameRecord {
   final String winningTeam;
   final List<PlayerRecord> players;
   final String newspaperText;
+  final Map<String, dynamic>? gameStateJson;
 
   GameRecord({
     required this.id,
@@ -39,6 +41,7 @@ class GameRecord {
     required this.winningTeam,
     required this.players,
     required this.newspaperText,
+    this.gameStateJson,
   });
 
   Map<String, dynamic> toJson() => {
@@ -47,6 +50,7 @@ class GameRecord {
         'winningTeam': winningTeam,
         'players': players.map((p) => p.toJson()).toList(),
         'newspaperText': newspaperText,
+        'gameStateJson': gameStateJson,
       };
 
   factory GameRecord.fromJson(Map<String, dynamic> json) => GameRecord(
@@ -57,6 +61,7 @@ class GameRecord {
             .map((p) => PlayerRecord.fromJson(p as Map<String, dynamic>))
             .toList(),
         newspaperText: json['newspaperText'] as String,
+        gameStateJson: json['gameStateJson'] as Map<String, dynamic>?,
       );
 }
 

@@ -35,6 +35,24 @@ class Player {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'role': role.name,
+        'isAlive': isAlive,
+        'isSilenced': isSilenced,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory Player.fromJson(Map<String, dynamic> json) => Player(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        role: Role.values.firstWhere((r) => r.name == json['role'], orElse: () => Role.goodCitizen),
+        isAlive: json['isAlive'] as bool? ?? true,
+        isSilenced: json['isSilenced'] as bool? ?? false,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -58,6 +58,30 @@ class GameEvent {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'gameId': gameId,
+        'round': round,
+        'phase': phase.name,
+        'type': type.name,
+        'actorId': actorId,
+        'targetId': targetId,
+        'timestamp': timestamp.toIso8601String(),
+        'metadata': metadata,
+      };
+
+  factory GameEvent.fromJson(Map<String, dynamic> json) => GameEvent(
+        id: json['id'] as String,
+        gameId: json['gameId'] as String,
+        round: json['round'] as int,
+        phase: Phase.values.firstWhere((p) => p.name == json['phase'], orElse: () => Phase.setup),
+        type: EventType.values.firstWhere((t) => t.name == json['type'], orElse: () => EventType.nightResolutionSummary),
+        actorId: json['actorId'] as String?,
+        targetId: json['targetId'] as String?,
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+      );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || other is GameEvent && runtimeType == other.runtimeType && id == other.id;

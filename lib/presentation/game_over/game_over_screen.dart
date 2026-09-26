@@ -52,6 +52,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
         team: p.role.team == Team.mafia ? 'المافيا' : 'المواطنون',
       )).toList(),
       newspaperText: narrative,
+      gameStateJson: gameState.toJson(),
     );
     
     final repo = HistoryRepository();

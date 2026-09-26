@@ -2,4 +2,5 @@
 enum Team {
   mafia,
   citizens,
+  independent,
 }

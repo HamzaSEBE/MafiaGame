@@ -10,6 +10,7 @@ enum Role {
   citizensSheikh,
   citizensGirl,
   citizensBoy,
+  joker,
 }
 
 extension RoleExtension on Role {
@@ -24,6 +25,8 @@ extension RoleExtension on Role {
       case Role.citizensGirl:
       case Role.citizensBoy:
         return Team.citizens;
+      case Role.joker:
+        return Team.independent;
     }
   }
 }

@@ -135,7 +135,10 @@ class GameOrchestrator extends Notifier<GameState> {
     
     final victoryStatus = VictoryEngine.evaluate(nextState);
     if (victoryStatus != VictoryStatus.continueGame) {
-      final winner = victoryStatus == VictoryStatus.mafiaWin ? Team.mafia : Team.citizens;
+      final Team winner;
+      if (victoryStatus == VictoryStatus.mafiaWin) winner = Team.mafia;
+      else if (victoryStatus == VictoryStatus.jokerWin) winner = Team.independent;
+      else winner = Team.citizens;
       nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
     } else if (assassinatedIds.isNotEmpty && CitizenBoyEngine.shouldTriggerAbility(nextState, assassinatedIds.first)) {
       nextState = nextState.copyWith(phase: Phase.triggeredAbility);
@@ -182,7 +185,10 @@ class GameOrchestrator extends Notifier<GameState> {
       var nextState = VotingEngine.applyElimination(state, result.eliminatedPlayerId!);
       final victoryStatus = VictoryEngine.evaluate(nextState);
       if (victoryStatus != VictoryStatus.continueGame) {
-        final winner = victoryStatus == VictoryStatus.mafiaWin ? Team.mafia : Team.citizens;
+        final Team winner;
+        if (victoryStatus == VictoryStatus.mafiaWin) winner = Team.mafia;
+        else if (victoryStatus == VictoryStatus.jokerWin) winner = Team.independent;
+        else winner = Team.citizens;
         nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
       } else if (CitizenBoyEngine.shouldTriggerAbility(nextState, result.eliminatedPlayerId!)) {
         nextState = nextState.copyWith(phase: Phase.triggeredAbility);
@@ -210,7 +216,10 @@ class GameOrchestrator extends Notifier<GameState> {
     var nextState = CitizenBoyEngine.applyRetaliation(state, actorId, targetId);
     final victoryStatus = VictoryEngine.evaluate(nextState);
     if (victoryStatus != VictoryStatus.continueGame) {
-      final winner = victoryStatus == VictoryStatus.mafiaWin ? Team.mafia : Team.citizens;
+      final Team winner;
+      if (victoryStatus == VictoryStatus.mafiaWin) winner = Team.mafia;
+      else if (victoryStatus == VictoryStatus.jokerWin) winner = Team.independent;
+      else winner = Team.citizens;
       nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
     } else {
       if (nextPhase == Phase.night) {

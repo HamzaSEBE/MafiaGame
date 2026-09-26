@@ -112,11 +112,13 @@ class AppTheme {
 
   static Color teamColor(Role role) {
     if (role.team == Team.mafia) return mafiaPrimary;
+    if (role.team == Team.independent) return Colors.purpleAccent;
     return citizensPrimary;
   }
 
   static Color roleColor(Role role) {
     if (role.team == Team.mafia) return mafiaPrimary;
+    if (role.team == Team.independent) return Colors.purpleAccent;
     if (role == Role.goodCitizen) return citizensPrimary;
     return specialAction;
   }
@@ -135,6 +137,7 @@ class AppTheme {
       case Role.citizensGirl:   return 'بنت المواطنين';
       case Role.citizensBoy:    return 'مواطن شجاع';
       case Role.goodCitizen:    return 'مواطن صالح';
+      case Role.joker:          return 'المهرج (الجوكر)';
     }
   }
 
@@ -147,6 +150,7 @@ class AppTheme {
       case Role.citizensGirl:   return 'تحمي لاعباً من القتل';
       case Role.citizensBoy:    return 'ينتقم عند إقصائه';
       case Role.goodCitizen:    return 'يصوّت في النهار';
+      case Role.joker:          return 'يفوز إذا تم إقصاؤه بالتصويت';
     }
   }
 
@@ -159,6 +163,7 @@ class AppTheme {
       case Role.citizensGirl: return Icons.health_and_safety;
       case Role.citizensBoy: return Icons.bolt;
       case Role.goodCitizen: return Icons.person;
+      case Role.joker: return Icons.sentiment_very_dissatisfied;
     }
   }
 
@@ -171,6 +176,7 @@ class AppTheme {
       case Role.citizensGirl: return 'assets/images/citizens_girl.jpg';
       case Role.citizensBoy: return 'assets/images/citizens_boy.jpg';
       case Role.goodCitizen: return 'assets/images/good_citizen.jpg';
+      case Role.joker: return 'assets/images/joker.jpg';
     }
   }
 }

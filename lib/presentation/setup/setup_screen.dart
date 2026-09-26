@@ -571,6 +571,12 @@ class _RolesTab extends StatelessWidget {
                 _buildRoleRow(Role.citizensGirl),
                 _buildRoleRow(Role.citizensBoy),
                 _buildRoleRow(Role.goodCitizen),
+                const Divider(color: Colors.white10, height: 32),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('المستقلين', style: TextStyle(color: Colors.purpleAccent, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                ),
+                _buildRoleRow(Role.joker),
               ],
             ),
           ),
@@ -581,7 +587,16 @@ class _RolesTab extends StatelessWidget {
 
   Widget _buildRoleRow(Role role) {
     final count = roleConfig[role]!;
-    final color = role.team == Team.mafia ? Colors.redAccent : Colors.blueAccent;
+    final color = role.team == Team.mafia 
+        ? Colors.redAccent 
+        : role.team == Team.independent 
+            ? Colors.purpleAccent 
+            : Colors.blueAccent;
+    final icon = role.team == Team.mafia 
+        ? Icons.local_fire_department 
+        : role.team == Team.independent 
+            ? Icons.sentiment_very_dissatisfied 
+            : Icons.shield;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -593,7 +608,7 @@ class _RolesTab extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(role.team == Team.mafia ? Icons.local_fire_department : Icons.shield, color: color, size: 28),
+          Icon(icon, color: color, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

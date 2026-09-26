@@ -37,9 +37,12 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
   Future<void> _saveGameToHistory() async {
     final gameState = ref.read(gameOrchestratorProvider);
     final winner = gameState.winner;
-    final isMafiaWin = winner == Team.mafia;
     
-    final winnerStr = isMafiaWin ? 'المافيا' : 'المواطنون';
+    final String winnerStr;
+    if (winner == Team.mafia) winnerStr = 'المافيا';
+    else if (winner == Team.independent) winnerStr = 'المهرج (الجوكر)';
+    else winnerStr = 'المواطنون';
+
     final narrative = TimelineGenerator.generateNarrative(gameState, winnerStr);
 
     final record = GameRecord(
@@ -49,7 +52,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
       players: gameState.players.map((p) => PlayerRecord(
         name: p.name,
         roleName: AppTheme.roleArabicName(p.role),
-        team: p.role.team == Team.mafia ? 'المافيا' : 'المواطنون',
+        team: p.role.team == Team.mafia ? 'المافيا' : (p.role.team == Team.independent ? 'مستقل' : 'المواطنون'),
       )).toList(),
       newspaperText: narrative,
       gameStateJson: gameState.toJson(),
@@ -67,11 +70,19 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
 
     for (final player in gameState.players) {
       final isMafia = player.role.team == Team.mafia;
+      final isIndependent = player.role.team == Team.independent;
+      final isCitizen = player.role.team == Team.citizens;
+      
+      bool won = false;
+      if (winner == Team.mafia && isMafia) won = true;
+      if (winner == Team.independent && isIndependent) won = true;
+      if (winner == Team.citizens && isCitizen) won = true;
+
       await statsRepo.updateStatsForPlayer(
         player.name,
         played: true,
-        wonAsMafia: isMafiaWin && isMafia,
-        wonAsCitizen: !isMafiaWin && !isMafia,
+        wonAsMafia: won && isMafia,
+        wonAsCitizen: won && (isCitizen || isIndependent), // Group independent with citizen for legacy stats, or we just leave it for now. Actually stats wonAsCitizen counts any win that is not mafia win
         diedFirstNight: firstNightVictims.contains(player.id),
       );
     }
@@ -82,11 +93,12 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
     final gameState = ref.watch(gameOrchestratorProvider);
     final winner = gameState.winner;
     final isMafiaWin = winner == Team.mafia;
+    final isJokerWin = winner == Team.independent;
 
-    final winColor    = isMafiaWin ? AppTheme.mafiaAccent  : AppTheme.citizensAccent;
-    final winTitle    = isMafiaWin ? 'فازت المافيا!'       : 'فاز المواطنون!';
-    final winSubtitle = isMafiaWin ? 'أحكمت المافيا قبضتها على المدينة' : 'تم تطهير المدينة من الخونة';
-    final winIcon     = isMafiaWin ? Icons.local_fire_department : Icons.shield;
+    final winColor    = isMafiaWin ? AppTheme.mafiaAccent : (isJokerWin ? Colors.purpleAccent : AppTheme.citizensAccent);
+    final winTitle    = isMafiaWin ? 'فازت المافيا!' : (isJokerWin ? 'فاز المهرج!' : 'فاز المواطنون!');
+    final winSubtitle = isMafiaWin ? 'أحكمت المافيا قبضتها على المدينة' : (isJokerWin ? 'خدع المهرج الجميع وتم إقصاؤه!' : 'تم تطهير المدينة من الخونة');
+    final winIcon     = isMafiaWin ? Icons.local_fire_department : (isJokerWin ? Icons.sentiment_very_dissatisfied : Icons.shield);
 
     // Build final stats
     final allPlayers   = gameState.players;

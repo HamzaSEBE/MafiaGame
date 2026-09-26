@@ -29,6 +29,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     Role.citizensGirl:   0,
     Role.citizensBoy:    0,
     Role.goodCitizen:    0,
+    Role.joker:          0,
   };
 
   int get _totalRoles => _roleConfig.values.fold(0, (a, b) => a + b);

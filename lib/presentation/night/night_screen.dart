@@ -9,6 +9,7 @@ import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/night/night_summary_screen.dart';
+import 'package:mafia_nightfall/presentation/night/cinematic_reveal_screen.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 import 'package:mafia_nightfall/presentation/widgets/judge_tools_sheet.dart';
 
@@ -355,7 +356,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             ref.read(gameOrchestratorProvider.notifier).resolveNight();
-                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightSummaryScreen()));
+                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const CinematicRevealScreen()));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orangeAccent,
@@ -378,7 +379,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
           child: ElevatedButton(
             onPressed: () {
               ref.read(gameOrchestratorProvider.notifier).resolveNight();
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightSummaryScreen()));
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const CinematicRevealScreen()));
             },
             child: const Text('تخطي الليل', style: TextStyle(fontFamily: 'Cairo')),
           ),

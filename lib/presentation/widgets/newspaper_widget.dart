@@ -423,20 +423,28 @@ class NewspaperWidget extends StatelessWidget {
   }
 
   Widget _buildConclusion() {
-    final winnerStr = gameState.winner == Team.mafia ? 'المافيا' : 'المواطنون';
+    final String winnerStr;
+    if (gameState.winner == Team.mafia) winnerStr = 'المافيا';
+    else if (gameState.winner == Team.independent) winnerStr = 'المهرج (الجوكر)';
+    else winnerStr = 'المواطنون';
+
     final isMafia = gameState.winner == Team.mafia;
+    final isJoker = gameState.winner == Team.independent;
     
+    final color = isMafia ? const Color(0xFF8B0000) : (isJoker ? Colors.purple : const Color(0xFF00008B));
+    final icon = isMafia ? '🩸' : (isJoker ? '🤡' : '🕊️');
+
     return Container(
       margin: const EdgeInsets.only(top: 24),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isMafia ? const Color(0xFF8B0000).withValues(alpha: 0.1) : const Color(0xFF00008B).withValues(alpha: 0.1),
-        border: Border.all(color: isMafia ? const Color(0xFF8B0000) : const Color(0xFF00008B), width: 3),
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color, width: 3),
       ),
       child: Column(
         children: [
           Text(
-            isMafia ? '🩸' : '🕊️',
+            icon,
             style: const TextStyle(fontSize: 40),
           ),
           const SizedBox(height: 8),
@@ -446,7 +454,7 @@ class NewspaperWidget extends StatelessWidget {
               fontFamily: 'Cairo',
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isMafia ? const Color(0xFF8B0000) : const Color(0xFF00008B),
+              color: color,
             ),
           ),
           Text(
@@ -455,7 +463,7 @@ class NewspaperWidget extends StatelessWidget {
               fontFamily: 'Cairo',
               fontSize: 24,
               fontWeight: FontWeight.w900,
-              color: isMafia ? const Color(0xFF8B0000) : const Color(0xFF00008B),
+              color: color,
             ),
             textAlign: TextAlign.center,
             textDirection: TextDirection.rtl,

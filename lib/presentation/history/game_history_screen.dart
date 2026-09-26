@@ -152,6 +152,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                             itemBuilder: (context, index) {
                               final record = _history![index];
                               final isMafiaWin = record.winningTeam == 'المافيا' || record.winningTeam == 'mafia';
+                              final isJokerWin = record.winningTeam == 'المهرج (الجوكر)' || record.winningTeam == 'joker' || record.winningTeam == 'المهرج';
                               
                               return Dismissible(
                           key: Key(record.id),
@@ -246,18 +247,18 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                         decoration: BoxDecoration(
-                                          color: isMafiaWin ? Colors.redAccent.withValues(alpha: 0.15) : Colors.blueAccent.withValues(alpha: 0.15),
+                                          color: isMafiaWin ? Colors.redAccent.withValues(alpha: 0.15) : (isJokerWin ? Colors.purpleAccent.withValues(alpha: 0.15) : Colors.blueAccent.withValues(alpha: 0.15)),
                                           borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(color: isMafiaWin ? Colors.redAccent.withValues(alpha: 0.5) : Colors.blueAccent.withValues(alpha: 0.5)),
+                                          border: Border.all(color: isMafiaWin ? Colors.redAccent.withValues(alpha: 0.5) : (isJokerWin ? Colors.purpleAccent.withValues(alpha: 0.5) : Colors.blueAccent.withValues(alpha: 0.5))),
                                         ),
                                         child: Row(
                                           children: [
-                                            Icon(isMafiaWin ? Icons.local_fire_department : Icons.shield, size: 16, color: isMafiaWin ? Colors.redAccent : Colors.blueAccent),
+                                            Icon(isMafiaWin ? Icons.local_fire_department : (isJokerWin ? Icons.sentiment_very_dissatisfied : Icons.shield), size: 16, color: isMafiaWin ? Colors.redAccent : (isJokerWin ? Colors.purpleAccent : Colors.blueAccent)),
                                             const SizedBox(width: 6),
                                             Text(
-                                              'انتصار ${isMafiaWin ? 'المافيا' : 'المواطنين'}',
+                                              'انتصار ${isMafiaWin ? 'المافيا' : (isJokerWin ? 'المهرج' : 'المواطنين')}',
                                               style: TextStyle(
-                                                color: isMafiaWin ? Colors.redAccent : Colors.blueAccent,
+                                                color: isMafiaWin ? Colors.redAccent : (isJokerWin ? Colors.purpleAccent : Colors.blueAccent),
                                                 fontWeight: FontWeight.bold,
                                                 fontFamily: 'Cairo',
                                                 fontSize: 13,

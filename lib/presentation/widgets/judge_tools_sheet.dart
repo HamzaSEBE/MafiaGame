@@ -4,6 +4,8 @@ import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
+import 'package:mafia_nightfall/domain/entities/player.dart';
+import 'package:mafia_nightfall/domain/entities/game_state.dart';
 
 class JudgeToolsSheet {
   static void show(BuildContext context) {
@@ -65,7 +67,7 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
                       border: Border(bottom: BorderSide(color: _tabIndex == 0 ? Colors.orangeAccent : Colors.transparent, width: 2)),
                     ),
                     child: Center(
-                      child: Text('📖 دليل الأدوار', style: TextStyle(color: _tabIndex == 0 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+                      child: Text('📖 الأدوار', style: TextStyle(color: _tabIndex == 0 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                   ),
                 ),
@@ -79,7 +81,21 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
                       border: Border(bottom: BorderSide(color: _tabIndex == 1 ? Colors.orangeAccent : Colors.transparent, width: 2)),
                     ),
                     child: Center(
-                      child: Text('📜 سجل اللعبة', style: TextStyle(color: _tabIndex == 1 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+                      child: Text('📜 السجل', style: TextStyle(color: _tabIndex == 1 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _tabIndex = 2),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: _tabIndex == 2 ? Colors.orangeAccent : Colors.transparent, width: 2)),
+                    ),
+                    child: Center(
+                      child: Text('👥 الهويات', style: TextStyle(color: _tabIndex == 2 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                   ),
                 ),
@@ -91,7 +107,11 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
           
           // Content
           Expanded(
-            child: _tabIndex == 0 ? _buildRolesGuide(presentRoles) : _buildEventLog(events, state),
+            child: _tabIndex == 0 
+                ? _buildRolesGuide(presentRoles) 
+                : _tabIndex == 1 
+                    ? _buildEventLog(events, state)
+                    : _buildIdentities(state.players, state),
           ),
         ],
       ),
@@ -238,5 +258,80 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
       case Role.citizensBoy: return 'الولد الشجاع. إذا تم إقصاؤه (سواء بالتصويت أو الاغتيال)، فإنه يسحب معه لاعباً آخر من اختياره للموت.';
       case Role.goodCitizen: return 'مواطن صالح لا يملك قدرات ليلية. سلاحه الوحيد هو صوته وتحليله في النهار لإسقاط المافيا.';
     }
+  }
+
+  Widget _buildIdentities(List<Player> players, GameState state) {
+    if (players.isEmpty) {
+      return const Center(child: Text('لا يوجد لاعبين', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')));
+    }
+    
+    final alivePlayers = state.alivePlayers;
+    final deadPlayers = players.where((p) => !alivePlayers.contains(p)).toList();
+    
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (alivePlayers.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8, right: 4),
+            child: Text('الأحياء', style: TextStyle(color: Colors.greenAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          ...alivePlayers.map((p) => _buildPlayerIdentityTile(p, true)),
+          const SizedBox(height: 16),
+        ],
+        if (deadPlayers.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8, right: 4),
+            child: Text('الأموات', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          ...deadPlayers.map((p) => _buildPlayerIdentityTile(p, false)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPlayerIdentityTile(Player player, bool isAlive) {
+    final roleColor = AppTheme.roleColor(player.role);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isAlive ? const Color(0xFF1A1A22) : Colors.redAccent.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isAlive ? roleColor.withValues(alpha: 0.3) : Colors.redAccent.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: roleColor.withValues(alpha: 0.2),
+            backgroundImage: AssetImage(AppTheme.roleImage(player.role)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              player.name, 
+              style: TextStyle(
+                color: isAlive ? Colors.white : Colors.white54, 
+                fontFamily: 'Cairo', 
+                fontWeight: FontWeight.bold, 
+                fontSize: 15,
+                decoration: isAlive ? TextDecoration.none : TextDecoration.lineThrough,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: roleColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: roleColor.withValues(alpha: 0.4)),
+            ),
+            child: Text(AppTheme.roleArabicName(player.role), style: TextStyle(color: roleColor, fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 }

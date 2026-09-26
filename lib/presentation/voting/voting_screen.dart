@@ -76,8 +76,30 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
 
   void _calculateLocalResult() {
     if (_votes.isEmpty) {
-      ref.read(gameOrchestratorProvider.notifier).skipElimination();
-      _goToNight();
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('لم يصوت أحد!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+          content: const Text('هل أنت متأكد من إنهاء التصويت بدون إقصاء أي لاعب والانتقال لليل؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref.read(gameOrchestratorProvider.notifier).skipElimination();
+                _goToNight();
+              },
+              child: const Text('نعم، انتقال', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
       return;
     }
 

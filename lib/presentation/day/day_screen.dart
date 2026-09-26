@@ -170,16 +170,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(player.name, style: TextStyle(color: isSilenced ? Colors.redAccent : Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Cairo')),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.roleColor(player.role).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppTheme.roleColor(player.role).withValues(alpha: 0.4)),
-                                  ),
-                                  child: Text(AppTheme.roleArabicName(player.role), style: TextStyle(color: AppTheme.roleColor(player.role), fontSize: 11, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-                                ),
+                                // Role badge is hidden during the day. Only shown in Judge Tools.
                                 if (isSilenced)
                                   const Padding(
                                     padding: EdgeInsets.only(top: 2),
@@ -223,7 +214,31 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const VotingScreen())),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF1E1E24),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Text('إنهاء النقاش؟', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                              content: const Text('هل أنت متأكد من إنهاء وقت النقاش والانتقال لمرحلة التصويت؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const VotingScreen()));
+                                  },
+                                  child: const Text('نعم، انتقال', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orangeAccent,
                           elevation: 10,

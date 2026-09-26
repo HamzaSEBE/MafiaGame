@@ -261,7 +261,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       });
     } else {
       ref.read(gameOrchestratorProvider.notifier).resolveNight();
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightSummaryScreen()));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const CinematicRevealScreen()));
     }
   }
 
@@ -356,7 +356,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             ref.read(gameOrchestratorProvider.notifier).resolveNight();
-                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const CinematicRevealScreen()));
+                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightSummaryScreen()));
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orangeAccent,
@@ -379,7 +379,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
           child: ElevatedButton(
             onPressed: () {
               ref.read(gameOrchestratorProvider.notifier).resolveNight();
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const CinematicRevealScreen()));
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const NightSummaryScreen()));
             },
             child: const Text('تخطي الليل', style: TextStyle(fontFamily: 'Cairo')),
           ),

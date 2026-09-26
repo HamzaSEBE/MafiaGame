@@ -11,6 +11,7 @@ import 'package:mafia_nightfall/presentation/game_over/game_over_screen.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 import 'dart:async';
+import 'package:mafia_nightfall/core/quotes/dramatic_quotes.dart';
 
 class VotingScreen extends ConsumerStatefulWidget {
   const VotingScreen({super.key});
@@ -174,51 +175,22 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
 
     if (eliminatedId != null) {
       final eliminated = state.getPlayerById(eliminatedId);
+      // Show dramatic suspense first
+      final quote = DramaticQuotes.getRandomDayElimination();
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppTheme.roleColor(eliminated!.role), width: 2)),
-          title: const Text('تم الإقصاء - الهوية الحقيقية', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.roleColor(eliminated.role), width: 3),
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    AppTheme.roleImage(eliminated.role),
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(eliminated.name, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-              const SizedBox(height: 4),
-              Text('كان: ${AppTheme.roleArabicName(eliminated.role)}', style: TextStyle(color: AppTheme.roleColor(eliminated.role), fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                if (eliminated.role == Role.citizensBoy) {
-                  _showCitizenBoyDialog(eliminatedId);
-                } else {
-                  _goToNight();
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.roleColor(eliminated.role)),
-              child: const Text('متابعة إلى الليل', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
-            ),
-          ],
+        builder: (ctx) => _DramaticRevealDialog(
+          quote: quote,
+          eliminated: eliminated!,
+          onContinue: () {
+            Navigator.pop(ctx);
+            if (eliminated.role == Role.citizensBoy) {
+              _showCitizenBoyDialog(eliminatedId);
+            } else {
+              _goToNight();
+            }
+          },
         ),
       );
     } else {
@@ -620,6 +592,134 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _DramaticRevealDialog extends StatefulWidget {
+  final String quote;
+  final Player eliminated;
+  final VoidCallback onContinue;
+
+  const _DramaticRevealDialog({
+    required this.quote,
+    required this.eliminated,
+    required this.onContinue,
+  });
+
+  @override
+  State<_DramaticRevealDialog> createState() => _DramaticRevealDialogState();
+}
+
+class _DramaticRevealDialogState extends State<_DramaticRevealDialog> with SingleTickerProviderStateMixin {
+  bool _showQuote = true;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _scaleAnim = Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        setState(() => _showQuote = false);
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.eliminated;
+    final roleColor = AppTheme.roleColor(p.role);
+
+    if (_showQuote) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 800),
+          builder: (ctx, value, child) => Opacity(
+            opacity: value,
+            child: Transform.scale(scale: 0.8 + (0.2 * value), child: child),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('⚖️', style: TextStyle(fontSize: 60)),
+              const SizedBox(height: 24),
+              Text(
+                widget.quote,
+                style: const TextStyle(
+                  color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900,
+                  fontFamily: 'Cairo', shadows: [Shadow(color: Colors.redAccent, blurRadius: 30)],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white.withValues(alpha: 0.5))),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: FadeTransition(
+        opacity: _fadeAnim,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1E1E24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: roleColor, width: 2)),
+          title: const Text('💀 الهوية الحقيقية', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: roleColor, width: 3),
+                  boxShadow: [BoxShadow(color: roleColor.withValues(alpha: 0.5), blurRadius: 20)],
+                ),
+                child: ClipOval(child: Image.asset(AppTheme.roleImage(p.role), width: 90, height: 90, fit: BoxFit.cover)),
+              ),
+              const SizedBox(height: 16),
+              Text(p.name, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: roleColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: roleColor.withValues(alpha: 0.5)),
+                ),
+                child: Text('كان: ${AppTheme.roleArabicName(p.role)}', style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+              ),
+            ],
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: widget.onContinue,
+                style: ElevatedButton.styleFrom(backgroundColor: roleColor, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('متابعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: 'Cairo')),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

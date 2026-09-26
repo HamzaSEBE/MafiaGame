@@ -48,6 +48,13 @@ class GameOrchestrator extends Notifier<GameState> {
     );
   }
 
+  /// Randomly shuffle the player order so role reveal order
+  /// is completely independent of the order names were added.
+  void shufflePlayers() {
+    final shuffled = List<Player>.from(state.players)..shuffle(Random.secure());
+    state = state.copyWith(players: shuffled);
+  }
+
   /// Shuffle and assign roles based on [roleConfig] (Map<Role, count>).
   /// Returns an error string if the total doesn't match player count, else null.
   String? assignRoles(Map<Role, int> roleConfig) {

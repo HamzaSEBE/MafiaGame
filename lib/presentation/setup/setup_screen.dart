@@ -72,6 +72,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
       _showError('عدد الأدوار ($_totalRoles) لا يساوي عدد اللاعبين (${players.length})');
       return;
     }
+
+    // Save player names for next game
+    final playerNames = players.map((p) => p.name).toList();
+    _profilesRepo.savePlayers(playerNames);
+
+    // Shuffle the player order for fully random reveal sequence
+    ref.read(gameOrchestratorProvider.notifier).shufflePlayers();
+
     final error = ref.read(gameOrchestratorProvider.notifier).assignRoles(_roleConfig);
     if (error != null) {
       _showError(error);

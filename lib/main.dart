@@ -8,9 +8,13 @@ import 'package:mafia_nightfall/presentation/interactive/web/web_join_screen.dar
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+import 'package:mafia_nightfall/firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

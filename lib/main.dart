@@ -6,7 +6,6 @@ import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/splash/splash_screen.dart';
 import 'package:mafia_nightfall/presentation/interactive/web/web_join_screen.dart';
 import 'package:flutter/services.dart';
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 void main() async {
@@ -30,7 +29,7 @@ class MafiaNightfallApp extends StatelessWidget {
     Widget home = const SplashScreen();
     
     if (kIsWeb) {
-      final uri = Uri.parse(html.window.location.href);
+      final uri = Uri.base;
       if (uri.queryParameters.containsKey('session')) {
         home = WebJoinScreen(sessionId: uri.queryParameters['session']!);
       }

@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only the judge (host) can create and update sessions.
+    // Anyone can read public session data to sync the game phase.
+    match /sessions/{sessionId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.hostUid;
+
+      // Seats hold the secret roles and action requests.
+      match /seats/{seatId} {
+        // A player can only read their own seat. The host can read and write all seats.
+        allow read: if request.auth != null && (request.auth.uid == resource.data.linkedUid || request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid);
+        allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
+
+      // Join requests allow players to request a specific seat.
+      match /joinRequests/{uid} {
+        // Player can create/read their own request.
+        allow create, read: if request.auth != null && request.auth.uid == uid;
+        // Host can read and delete requests.
+        allow read, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
+
+      // Action requests allow players to submit their votes or night actions.
+      match /actionRequests/{requestId} {
+        // Player can only create a request for themselves.
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+        // Player can read their own.
+        allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+        // Host can read and delete all action requests.
+        allow read, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
+    }
+
+    // Default users and other collections
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

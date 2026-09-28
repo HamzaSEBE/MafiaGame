@@ -6,6 +6,7 @@ import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/reveal/role_reveal_screen.dart';
 import 'package:mafia_nightfall/data/repositories/player_profiles_repository.dart';
+import 'package:mafia_nightfall/presentation/interactive/judge_lobby_screen.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
@@ -97,7 +98,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     ref.read(gameOrchestratorProvider.notifier).removePlayer(players[index].id);
   }
 
-  void _startGame() {
+  void _startGame(bool isInteractive) {
     final players = ref.read(gameOrchestratorProvider).players;
     if (players.isEmpty) {
       _showError('أضف لاعبين أولاً');
@@ -120,9 +121,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
       _showError(error);
       return;
     }
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const RoleReviewScreen()),
-    );
+    
+    if (isInteractive) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const JudgeLobbyScreen()));
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const RoleReviewScreen()),
+      );
+    }
   }
 
   void _autoDistributeRoles() {
@@ -266,46 +272,78 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                   ),
                 ),
                 
-                // Start Button
+                // Start Buttons
                 Padding(
                   padding: const EdgeInsets.all(24),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: double.infinity,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: (players.length >= 4 && _totalRoles == players.length)
-                            ? [const Color(0xFFFF512F), const Color(0xFFDD2476)] // Glowing active
-                            : [Colors.grey.shade800, Colors.grey.shade900], // Inactive
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: (players.length >= 4 && _totalRoles == players.length)
-                          ? [const BoxShadow(color: Color(0xFFFF512F), blurRadius: 20, spreadRadius: 2)]
-                          : [],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(30),
-                        onTap: (players.length >= 4 && _totalRoles == players.length) ? _startGame : () {
-                           if (players.length < 4) _showError('يجب إضافة 4 لاعبين على الأقل');
-                           else _showError('عدد الأدوار لا يطابق عدد اللاعبين');
-                        },
-                        child: const Center(
-                          child: Text(
-                            'بدء اللعبة',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Cairo',
-                              letterSpacing: 1.5,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: (players.length >= 4 && _totalRoles == players.length)
+                                  ? [const Color(0xFFDD2476), const Color(0xFF900C3F)]
+                                  : [Colors.grey.shade800, Colors.grey.shade900],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: (players.length >= 4 && _totalRoles == players.length) 
+                                  ? () => _startGame(false) 
+                                  : () {
+                                     if (players.length < 4) _showError('يجب إضافة 4 لاعبين على الأقل');
+                                     else _showError('عدد الأدوار لا يطابق عدد اللاعبين');
+                                  },
+                              child: const Center(
+                                child: Text('جهاز واحد',
+                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: (players.length >= 4 && _totalRoles == players.length)
+                                  ? [const Color(0xFFFF512F), const Color(0xFFF09819)]
+                                  : [Colors.grey.shade800, Colors.grey.shade900],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: (players.length >= 4 && _totalRoles == players.length)
+                                ? [const BoxShadow(color: Color(0xFFFF512F), blurRadius: 10, spreadRadius: 1)]
+                                : [],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: (players.length >= 4 && _totalRoles == players.length) 
+                                  ? () => _startGame(true) 
+                                  : () {
+                                     if (players.length < 4) _showError('يجب إضافة 4 لاعبين على الأقل');
+                                     else _showError('عدد الأدوار لا يطابق عدد اللاعبين');
+                                  },
+                              child: const Center(
+                                child: Text('لعب تفاعلي 🌐',
+                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

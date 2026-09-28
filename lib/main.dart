@@ -15,10 +15,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   runApp(const ProviderScope(child: MafiaNightfallApp()));
 }
@@ -34,8 +36,30 @@ class MafiaNightfallApp extends StatelessWidget {
     
     if (kIsWeb) {
       final uri = Uri.base;
+      String? sessionId;
+      
       if (uri.queryParameters.containsKey('session')) {
-        home = WebJoinScreen(sessionId: uri.queryParameters['session']!);
+        sessionId = uri.queryParameters['session'];
+      } else if (uri.fragment.contains('session=')) {
+        final parts = uri.fragment.split('session=');
+        if (parts.length > 1) {
+          sessionId = parts[1].split('&').first;
+        }
+      }
+
+      if (sessionId != null && sessionId.isNotEmpty) {
+        home = WebJoinScreen(sessionId: sessionId);
+      } else {
+        home = const Scaffold(
+          backgroundColor: Color(0xFF07070B),
+          body: Center(
+            child: Text(
+              'الرجاء مسح رمز الـ QR من شاشة الحكم للانضمام للعبة.',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Cairo'),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
       }
     }
 

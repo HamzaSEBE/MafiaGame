@@ -49,7 +49,9 @@ class GameOrchestrator extends Notifier<GameState> {
 
   void updatePlayer(Player updatedPlayer) {
     state = state.copyWith(
-      players: state.players.map((p) => p.id == updatedPlayer.id ? updatedPlayer : p).toList(),
+      players: state.players
+          .map((p) => p.id == updatedPlayer.id ? updatedPlayer : p)
+          .toList(),
     );
   }
 
@@ -116,30 +118,38 @@ class GameOrchestrator extends Notifier<GameState> {
 
   void undoLastNightAction() {
     if (state.eventHistory.isEmpty) return;
-    
+
     // Remove the most recent event if it belongs to the current night round
     final lastEvent = state.eventHistory.last;
     if (lastEvent.phase == Phase.night && lastEvent.round == state.round) {
-      final updatedHistory = List<GameEvent>.from(state.eventHistory)..removeLast();
+      final updatedHistory = List<GameEvent>.from(state.eventHistory)
+        ..removeLast();
       state = state.copyWith(eventHistory: updatedHistory);
     }
   }
 
   void resolveNight() {
     var nextState = NightResolutionEngine.resolve(state, _ruleset);
-    
+
     // Find who was assassinated
-    final resolutionEvent = nextState.eventHistory.lastWhere((e) => e.type == EventType.nightResolutionSummary);
-    final assassinatedIds = List<String>.from(resolutionEvent.metadata['assassinatedIds'] ?? []);
-    
+    final resolutionEvent = nextState.eventHistory
+        .lastWhere((e) => e.type == EventType.nightResolutionSummary);
+    final assassinatedIds =
+        List<String>.from(resolutionEvent.metadata['assassinatedIds'] ?? []);
+
     final victoryStatus = VictoryEngine.evaluate(nextState);
     if (victoryStatus != VictoryStatus.continueGame) {
       final Team winner;
-      if (victoryStatus == VictoryStatus.mafiaWin) winner = Team.mafia;
-      else if (victoryStatus == VictoryStatus.jokerWin) winner = Team.independent;
-      else winner = Team.citizens;
+      if (victoryStatus == VictoryStatus.mafiaWin)
+        winner = Team.mafia;
+      else if (victoryStatus == VictoryStatus.jokerWin)
+        winner = Team.independent;
+      else
+        winner = Team.citizens;
       nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
-    } else if (assassinatedIds.isNotEmpty && CitizenBoyEngine.shouldTriggerAbility(nextState, assassinatedIds.first)) {
+    } else if (assassinatedIds.isNotEmpty &&
+        CitizenBoyEngine.shouldTriggerAbility(
+            nextState, assassinatedIds.first)) {
       nextState = nextState.copyWith(phase: Phase.triggeredAbility);
     } else {
       nextState = nextState.copyWith(phase: Phase.day);
@@ -161,23 +171,31 @@ class GameOrchestrator extends Notifier<GameState> {
     state = state.copyWith(phase: Phase.day);
   }
 
+  /// Starts the original first-night introduction after everyone has seen a role.
+  void beginIntroductionNight() {
+    if (state.phase != Phase.roleReveal) return;
+    state = state.copyWith(phase: Phase.night, round: 1);
+  }
+
   void submitFinalVotes(Map<String, String> finalVotes) {
     // Clear any existing votes for this round just in case
     final filteredEvents = state.eventHistory
         .where((e) => !(e.round == state.round && e.type == EventType.vote))
         .toList();
-        
-    final newEvents = finalVotes.entries.map((e) => GameEvent(
-      id: const Uuid().v4(),
-      gameId: state.id,
-      round: state.round,
-      phase: Phase.voting,
-      type: EventType.vote,
-      actorId: e.key,
-      targetId: e.value,
-      timestamp: DateTime.now(),
-    )).toList();
-    
+
+    final newEvents = finalVotes.entries
+        .map((e) => GameEvent(
+              id: const Uuid().v4(),
+              gameId: state.id,
+              round: state.round,
+              phase: Phase.voting,
+              type: EventType.vote,
+              actorId: e.key,
+              targetId: e.value,
+              timestamp: DateTime.now(),
+            ))
+        .toList();
+
     state = state.copyWith(eventHistory: [...filteredEvents, ...newEvents]);
   }
 
@@ -187,15 +205,20 @@ class GameOrchestrator extends Notifier<GameState> {
       return {'isTie': true, 'tiedPlayers': result.voteCounts.keys.toList()};
     }
     if (result.eliminatedPlayerId != null) {
-      var nextState = VotingEngine.applyElimination(state, result.eliminatedPlayerId!);
+      var nextState =
+          VotingEngine.applyElimination(state, result.eliminatedPlayerId!);
       final victoryStatus = VictoryEngine.evaluate(nextState);
       if (victoryStatus != VictoryStatus.continueGame) {
         final Team winner;
-        if (victoryStatus == VictoryStatus.mafiaWin) winner = Team.mafia;
-        else if (victoryStatus == VictoryStatus.jokerWin) winner = Team.independent;
-        else winner = Team.citizens;
+        if (victoryStatus == VictoryStatus.mafiaWin)
+          winner = Team.mafia;
+        else if (victoryStatus == VictoryStatus.jokerWin)
+          winner = Team.independent;
+        else
+          winner = Team.citizens;
         nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
-      } else if (CitizenBoyEngine.shouldTriggerAbility(nextState, result.eliminatedPlayerId!)) {
+      } else if (CitizenBoyEngine.shouldTriggerAbility(
+          nextState, result.eliminatedPlayerId!)) {
         nextState = nextState.copyWith(phase: Phase.triggeredAbility);
       } else {
         nextState = nextState.copyWith(phase: Phase.elimination);
@@ -217,18 +240,25 @@ class GameOrchestrator extends Notifier<GameState> {
     state = state.copyWith(eventHistory: filteredEvents, phase: Phase.voting);
   }
 
-  void citizenBoyRetaliation({required String actorId, required String targetId, required Phase nextPhase}) {
+  void citizenBoyRetaliation(
+      {required String actorId,
+      required String targetId,
+      required Phase nextPhase}) {
     var nextState = CitizenBoyEngine.applyRetaliation(state, actorId, targetId);
     final victoryStatus = VictoryEngine.evaluate(nextState);
     if (victoryStatus != VictoryStatus.continueGame) {
       final Team winner;
-      if (victoryStatus == VictoryStatus.mafiaWin) winner = Team.mafia;
-      else if (victoryStatus == VictoryStatus.jokerWin) winner = Team.independent;
-      else winner = Team.citizens;
+      if (victoryStatus == VictoryStatus.mafiaWin)
+        winner = Team.mafia;
+      else if (victoryStatus == VictoryStatus.jokerWin)
+        winner = Team.independent;
+      else
+        winner = Team.citizens;
       nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
     } else {
       if (nextPhase == Phase.night) {
-        nextState = nextState.copyWith(phase: Phase.night, round: state.round + 1);
+        nextState =
+            nextState.copyWith(phase: Phase.night, round: state.round + 1);
       } else {
         nextState = nextState.copyWith(phase: nextPhase);
       }

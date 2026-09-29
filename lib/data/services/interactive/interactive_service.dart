@@ -85,6 +85,12 @@ class InteractiveService {
     });
   }
 
+  Future<InteractiveSession?> getSession(String sessionId) async {
+    final doc = await _firestore.collection('sessions').doc(sessionId).get();
+    if (!doc.exists) return null;
+    return InteractiveSession.fromJson(doc.data()!);
+  }
+
   Stream<List<InteractiveSeat>> streamSeats(String sessionId) {
     return _firestore
         .collection('sessions')
@@ -158,7 +164,10 @@ class InteractiveService {
       String sessionId,
       GameState state,
       Map<String, String>? requiredActions,
-      Map<String, List<String>>? availableTargets) async {
+      Map<String, List<String>>? availableTargets,
+      {Map<String, List<PlayerActionPrompt>>? actionPrompts,
+      Map<String, String>? privateResults,
+      bool clearPrivateResults = false}) async {
     final batch = _firestore.batch();
 
     // Update public session state
@@ -169,6 +178,9 @@ class InteractiveService {
     }
     final actionRevision =
         ((currentSession.data()?['actionRevision'] as num?)?.toInt() ?? 0) + 1;
+    final hasActionPrompts = actionPrompts != null
+        ? actionPrompts.values.any((prompts) => prompts.isNotEmpty)
+        : requiredActions?.isNotEmpty ?? false;
     batch.update(sessionRef, {
       'status': (state.phase == Phase.winCheck
               ? SessionStatus.finished
@@ -177,6 +189,8 @@ class InteractiveService {
       'phase': state.phase.name,
       'round': state.round,
       'actionRevision': actionRevision,
+      'actionsPhase': hasActionPrompts ? state.phase.name : null,
+      'actionsRound': hasActionPrompts ? state.round : null,
       'winner': state.winner?.name,
     });
 
@@ -196,12 +210,29 @@ class InteractiveService {
           .doc(sessionId)
           .collection('secrets')
           .doc(player.id);
+      final prompts = actionPrompts?[player.id] ??
+          (requiredActions?[player.id] == null
+              ? const <PlayerActionPrompt>[]
+              : <PlayerActionPrompt>[
+                  PlayerActionPrompt(
+                    type: requiredActions![player.id]!,
+                    availableTargets: availableTargets?[player.id] ?? const [],
+                  ),
+                ]);
       final secretData = <String, dynamic>{
         'role': player.role.name,
-        'requiredActionType': requiredActions?[player.id],
-        'availableTargets': availableTargets?[player.id],
+        'requiredActions': prompts.map((action) => action.toJson()).toList(),
+        'requiredActionType': prompts.isEmpty ? null : prompts.first.type,
+        'availableTargets':
+            prompts.isEmpty ? null : prompts.first.availableTargets,
         'hasSubmittedAction': false,
       };
+      if (clearPrivateResults) {
+        secretData['privateResult'] = null;
+      }
+      if (privateResults?.containsKey(player.id) == true) {
+        secretData['privateResult'] = privateResults![player.id];
+      }
       batch.update(secretRef, secretData);
     }
 
@@ -224,6 +255,33 @@ class InteractiveService {
         .map((snap) {
       return snap.docs.map((d) => ActionRequest.fromJson(d.data())).toList();
     });
+  }
+
+  Stream<List<ActionRequest>> streamMyActionRequests(
+      String sessionId, String playerUid) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('actionRequests')
+        .where('uid', isEqualTo: playerUid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => ActionRequest.fromJson(doc.data()))
+            .toList());
+  }
+
+  Future<void> clearActionRequests(String sessionId) async {
+    final requests = await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('actionRequests')
+        .get();
+    if (requests.docs.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final request in requests.docs) {
+      batch.delete(request.reference);
+    }
+    await batch.commit();
   }
 
   Future<void> clearActionRequest(String sessionId, String requestId) async {
@@ -290,12 +348,16 @@ class InteractiveService {
     await signInAnonymouslyIfNeeded();
     final playerUid = uid!;
     final reqId = const Uuid().v4();
+    final session =
+        await _firestore.collection('sessions').doc(sessionId).get();
+    final revision = (session.data()?['actionRevision'] as num?)?.toInt() ?? 0;
 
     final action = ActionRequest(
       id: reqId,
       uid: playerUid,
       actionType: actionType,
       targetId: targetId,
+      revision: revision,
       timestamp: DateTime.now(),
     );
 

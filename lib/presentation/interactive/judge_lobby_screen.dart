@@ -163,7 +163,7 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
 
     final service = ref.read(interactiveServiceProvider);
     final joinUrl =
-        'https://mafiagame-351f8.web.app/?v=20260929-3#/?session=$_sessionId';
+        'https://mafiagame-351f8.web.app/?v=20260929-4#/?session=$_sessionId';
 
     final gamePhase = ref.watch(gameOrchestratorProvider).phase;
 

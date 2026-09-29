@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
-import 'package:mafia_nightfall/presentation/reveal/role_reveal_screen.dart';
 import 'package:mafia_nightfall/data/repositories/player_profiles_repository.dart';
 import 'package:mafia_nightfall/presentation/interactive/judge_lobby_screen.dart';
 
@@ -123,7 +122,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     }
     
     if (isInteractive) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const JudgeLobbyScreen()));
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JudgeLobbyScreen()));
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const RoleReviewScreen()),

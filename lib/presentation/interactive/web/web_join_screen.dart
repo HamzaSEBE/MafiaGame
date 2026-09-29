@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/data/services/interactive/interactive_service.dart';
 import 'package:mafia_nightfall/domain/entities/interactive/models.dart';
 import 'package:mafia_nightfall/presentation/interactive/web/web_player_screen.dart';
+import 'package:mafia_nightfall/presentation/interactive/web/web_session_ended_screen.dart';
 
 T? _firstOrNull<T>(Iterable<T> values) => values.isEmpty ? null : values.first;
 
@@ -25,13 +26,28 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
   bool _isInitializing = true;
   bool _isRequesting = false;
   bool _isNavigating = false;
+  bool _sessionEnded = false;
   Stream<List<InteractiveSeat>>? _seatsStream;
   Stream<JoinRequest?>? _myRequestStream;
+  StreamSubscription<InteractiveSession?>? _sessionSubscription;
 
   @override
   void initState() {
     super.initState();
+    final service = ref.read(interactiveServiceProvider);
+    _sessionSubscription = service.streamSession(widget.sessionId).listen(
+      (session) {
+        if (!mounted || session?.status != SessionStatus.finished) return;
+        setState(() => _sessionEnded = true);
+      },
+    );
     _initAuth();
+  }
+
+  @override
+  void dispose() {
+    _sessionSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _initAuth() async {
@@ -188,6 +204,8 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_sessionEnded) return const WebSessionEndedScreen();
+
     if (_isInitializing) {
       return const Scaffold(
         backgroundColor: Color(0xFF07070B),

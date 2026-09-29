@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/presentation/setup/setup_screen.dart';
+import 'package:mafia_nightfall/presentation/instructions/instructions_screen.dart';
 import 'package:mafia_nightfall/presentation/history/game_history_screen.dart';
 import 'package:mafia_nightfall/presentation/settings/settings_screen.dart';
 import 'package:mafia_nightfall/presentation/profile/profile_screen.dart';
@@ -137,52 +138,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _buildLuxuriousButton(
                         context: context,
                         ref: ref,
-                        icon: Icons.play_arrow_rounded,
-                        label: 'بدء لعبة جديدة',
+                        icon: Icons.qr_code_scanner,
+                        label: 'لعب تفاعلي (QR)',
                         primary: true,
+                        colorOverride: const Color(0xFFFF512F),
                         onTap: () {
                           ref.read(audioManagerProvider).playClick();
-                          ref.read(gameOrchestratorProvider.notifier).resetGame();
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => const SetupScreen(),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(opacity: animation, child: child);
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen(isInteractive: true)));
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLuxuriousButton(
+                        context: context,
+                        ref: ref,
+                        icon: Icons.phone_android,
+                        label: 'لعب محلي (جهاز واحد)',
+                        primary: false,
+                        onTap: () {
+                          ref.read(audioManagerProvider).playClick();
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SetupScreen(isInteractive: false)));
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLuxuriousButton(
+                        context: context,
+                        ref: ref,
+                        icon: Icons.public,
+                        label: 'لعب عبر الإنترنت (قريباً 🔥)',
+                        primary: false,
+                        colorOverride: Colors.grey.shade800,
+                        onTap: () {
+                          ref.read(audioManagerProvider).playClick();
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('قريباً جداً! حماس 🔥', style: TextStyle(fontFamily: 'Cairo'))));
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildLuxuriousButton(
+                              context: context,
+                              ref: ref,
+                              icon: Icons.leaderboard,
+                              label: 'الإحصائيات',
+                              primary: false,
+                              onTap: () {
+                                ref.read(audioManagerProvider).playClick();
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const StatsScreen()));
                               },
-                              transitionDuration: const Duration(milliseconds: 500),
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildLuxuriousButton(
+                              context: context,
+                              ref: ref,
+                              icon: Icons.history_edu,
+                              label: 'السجل',
+                              primary: false,
+                              onTap: () {
+                                ref.read(audioManagerProvider).playClick();
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const GameHistoryScreen()));
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       _buildLuxuriousButton(
                         context: context,
                         ref: ref,
-                        icon: Icons.leaderboard,
-                        label: 'إحصائيات اللاعبين',
+                        icon: Icons.help_outline,
+                        label: 'كيف تلعب؟ (تعليمات)',
                         primary: false,
                         onTap: () {
                           ref.read(audioManagerProvider).playClick();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const StatsScreen()),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLuxuriousButton(
-                        context: context,
-                        ref: ref,
-                        icon: Icons.history_edu,
-                        label: 'سجل المباريات',
-                        primary: false,
-                        onTap: () {
-                          ref.read(audioManagerProvider).playClick();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const GameHistoryScreen()),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const InstructionsScreen()));
                         },
                       ),
                     ],
@@ -322,6 +353,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String label,
     required bool primary,
     required VoidCallback onTap,
+    Color? colorOverride,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -332,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           borderRadius: BorderRadius.circular(16),
           gradient: primary
               ? const LinearGradient(
-                  colors: [Color(0xFF8B0000), Color(0xFF4A0000)], // Mafia Red to Dark Red
+                  colors: colorOverride != null ? [colorOverride, colorOverride.withOpacity(0.6)] : [const Color(0xFF8B0000), const Color(0xFF4A0000)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )

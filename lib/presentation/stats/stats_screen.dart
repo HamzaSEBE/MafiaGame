@@ -1,14 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/domain/entities/player_stats.dart';
 import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
 
-class StatsScreen extends ConsumerWidget {
+class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StatsScreen> createState() => _StatsScreenState();
+}
+
+class _StatsScreenState extends ConsumerState<StatsScreen> {
+  final ScreenshotController _screenshotController = ScreenshotController();
+  bool _isCapturing = false;
+
+  void _shareStats() async {
+    setState(() => _isCapturing = true);
+    try {
+      final image = await _screenshotController.capture(delay: const Duration(milliseconds: 10));
+      if (image != null) {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = await File('${dir.path}/stats_${DateTime.now().millisecondsSinceEpoch}.png').create();
+        await file.writeAsBytes(image);
+        await Share.shareXFiles([XFile(file.path)], text: 'إحصائيات لعبة مافيا - Mafia Nightfall 🔥');
+      }
+    } finally {
+      if (mounted) setState(() => _isCapturing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
       body: Stack(
@@ -27,9 +54,13 @@ class StatsScreen extends ConsumerWidget {
           ),
           
           SafeArea(
-            child: Column(
+            child: Screenshot(
+              controller: _screenshotController,
+              child: Container(
+                color: const Color(0xFF0A0A0F), // For screenshot background
+                child: Column(
               children: [
-                _buildHeader(context, ref),
+                _buildHeader(context),
                 const SizedBox(height: 20),
                 Expanded(
                   child: FutureBuilder<List<PlayerStats>>(
@@ -60,12 +91,14 @@ class StatsScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ],
+        ),
       ),
-    );
-  }
+    ],
+  ),
+);
+}
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(

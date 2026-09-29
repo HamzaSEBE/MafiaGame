@@ -39,9 +39,19 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
     setState(() => _isRequesting = true);
     final service = ref.read(interactiveServiceProvider);
     
-    await service.requestSeat(widget.sessionId, _selectedSeat!.id, _nameController.text.trim());
-    
-    setState(() => _isRequesting = false);
+    try {
+      await service.requestSeat(widget.sessionId, _selectedSeat!.id, _nameController.text.trim());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل الطلب: $e', style: const TextStyle(fontFamily: 'Cairo'))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequesting = false);
+      }
+    }
   }
 
   @override
@@ -64,7 +74,26 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
       body: StreamBuilder<List<InteractiveSeat>>(
         stream: service.streamSeats(widget.sessionId),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
+                  const SizedBox(height: 16),
+                  Text('خطأ في جلب البيانات: ${snapshot.error}', style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'), textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => setState(() {}),
+                    child: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Cairo')),
+                  )
+                ],
+              ),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(color: Colors.orangeAccent));
+          }
           
           final seats = snapshot.data!;
           

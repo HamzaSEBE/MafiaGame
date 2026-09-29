@@ -18,15 +18,26 @@ class WebPlayerScreen extends ConsumerStatefulWidget {
 class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   String? _selectedTargetId;
   bool _isSubmitting = false;
+  bool _hasSubmittedLocally = false;
+  Phase? _lastPhase;
 
   Future<void> _submitAction(String actionType) async {
     if (_selectedTargetId == null) return;
     setState(() => _isSubmitting = true);
     
     final service = ref.read(interactiveServiceProvider);
-    await service.submitAction(widget.sessionId, widget.seatId, actionType, _selectedTargetId!);
-    
-    setState(() => _isSubmitting = false);
+    try {
+      await service.submitAction(widget.sessionId, widget.seatId, actionType, _selectedTargetId!);
+      if (mounted) setState(() => _hasSubmittedLocally = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ في إرسال الحركة: $e', style: const TextStyle(fontFamily: 'Cairo'))));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -42,67 +53,102 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
       body: StreamBuilder<InteractiveSession?>(
         stream: service.streamSession(widget.sessionId),
         builder: (context, sessionSnap) {
+          if (sessionSnap.hasError) return _buildError('خطأ في جلب الجلسة: ${sessionSnap.error}');
           final session = sessionSnap.data;
+          
+          if (session != null && _lastPhase != session.phase) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _lastPhase = session.phase;
+                  _hasSubmittedLocally = false;
+                  _selectedTargetId = null;
+                });
+              }
+            });
+          }
           
           return StreamBuilder<InteractiveSeat?>(
             stream: service.streamMySeat(widget.sessionId, widget.seatId),
             builder: (context, seatSnap) {
+              if (seatSnap.hasError) return _buildError('خطأ في جلب المقعد: ${seatSnap.error}');
               final seat = seatSnap.data;
-              
-              if (session == null || seat == null) {
-                return const Center(child: CircularProgressIndicator(color: Colors.orangeAccent));
-              }
-              
-              if (!seat.isAlive) {
-                return _buildDeadScreen();
-              }
-              
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Role Card
-                    if (seat.role != null)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.1)),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.orangeAccent.withOpacity(0.2),
-                              radius: 30,
-                              child: const Icon(Icons.person, color: Colors.orangeAccent, size: 30),
+
+              return StreamBuilder<InteractiveSecret?>(
+                stream: service.streamMySecret(widget.sessionId, widget.seatId),
+                builder: (context, secretSnap) {
+                  if (secretSnap.hasError) return _buildError('خطأ في جلب السر: ${secretSnap.error}');
+                  final secret = secretSnap.data;
+                  
+                  if (session == null || seat == null || secret == null) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.orangeAccent));
+                  }
+                  
+                  if (!seat.isAlive) {
+                    return _buildDeadScreen();
+                  }
+                  
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        // Role Card
+                        if (secret.role != null)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withOpacity(0.1)),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(seat.playerName, style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-                                  Text(AppTheme.roleArabicName(seat.role!), style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontFamily: 'Cairo')),
-                                ],
-                              ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Colors.orangeAccent.withOpacity(0.2),
+                                  radius: 30,
+                                  child: const Icon(Icons.person, color: Colors.orangeAccent, size: 30),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(seat.playerName, style: const TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                                      Text(AppTheme.roleArabicName(secret.role!), style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontFamily: 'Cairo')),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                          
+                        const SizedBox(height: 30),
+                        
+                        // Action Area
+                        Expanded(
+                          child: _buildActionArea(session, seat, secret, service),
                         ),
-                      ),
-                      
-                    const SizedBox(height: 30),
-                    
-                    // Action Area
-                    Expanded(
-                      child: _buildActionArea(session, seat, service),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildError(String errorMsg) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
+          const SizedBox(height: 16),
+          Text(errorMsg, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'), textAlign: TextAlign.center),
+        ],
       ),
     );
   }
@@ -121,14 +167,14 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
     );
   }
 
-  Widget _buildActionArea(InteractiveSession session, InteractiveSeat seat, InteractiveService service) {
-    if (seat.hasSubmittedAction) {
+  Widget _buildActionArea(InteractiveSession session, InteractiveSeat seat, InteractiveSecret secret, InteractiveService service) {
+    if (secret.hasSubmittedAction || _hasSubmittedLocally) {
       return const Center(
         child: Text('تم إرسال حركتك بنجاح.\nبانتظار البقية...', textAlign: TextAlign.center, style: TextStyle(color: Colors.greenAccent, fontSize: 20, fontFamily: 'Cairo')),
       );
     }
 
-    if (seat.requiredActionType == null || seat.availableTargets == null) {
+    if (secret.requiredActionType == null || secret.availableTargets == null) {
       return Center(
         child: Text(
           session.phase == Phase.day ? 'نهار هادئ... تحدث مع الجميع.' : 'انتظر دورك...',
@@ -141,7 +187,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          seat.requiredActionType == 'vote' ? 'صوّت ضد لاعب للإقصاء:' : 'اختر هدفك لهذه الليلة:',
+          secret.requiredActionType == 'vote' ? 'صوّت ضد لاعب للإقصاء:' : 'اختر هدفك لهذه الليلة:',
           style: const TextStyle(color: Colors.white, fontSize: 20, fontFamily: 'Cairo', fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
@@ -150,8 +196,9 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
           child: StreamBuilder<List<InteractiveSeat>>(
             stream: service.streamSeats(session.id),
             builder: (context, seatsSnap) {
+              if (seatsSnap.hasError) return Text('خطأ: ${seatsSnap.error}', style: const TextStyle(color: Colors.red));
               final allSeats = seatsSnap.data ?? [];
-              final targets = allSeats.where((s) => seat.availableTargets!.contains(s.id)).toList();
+              final targets = allSeats.where((s) => secret.availableTargets!.contains(s.id)).toList();
               
               return ListView.builder(
                 itemCount: targets.length,
@@ -175,7 +222,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
             backgroundColor: Colors.orangeAccent,
             minimumSize: const Size(double.infinity, 50),
           ),
-          onPressed: _isSubmitting ? null : () => _submitAction(seat.requiredActionType!),
+          onPressed: _isSubmitting ? null : () => _submitAction(secret.requiredActionType!),
           child: _isSubmitting 
               ? const CircularProgressIndicator(color: Colors.black)
               : const Text('تأكيد وإرسال', style: TextStyle(color: Colors.black, fontSize: 18, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),

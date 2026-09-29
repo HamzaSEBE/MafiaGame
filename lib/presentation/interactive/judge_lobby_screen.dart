@@ -64,7 +64,7 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
     }
 
     final service = ref.read(interactiveServiceProvider);
-    final joinUrl = 'https://mafiagame-351f8.web.app/?session=$_sessionId';
+    final joinUrl = 'https://mafiagame-351f8.web.app/#/?session=$_sessionId';
 
     return Scaffold(
       backgroundColor: const Color(0xFF07070B),

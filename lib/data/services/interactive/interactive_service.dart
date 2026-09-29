@@ -39,7 +39,7 @@ class InteractiveService {
 
     await _firestore.collection('sessions').doc(sessionId).set(session.toJson());
 
-    // Create seats
+    // Create seats and secrets
     final batch = _firestore.batch();
     for (var player in initialState.players) {
       final seat = InteractiveSeat(
@@ -50,6 +50,12 @@ class InteractiveService {
       );
       final ref = _firestore.collection('sessions').doc(sessionId).collection('seats').doc(player.id);
       batch.set(ref, seat.toJson());
+
+      final secret = InteractiveSecret(
+        id: player.id,
+      );
+      final secretRef = _firestore.collection('sessions').doc(sessionId).collection('secrets').doc(player.id);
+      batch.set(secretRef, secret.toJson());
     }
     await batch.commit();
 
@@ -108,17 +114,21 @@ class InteractiveService {
       'winner': state.winner?.name,
     });
 
-    // Update private seats
+    // Update public seats and private secrets
     for (var player in state.players) {
       final seatRef = _firestore.collection('sessions').doc(sessionId).collection('seats').doc(player.id);
-      final updateData = <String, dynamic>{
+      batch.update(seatRef, {
         'isAlive': player.isAlive,
+      });
+
+      final secretRef = _firestore.collection('sessions').doc(sessionId).collection('secrets').doc(player.id);
+      final secretData = <String, dynamic>{
         'role': player.role.name,
         'requiredActionType': requiredActions?[player.id],
         'availableTargets': availableTargets?[player.id],
         'hasSubmittedAction': false,
       };
-      batch.update(seatRef, updateData);
+      batch.update(secretRef, secretData);
     }
 
     await batch.commit();
@@ -159,6 +169,13 @@ class InteractiveService {
     });
   }
 
+  Stream<InteractiveSecret?> streamMySecret(String sessionId, String seatId) {
+    return _firestore.collection('sessions').doc(sessionId).collection('secrets').doc(seatId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return InteractiveSecret.fromJson(doc.data()!);
+    });
+  }
+
   Future<void> submitAction(String sessionId, String seatId, String actionType, String targetId) async {
     await signInAnonymouslyIfNeeded();
     final playerUid = uid!;
@@ -178,10 +195,12 @@ class InteractiveService {
     final actionRef = _firestore.collection('sessions').doc(sessionId).collection('actionRequests').doc(reqId);
     batch.set(actionRef, action.toJson());
 
-    // Mark seat as submitted
-    final seatRef = _firestore.collection('sessions').doc(sessionId).collection('seats').doc(seatId);
-    batch.update(seatRef, {'hasSubmittedAction': true});
-
+    // We no longer update the seat document from the client to prevent security rule violations!
+    // Instead, the judge will monitor actionRequests and consider the action submitted.
+    // Or we can allow the client to update ONLY `hasSubmittedAction` in `secrets`.
+    // Wait, the client doesn't need to write `hasSubmittedAction` to Firestore,
+    // the host listens to actionRequests and processes them!
+    
     await batch.commit();
   }
 }

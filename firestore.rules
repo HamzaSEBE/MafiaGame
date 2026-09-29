@@ -8,10 +8,18 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.hostUid;
 
-      // Seats hold the secret roles and action requests.
+      // Public seats: anyone authenticated can read (to choose a seat). Judge can write.
       match /seats/{seatId} {
-        // A player can only read their own seat. The host can read and write all seats.
-        allow read: if request.auth != null && (request.auth.uid == resource.data.linkedUid || request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid);
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
+
+      // Secret data: only the linked player or judge can read. Judge can write.
+      match /secrets/{seatId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(seatId)).data.linkedUid ||
+          request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid
+        );
         allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
       }
 

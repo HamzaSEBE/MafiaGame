@@ -1,6 +1,5 @@
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
-import 'package:mafia_nightfall/domain/enums/team.dart';
 
 enum SessionStatus { waiting, active, finished }
 enum SeatStatus { unlinked, requested, linked }
@@ -11,6 +10,7 @@ class InteractiveSession {
   final SessionStatus status;
   final Phase phase;
   final int round;
+  final int actionRevision;
   final Team? winner;
   final DateTime createdAt;
 
@@ -20,6 +20,7 @@ class InteractiveSession {
     required this.status,
     required this.phase,
     required this.round,
+    this.actionRevision = 0,
     this.winner,
     required this.createdAt,
   });
@@ -30,6 +31,7 @@ class InteractiveSession {
         'status': status.name,
         'phase': phase.name,
         'round': round,
+        'actionRevision': actionRevision,
         'winner': winner?.name,
         'createdAt': createdAt.toIso8601String(),
       };
@@ -40,6 +42,7 @@ class InteractiveSession {
         status: SessionStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => SessionStatus.waiting),
         phase: Phase.values.firstWhere((e) => e.name == json['phase'], orElse: () => Phase.setup),
         round: json['round'] as int? ?? 1,
+        actionRevision: (json['actionRevision'] as num?)?.toInt() ?? 0,
         winner: json['winner'] != null ? Team.values.firstWhere((e) => e.name == json['winner']) : null,
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       );

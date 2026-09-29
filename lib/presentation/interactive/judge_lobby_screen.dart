@@ -4,7 +4,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/data/services/interactive/interactive_service.dart';
 import 'package:mafia_nightfall/domain/entities/interactive/models.dart';
+import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/presentation/interactive/judge_dashboard_screen.dart';
+import 'package:mafia_nightfall/presentation/interactive/session_exit_confirmation.dart';
+import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 
 class JudgeLobbyScreen extends ConsumerStatefulWidget {
   const JudgeLobbyScreen({super.key});
@@ -15,7 +18,11 @@ class JudgeLobbyScreen extends ConsumerStatefulWidget {
 
 class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
   String? _sessionId;
+  String? _creationError;
   bool _isCreating = true;
+  bool _isStarting = false;
+  bool _isExiting = false;
+  bool _leaveRequested = false;
 
   @override
   void initState() {
@@ -26,50 +33,151 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
   Future<void> _createSession() async {
     final state = ref.read(gameOrchestratorProvider);
     final service = ref.read(interactiveServiceProvider);
-    
-    final sessionId = await service.createSession(state);
-    if (mounted) {
+
+    try {
+      final sessionId = await service.createSession(state);
+      if (_leaveRequested || !mounted) {
+        await service.endSession(sessionId);
+        return;
+      }
       setState(() {
         _sessionId = sessionId;
+        _isCreating = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _creationError = error.toString();
         _isCreating = false;
       });
     }
   }
 
-  void _startGame(List<InteractiveSeat> seats) {
+  Future<void> _startGame(List<InteractiveSeat> seats) async {
+    if (_isStarting || _sessionId == null) return;
     if (seats.any((s) => s.status != SeatStatus.linked)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('يجب ربط جميع المقاعد باللاعبين أولاً!')),
       );
       return;
     }
-    
-    // Proceed to interactive dashboard (Day phase equivalent start)
+
+    setState(() => _isStarting = true);
     final service = ref.read(interactiveServiceProvider);
     final state = ref.read(gameOrchestratorProvider);
-    service.syncGameState(_sessionId!, state, null, null); // Sync initial state
-    
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => JudgeDashboardScreen(sessionId: _sessionId!)),
+    try {
+      // Publish roles the first time; when returning from the dashboard, keep
+      // the current phase and action choices untouched.
+      if (state.phase == Phase.roleReveal) {
+        await service.syncGameState(_sessionId!, state, null, null);
+      }
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => JudgeDashboardScreen(sessionId: _sessionId!),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر فتح لوحة الحكم: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _isStarting = false);
+    }
+  }
+
+  Future<void> _exitSession() async {
+    if (_isExiting) return;
+    final confirmed = await confirmEndInteractiveSession(context);
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isExiting = true);
+    final sessionId = _sessionId;
+    _leaveRequested = true;
+
+    try {
+      if (sessionId != null) {
+        await ref
+            .read(interactiveServiceProvider)
+            .endSession(sessionId)
+            .timeout(const Duration(seconds: 15));
+      }
+      if (!mounted) return;
+      ref.read(gameOrchestratorProvider.notifier).resetGame();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (_) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isExiting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('تعذر إنهاء الجلسة. افحص الاتصال ثم أعد المحاولة: $error'),
+        ),
+      );
+    }
+  }
+
+  Widget _guardSystemBack(Widget child) {
+    return PopScope<Object?>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _exitSession();
+      },
+      child: child,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isCreating || _sessionId == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF07070B),
-        body: Center(child: CircularProgressIndicator(color: Colors.orangeAccent)),
-      );
+      return _guardSystemBack(Scaffold(
+        backgroundColor: const Color(0xFF07070B),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            onPressed: _isExiting ? null : _exitSession,
+            icon: const Icon(Icons.arrow_back),
+          ),
+        ),
+        body: Center(
+          child: _creationError == null
+              ? const CircularProgressIndicator(color: Colors.orangeAccent)
+              : Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'تعذر إنشاء الجلسة: $_creationError',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ),
+        ),
+      ));
     }
 
     final service = ref.read(interactiveServiceProvider);
-    final joinUrl = 'https://mafiagame-351f8.web.app/?v=20260929-2#/?session=$_sessionId';
+    final joinUrl =
+        'https://mafiagame-351f8.web.app/?v=20260929-3#/?session=$_sessionId';
 
-    return Scaffold(
+    final gamePhase = ref.watch(gameOrchestratorProvider).phase;
+
+    return _guardSystemBack(Scaffold(
       backgroundColor: const Color(0xFF07070B),
       appBar: AppBar(
-        title: const Text('انتظار اللاعبين 🌐', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          tooltip: 'إنهاء الجلسة',
+          onPressed: _isExiting ? null : _exitSession,
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: const Text('انتظار اللاعبين 🌐',
+            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -81,11 +189,18 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('امسح الرمز للانضمام', style: TextStyle(color: Colors.white, fontSize: 24, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                const Text('امسح الرمز للانضمام',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20)),
                   child: QrImageView(
                     data: joinUrl,
                     version: QrVersions.auto,
@@ -93,26 +208,35 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('رمز الجلسة:', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 16, fontFamily: 'Cairo')),
-                Text(_sessionId!, style: const TextStyle(color: Colors.orangeAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('رمز الجلسة:',
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 16,
+                        fontFamily: 'Cairo')),
+                Text(_sessionId!,
+                    style: const TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          
+
           // Right side: Seats & Requests
           Expanded(
             flex: 1,
             child: StreamBuilder<List<InteractiveSeat>>(
               stream: service.streamSeats(_sessionId!),
               builder: (context, seatsSnap) {
-                if (!seatsSnap.hasData) return const Center(child: CircularProgressIndicator());
+                if (!seatsSnap.hasData)
+                  return const Center(child: CircularProgressIndicator());
                 final seats = seatsSnap.data!;
-                
+
                 return StreamBuilder<List<JoinRequest>>(
                   stream: service.streamJoinRequests(_sessionId!),
                   builder: (context, reqSnap) {
                     final requests = reqSnap.data ?? [];
-                    
+
                     return Column(
                       children: [
                         Expanded(
@@ -121,29 +245,57 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
                             itemCount: seats.length,
                             itemBuilder: (context, index) {
                               final seat = seats[index];
-                              final reqsForSeat = requests.where((r) => r.seatId == seat.id).toList();
-                              
+                              final reqsForSeat = requests
+                                  .where((r) => r.seatId == seat.id)
+                                  .toList();
+
                               return Card(
-                                color: seat.status == SeatStatus.linked ? Colors.green.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                                color: seat.status == SeatStatus.linked
+                                    ? Colors.green.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.05),
                                 child: ExpansionTile(
-                                  title: Text(seat.playerName, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-                                  subtitle: Text(seat.status == SeatStatus.linked ? 'متصل' : 'في الانتظار', style: TextStyle(color: seat.status == SeatStatus.linked ? Colors.greenAccent : Colors.orangeAccent)),
-                                  children: reqsForSeat.map((req) => ListTile(
-                                    title: Text(req.displayName, style: const TextStyle(color: Colors.white)),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.check, color: Colors.greenAccent),
-                                          onPressed: () => service.approveJoinRequest(_sessionId!, seat.id, req.uid),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.close, color: Colors.redAccent),
-                                          onPressed: () => service.rejectJoinRequest(_sessionId!, req.uid),
-                                        ),
-                                      ],
-                                    ),
-                                  )).toList(),
+                                  title: Text(seat.playerName,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Cairo')),
+                                  subtitle: Text(
+                                      seat.status == SeatStatus.linked
+                                          ? 'متصل'
+                                          : 'في الانتظار',
+                                      style: TextStyle(
+                                          color:
+                                              seat.status == SeatStatus.linked
+                                                  ? Colors.greenAccent
+                                                  : Colors.orangeAccent)),
+                                  children: reqsForSeat
+                                      .map((req) => ListTile(
+                                            title: Text(req.displayName,
+                                                style: const TextStyle(
+                                                    color: Colors.white)),
+                                            trailing: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(Icons.check,
+                                                      color:
+                                                          Colors.greenAccent),
+                                                  onPressed: () => service
+                                                      .approveJoinRequest(
+                                                          _sessionId!,
+                                                          seat.id,
+                                                          req.uid),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.close,
+                                                      color: Colors.redAccent),
+                                                  onPressed: () =>
+                                                      service.rejectJoinRequest(
+                                                          _sessionId!, req.uid),
+                                                ),
+                                              ],
+                                            ),
+                                          ))
+                                      .toList(),
                                 ),
                               );
                             },
@@ -156,8 +308,24 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
                               backgroundColor: Colors.orangeAccent,
                               minimumSize: const Size(double.infinity, 50),
                             ),
-                            onPressed: () => _startGame(seats),
-                            child: const Text('بدء اللعبة', style: TextStyle(color: Colors.black, fontSize: 18, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                            onPressed:
+                                _isStarting || gamePhase == Phase.winCheck
+                                    ? null
+                                    : () => _startGame(seats),
+                            child: Text(
+                              _isStarting
+                                  ? 'جارٍ فتح اللعبة...'
+                                  : gamePhase == Phase.roleReveal
+                                      ? 'بدء اللعبة'
+                                      : gamePhase == Phase.winCheck
+                                          ? 'انتهت اللعبة'
+                                          : 'استئناف اللعبة',
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontFamily: 'Cairo',
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
                       ],
@@ -169,6 +337,6 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

@@ -10,7 +10,6 @@ import 'package:mafia_nightfall/domain/engine/citizen_boy_engine.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
-import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:uuid/uuid.dart';
 
 // ─── Manual Riverpod Provider (no code generation needed) ────────────────────
@@ -131,7 +130,7 @@ class GameOrchestrator extends Notifier<GameState> {
     
     // Find who was assassinated
     final resolutionEvent = nextState.eventHistory.lastWhere((e) => e.type == EventType.nightResolutionSummary);
-    final assassinatedIds = List<String>.from(resolutionEvent.metadata?['assassinatedIds'] ?? []);
+    final assassinatedIds = List<String>.from(resolutionEvent.metadata['assassinatedIds'] ?? []);
     
     final victoryStatus = VictoryEngine.evaluate(nextState);
     if (victoryStatus != VictoryStatus.continueGame) {
@@ -154,6 +153,12 @@ class GameOrchestrator extends Notifier<GameState> {
 
   void startVoting() {
     state = state.copyWith(phase: Phase.voting);
+  }
+
+  /// Starts the public day after every player has seen their private role.
+  void beginDay() {
+    if (state.phase != Phase.roleReveal) return;
+    state = state.copyWith(phase: Phase.day);
   }
 
   void submitFinalVotes(Map<String, String> finalVotes) {
@@ -229,6 +234,14 @@ class GameOrchestrator extends Notifier<GameState> {
       }
     }
     state = nextState;
+  }
+
+  void skipTriggeredAbility(Phase nextPhase) {
+    if (state.phase != Phase.triggeredAbility) return;
+    state = state.copyWith(
+      phase: nextPhase,
+      round: nextPhase == Phase.night ? state.round + 1 : state.round,
+    );
   }
 
   void advanceToNight() {

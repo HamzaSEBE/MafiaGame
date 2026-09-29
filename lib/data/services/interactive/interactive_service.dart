@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/domain/entities/interactive/models.dart';
 import 'package:mafia_nightfall/domain/entities/game_state.dart';
+import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:uuid/uuid.dart';
 
 final interactiveServiceProvider = Provider((ref) => InteractiveService());
@@ -162,10 +163,20 @@ class InteractiveService {
 
     // Update public session state
     final sessionRef = _firestore.collection('sessions').doc(sessionId);
+    final currentSession = await sessionRef.get();
+    if (!currentSession.exists) {
+      throw StateError('لا يمكن تحديث لعبة غير موجودة.');
+    }
+    final actionRevision =
+        ((currentSession.data()?['actionRevision'] as num?)?.toInt() ?? 0) + 1;
     batch.update(sessionRef, {
-      'status': SessionStatus.active.name,
+      'status': (state.phase == Phase.winCheck
+              ? SessionStatus.finished
+              : SessionStatus.active)
+          .name,
       'phase': state.phase.name,
       'round': state.round,
+      'actionRevision': actionRevision,
       'winner': state.winner?.name,
     });
 
@@ -195,6 +206,13 @@ class InteractiveService {
     }
 
     await batch.commit();
+  }
+
+  /// Closes the session so every connected player leaves the live game view.
+  Future<void> endSession(String sessionId) async {
+    await _firestore.collection('sessions').doc(sessionId).update({
+      'status': SessionStatus.finished.name,
+    });
   }
 
   Stream<List<ActionRequest>> streamActionRequests(String sessionId) {

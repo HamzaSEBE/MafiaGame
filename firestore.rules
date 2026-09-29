@@ -32,6 +32,7 @@ service cloud.firestore {
 
         function isValidPlayerRequest() {
           return request.auth != null && request.auth.uid == uid &&
+            get(/databases/$(database)/documents/sessions/$(sessionId)).data.status != 'finished' &&
             request.resource.data.uid == uid &&
             request.resource.data.seatId is string &&
             request.resource.data.displayName is string;
@@ -47,7 +48,9 @@ service cloud.firestore {
       // Action requests allow players to submit their votes or night actions.
       match /actionRequests/{requestId} {
         // Player can only create a request for themselves.
-        allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+        allow create: if request.auth != null &&
+          request.auth.uid == request.resource.data.uid &&
+          get(/databases/$(database)/documents/sessions/$(sessionId)).data.status == 'active';
         // Player can read their own.
         allow read: if request.auth != null && request.auth.uid == resource.data.uid;
         // Host can read and delete all action requests.

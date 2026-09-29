@@ -11,7 +11,7 @@
 
 ## 📥 حمّل اللعبة الآن
 
-[![تحميل التطبيق](https://img.shields.io/badge/-%D8%AA%D8%AD%D9%85%D9%8A%D9%84_APK_%D8%A7%D9%84%D8%A2%D9%86-28a745?style=for-the-badge&logo=android&logoColor=white)](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall.apk)
+[![تحميل التطبيق](https://img.shields.io/badge/-%D8%AA%D8%AD%D9%85%D9%8A%D9%84_APK_%D8%A7%D9%84%D8%A2%D9%86-28a745?style=for-the-badge&logo=android&logoColor=white)](https://github.com/HamzaSEBE/MafiaGame/raw/master/releases/mafia-nightfall.apk)
 
 ---
 </div>

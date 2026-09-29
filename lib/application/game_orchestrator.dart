@@ -62,6 +62,19 @@ class GameOrchestrator extends Notifier<GameState> {
     state = state.copyWith(players: shuffled);
   }
 
+  /// Redistributes the roles already assigned to this player set without
+  /// changing the configured role counts or starting the game.
+  void shuffleAssignedRoles() {
+    final players = List<Player>.from(state.players)..shuffle(Random.secure());
+    final roles = players.map((player) => player.role).toList()
+      ..shuffle(Random.secure());
+    final reassigned = [
+      for (var index = 0; index < players.length; index++)
+        players[index].copyWith(role: roles[index]),
+    ];
+    state = state.copyWith(players: reassigned);
+  }
+
   /// Shuffle and assign roles based on [roleConfig] (Map<Role, count>).
   /// Returns an error string if the total doesn't match player count, else null.
   String? assignRoles(Map<Role, int> roleConfig) {

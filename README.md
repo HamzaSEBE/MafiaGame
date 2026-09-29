@@ -13,6 +13,9 @@
 
 [![تحميل التطبيق](https://img.shields.io/badge/-%D8%AA%D8%AD%D9%85%D9%8A%D9%84_APK_%D8%A7%D9%84%D8%A2%D9%86-28a745?style=for-the-badge&logo=android&logoColor=white)](https://github.com/HamzaSEBE/MafiaGame/raw/master/releases/mafia-nightfall.apk)
 
+**الإصدار الحالي:** 1.0.4 (Build 5) — 29 سبتمبر 2026<br>
+**اللعب التفاعلي عبر الويب:** [افتح اللعبة](https://mafiagame-351f8.web.app)
+
 ---
 </div>
 

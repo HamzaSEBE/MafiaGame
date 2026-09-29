@@ -239,6 +239,38 @@ class InteractiveService {
     await batch.commit();
   }
 
+  /// Publishes an investigation result to the investigating seat as soon as
+  /// its action arrives. The transaction prevents a late result from an older
+  /// night from overwriting the next phase's private state.
+  Future<bool> publishInvestigationResult({
+    required String sessionId,
+    required String seatId,
+    required int expectedRevision,
+    required int expectedRound,
+    required String result,
+  }) {
+    final sessionRef = _firestore.collection('sessions').doc(sessionId);
+    final secretRef = sessionRef.collection('secrets').doc(seatId);
+
+    return _firestore.runTransaction<bool>((transaction) async {
+      final sessionSnapshot = await transaction.get(sessionRef);
+      final sessionData = sessionSnapshot.data();
+      if (sessionData == null ||
+          sessionData['status'] != SessionStatus.active.name ||
+          sessionData['phase'] != Phase.night.name ||
+          sessionData['actionsPhase'] != Phase.night.name ||
+          (sessionData['actionsRound'] as num?)?.toInt() != expectedRound ||
+          (sessionData['round'] as num?)?.toInt() != expectedRound ||
+          (sessionData['actionRevision'] as num?)?.toInt() !=
+              expectedRevision) {
+        return false;
+      }
+
+      transaction.update(secretRef, {'privateResult': result});
+      return true;
+    });
+  }
+
   /// Closes the session so every connected player leaves the live game view.
   Future<void> endSession(String sessionId) async {
     await _firestore.collection('sessions').doc(sessionId).update({

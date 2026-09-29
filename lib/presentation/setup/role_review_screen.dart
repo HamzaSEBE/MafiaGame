@@ -7,7 +7,9 @@ import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 
 class RoleReviewScreen extends ConsumerStatefulWidget {
-  const RoleReviewScreen({super.key});
+  final bool returnToLobby;
+
+  const RoleReviewScreen({super.key, this.returnToLobby = false});
 
   @override
   ConsumerState<RoleReviewScreen> createState() => _RoleReviewScreenState();
@@ -17,23 +19,14 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
   Player? _selectedPlayer;
 
   void _shuffleAgain() {
-    ref.read(gameOrchestratorProvider.notifier).shufflePlayers();
-    
-    // We need to re-assign roles using the current config.
-    // The problem is we don't have the config here easily.
-    // Actually, we can just shuffle the roles among the current players.
-    
-    final players = ref.read(gameOrchestratorProvider).players;
-    final roles = players.map((p) => p.role).toList()..shuffle();
-    
-    for (int i = 0; i < players.length; i++) {
-      ref.read(gameOrchestratorProvider.notifier).updatePlayer(
-        players[i].copyWith(role: roles[i])
-      );
-    }
-    
+    ref.read(gameOrchestratorProvider.notifier).shuffleAssignedRoles();
+    setState(() => _selectedPlayer = null);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إعادة التوزيع عشوائياً 🎲', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
+      const SnackBar(
+          content: Text('تم إعادة التوزيع عشوائياً 🎲',
+              style: TextStyle(fontFamily: 'Cairo')),
+          backgroundColor: Colors.green),
     );
   }
 
@@ -47,12 +40,20 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
         // Swap roles
         final roleA = _selectedPlayer!.role;
         final roleB = p.role;
-        
-        ref.read(gameOrchestratorProvider.notifier).updatePlayer(_selectedPlayer!.copyWith(role: roleB));
-        ref.read(gameOrchestratorProvider.notifier).updatePlayer(p.copyWith(role: roleA));
-        
+
+        ref
+            .read(gameOrchestratorProvider.notifier)
+            .updatePlayer(_selectedPlayer!.copyWith(role: roleB));
+        ref
+            .read(gameOrchestratorProvider.notifier)
+            .updatePlayer(p.copyWith(role: roleA));
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تبديل الأدوار بنجاح 🔄', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.blueAccent, duration: Duration(seconds: 1)),
+          const SnackBar(
+              content: Text('تم تبديل الأدوار بنجاح 🔄',
+                  style: TextStyle(fontFamily: 'Cairo')),
+              backgroundColor: Colors.blueAccent,
+              duration: Duration(seconds: 1)),
         );
         setState(() => _selectedPlayer = null);
       }
@@ -69,7 +70,16 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('مراجعة الأدوار (للحكم)', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(
+          widget.returnToLobby
+              ? 'مراجعة الأدوار قبل بدء اللعبة'
+              : 'مراجعة الأدوار (للحكم)',
+          style: const TextStyle(
+            fontFamily: 'Cairo',
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Stack(
@@ -89,7 +99,10 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                         _selectedPlayer == null
                             ? 'اضغط على أي لاعب لتحديده، ثم اضغط على لاعب آخر لتبديل أدوارهما.'
                             : 'تم تحديد ${_selectedPlayer!.name}. اضغط على لاعب آخر للتبديل.',
-                        style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontFamily: 'Cairo',
+                            fontSize: 13),
                       ),
                     ),
                   ],
@@ -115,10 +128,14 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          color: isSelected ? roleColor.withValues(alpha: 0.2) : const Color(0xFF1A1A22),
+                          color: isSelected
+                              ? roleColor.withValues(alpha: 0.2)
+                              : const Color(0xFF1A1A22),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? roleColor : roleColor.withValues(alpha: 0.3),
+                            color: isSelected
+                                ? roleColor
+                                : roleColor.withValues(alpha: 0.3),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -128,7 +145,8 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                             CircleAvatar(
                               radius: 16,
                               backgroundColor: roleColor.withValues(alpha: 0.2),
-                              backgroundImage: AssetImage(AppTheme.roleImage(p.role)),
+                              backgroundImage:
+                                  AssetImage(AppTheme.roleImage(p.role)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -138,13 +156,20 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                                 children: [
                                   Text(
                                     p.name,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo', fontSize: 13),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Cairo',
+                                        fontSize: 13),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     AppTheme.roleArabicName(p.role),
-                                    style: TextStyle(color: roleColor, fontFamily: 'Cairo', fontSize: 11),
+                                    style: TextStyle(
+                                        color: roleColor,
+                                        fontFamily: 'Cairo',
+                                        fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -168,8 +193,13 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _shuffleAgain,
-                          icon: const Icon(Icons.shuffle, color: Colors.orangeAccent, size: 20),
-                          label: const Text('إعادة التوزيع', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                          icon: const Icon(Icons.shuffle,
+                              color: Colors.orangeAccent, size: 20),
+                          label: const Text('إعادة التوزيع',
+                              style: TextStyle(
+                                  color: Colors.orangeAccent,
+                                  fontFamily: 'Cairo',
+                                  fontWeight: FontWeight.bold)),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Colors.orangeAccent),
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -180,12 +210,28 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (_) => const RoleRevealScreen()),
-                            );
+                            if (widget.returnToLobby) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => const RoleRevealScreen(),
+                                ),
+                              );
+                            }
                           },
-                          icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
-                          label: const Text('بدء اللعبة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                          icon: const Icon(Icons.play_arrow,
+                              color: Colors.white, size: 20),
+                          label: Text(
+                            widget.returnToLobby
+                                ? 'حفظ والعودة إلى اللوبي'
+                                : 'بدء اللعبة',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.mafiaPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 14),

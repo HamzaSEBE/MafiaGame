@@ -361,7 +361,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (ctx) => _DramaticRevealDialog(
+            builder: (ctx) => DramaticRevealDialog(
               quote: DramaticQuotes.getRandomDayElimination(),
               eliminated: eliminated,
               onContinue: () {
@@ -387,7 +387,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => _DramaticRevealDialog(
+        builder: (ctx) => DramaticRevealDialog(
           quote: quote,
           eliminated: eliminated!,
           onContinue: () {
@@ -975,6 +975,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final canJudgeDuringDefense = _isRunning || _secondsLeft == 0;
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E24),
       shape: RoundedRectangleBorder(
@@ -1030,7 +1031,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
                     fontWeight: FontWeight.bold)),
           ),
         const SizedBox(height: 12),
-        const Text('بعد انتهاء الدفاع:',
+        const Text('أثناء وقت الدفاع يمكن للحكم تأكيد القرار أو تغييره:',
             style: TextStyle(
                 color: Colors.white54, fontSize: 12, fontFamily: 'Cairo')),
         const SizedBox(height: 8),
@@ -1038,7 +1039,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: _secondsLeft == 0 ? widget.onChangeVotes : null,
+                onPressed: canJudgeDuringDefense ? widget.onChangeVotes : null,
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.orangeAccent),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1055,7 +1056,7 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
             Expanded(
               child: ElevatedButton(
                 onPressed:
-                    _secondsLeft == 0 ? widget.onConfirmElimination : null,
+                    canJudgeDuringDefense ? widget.onConfirmElimination : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1075,22 +1076,23 @@ class _DefenseTimerDialogState extends ConsumerState<_DefenseTimerDialog> {
   }
 }
 
-class _DramaticRevealDialog extends StatefulWidget {
+class DramaticRevealDialog extends StatefulWidget {
   final String quote;
   final Player eliminated;
   final VoidCallback onContinue;
 
-  const _DramaticRevealDialog({
+  const DramaticRevealDialog({
+    super.key,
     required this.quote,
     required this.eliminated,
     required this.onContinue,
   });
 
   @override
-  State<_DramaticRevealDialog> createState() => _DramaticRevealDialogState();
+  State<DramaticRevealDialog> createState() => DramaticRevealDialogState();
 }
 
-class _DramaticRevealDialogState extends State<_DramaticRevealDialog>
+class DramaticRevealDialogState extends State<DramaticRevealDialog>
     with SingleTickerProviderStateMixin {
   bool _showQuote = true;
   late AnimationController _controller;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -7,7 +9,6 @@ import 'package:mafia_nightfall/domain/entities/interactive/models.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
-import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/presentation/day/day_screen.dart';
 import 'package:mafia_nightfall/presentation/game_over/game_over_screen.dart';
@@ -33,11 +34,121 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
   bool _isOpeningGameOver = false;
   bool _isLoadingSessionState = true;
   final Set<int> _nightActionRounds = {};
+  StreamSubscription<InteractiveSession?>? _sessionSubscription;
+  StreamSubscription<List<InteractiveSeat>>? _seatsSubscription;
+  StreamSubscription<List<ActionRequest>>? _actionsSubscription;
+  InteractiveSession? _liveSession;
+  List<InteractiveSeat> _liveSeats = const [];
+  List<ActionRequest> _liveActions = const [];
+  final Set<String> _pendingInvestigationResults = {};
+  final Set<String> _publishedInvestigationResults = {};
 
   @override
   void initState() {
     super.initState();
+    _watchForInvestigations();
     _restorePublishedActionState();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sessionSubscription?.cancel() ?? Future<void>.value());
+    unawaited(_seatsSubscription?.cancel() ?? Future<void>.value());
+    unawaited(_actionsSubscription?.cancel() ?? Future<void>.value());
+    super.dispose();
+  }
+
+  void _watchForInvestigations() {
+    final service = ref.read(interactiveServiceProvider);
+    _sessionSubscription = service.streamSession(widget.sessionId).listen(
+      (session) {
+        _liveSession = session;
+        _publishAvailableInvestigationResults();
+      },
+      onError: (_) {},
+    );
+    _seatsSubscription = service.streamSeats(widget.sessionId).listen(
+      (seats) {
+        _liveSeats = seats;
+        _publishAvailableInvestigationResults();
+      },
+      onError: (_) {},
+    );
+    _actionsSubscription =
+        service.streamActionRequests(widget.sessionId).listen(
+      (actions) {
+        _liveActions = actions;
+        _publishAvailableInvestigationResults();
+      },
+      onError: (_) {},
+    );
+  }
+
+  Future<void> _publishAvailableInvestigationResults() async {
+    if (!mounted) return;
+    final session = _liveSession;
+    final state = ref.read(gameOrchestratorProvider);
+    if (session == null ||
+        session.status != SessionStatus.active ||
+        session.phase != Phase.night ||
+        session.actionsPhase != Phase.night ||
+        session.actionsRound != state.round ||
+        session.round != state.round ||
+        state.phase != Phase.night) {
+      return;
+    }
+
+    final prompts = _nightPrompts(state);
+    final service = ref.read(interactiveServiceProvider);
+    for (final action in _liveActions) {
+      if (action.actionType != 'investigation' ||
+          action.revision != session.actionRevision ||
+          _publishedInvestigationResults.contains(action.id) ||
+          !_pendingInvestigationResults.add(action.id)) {
+        continue;
+      }
+
+      final seat = _seatForUid(_liveSeats, action.uid);
+      final actor = seat == null ? null : state.getPlayerById(seat.id);
+      final target = state.getPlayerById(action.targetId);
+      final prompt = seat == null
+          ? null
+          : prompts[seat.id]
+              ?.where((item) => item.type == 'investigation')
+              .firstOrNull;
+      if (actor == null ||
+          actor.role != Role.citizensSheikh ||
+          !actor.isAlive ||
+          target == null ||
+          !target.isAlive ||
+          target.id == actor.id ||
+          prompt == null ||
+          !prompt.availableTargets.contains(target.id)) {
+        _pendingInvestigationResults.remove(action.id);
+        continue;
+      }
+
+      final result =
+          'اللاعب ${target.name} ${target.role.team == Team.mafia ? 'من المافيا!' : 'من المواطنين'}';
+      try {
+        final published = await service.publishInvestigationResult(
+          sessionId: widget.sessionId,
+          seatId: actor.id,
+          expectedRevision: session.actionRevision,
+          expectedRound: state.round,
+          result: result,
+        );
+        if (published) _publishedInvestigationResults.add(action.id);
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تعذر إرسال نتيجة التحقيق فورًا: $error')),
+          );
+        }
+      } finally {
+        _pendingInvestigationResults.remove(action.id);
+      }
+    }
   }
 
   Future<void> _restorePublishedActionState() async {
@@ -421,6 +532,8 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
               state.alivePlayers.any((p) => p.id == action.targetId);
         }).firstOrNull;
         if (valid == null) return;
+        final victim = state.getPlayerById(valid.targetId);
+        if (victim == null) return;
 
         final service = ref.read(interactiveServiceProvider);
         await service.clearActionRequests(widget.sessionId);
@@ -438,6 +551,18 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           );
         } else {
           await _syncStateToClients();
+        }
+
+        if (mounted) {
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => DramaticRevealDialog(
+              quote: 'انتقام المواطن الشجاع كشف ضحيته... والحقيقة ستظهر الآن.',
+              eliminated: victim,
+              onContinue: () => Navigator.of(dialogContext).pop(),
+            ),
+          );
         }
         if (mounted && after.phase == Phase.winCheck) _openGameOver();
       });

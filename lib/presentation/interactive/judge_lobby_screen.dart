@@ -8,6 +8,7 @@ import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/presentation/interactive/judge_dashboard_screen.dart';
 import 'package:mafia_nightfall/presentation/interactive/session_exit_confirmation.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
+import 'package:mafia_nightfall/presentation/setup/role_review_screen.dart';
 
 class JudgeLobbyScreen extends ConsumerStatefulWidget {
   const JudgeLobbyScreen({super.key});
@@ -87,6 +88,15 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
     }
   }
 
+  Future<void> _reviewRoles() async {
+    if (ref.read(gameOrchestratorProvider).phase != Phase.roleReveal) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const RoleReviewScreen(returnToLobby: true),
+      ),
+    );
+  }
+
   Future<void> _exitSession() async {
     if (_isExiting) return;
     final confirmed = await confirmEndInteractiveSession(context);
@@ -163,7 +173,7 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
 
     final service = ref.read(interactiveServiceProvider);
     final joinUrl =
-        'https://mafiagame-351f8.web.app/?v=20260929-4#/?session=$_sessionId';
+        'https://mafiagame-351f8.web.app/?v=20260929-5#/?session=$_sessionId';
 
     final gamePhase = ref.watch(gameOrchestratorProvider).phase;
 
@@ -303,29 +313,60 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
                         ),
                         Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orangeAccent,
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
-                            onPressed:
-                                _isStarting || gamePhase == Phase.winCheck
-                                    ? null
-                                    : () => _startGame(seats),
-                            child: Text(
-                              _isStarting
-                                  ? 'جارٍ فتح اللعبة...'
-                                  : gamePhase == Phase.roleReveal
-                                      ? 'بدء اللعبة'
-                                      : gamePhase == Phase.winCheck
-                                          ? 'انتهت اللعبة'
-                                          : 'استئناف اللعبة',
-                              style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18,
-                                  fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.bold),
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (gamePhase == Phase.roleReveal) ...[
+                                OutlinedButton.icon(
+                                  onPressed: _isStarting ? null : _reviewRoles,
+                                  icon: const Icon(
+                                    Icons.style,
+                                    color: Colors.orangeAccent,
+                                  ),
+                                  label: const Text(
+                                    'مراجعة الأدوار أو إعادة توزيعها',
+                                    style: TextStyle(
+                                      color: Colors.orangeAccent,
+                                      fontFamily: 'Cairo',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                      color: Colors.orangeAccent,
+                                    ),
+                                    minimumSize:
+                                        const Size(double.infinity, 48),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orangeAccent,
+                                  minimumSize: const Size(double.infinity, 50),
+                                ),
+                                onPressed:
+                                    _isStarting || gamePhase == Phase.winCheck
+                                        ? null
+                                        : () => _startGame(seats),
+                                child: Text(
+                                  _isStarting
+                                      ? 'جارٍ فتح اللعبة...'
+                                      : gamePhase == Phase.roleReveal
+                                          ? 'بدء اللعبة'
+                                          : gamePhase == Phase.winCheck
+                                              ? 'انتهت اللعبة'
+                                              : 'استئناف اللعبة',
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 18,
+                                    fontFamily: 'Cairo',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

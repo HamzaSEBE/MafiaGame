@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">مافيا عالشوارب</title>
+  <desc id="desc">ليلة غامضة، بطاقات أدوار، ولمحة عن اللعب عبر QR.</desc>
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07070B" />
+      <stop offset="0.56" stop-color="#100B14" />
+      <stop offset="1" stop-color="#0F172A" />
+    </linearGradient>
+    <radialGradient id="bloodGlow" cx="0.17" cy="0.48" r="0.72">
+      <stop offset="0" stop-color="#8B1534" stop-opacity="0.56" />
+      <stop offset="1" stop-color="#8B1534" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="violetGlow" cx="0.88" cy="0.05" r="0.72">
+      <stop offset="0" stop-color="#6D3CC8" stop-opacity="0.25" />
+      <stop offset="1" stop-color="#6D3CC8" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="cardRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#31131E" />
+      <stop offset="1" stop-color="#160E16" />
+    </linearGradient>
+    <linearGradient id="cardBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#10283B" />
+      <stop offset="1" stop-color="#101722" />
+    </linearGradient>
+    <linearGradient id="goldLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F6C96B" stop-opacity="0" />
+      <stop offset="0.45" stop-color="#F6C96B" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#E11D48" stop-opacity="0" />
+    </linearGradient>
+    <pattern id="grain" width="34" height="34" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="3" r="1" fill="#FFFFFF" opacity="0.09" />
+      <circle cx="22" cy="19" r="0.8" fill="#FFFFFF" opacity="0.06" />
+      <path d="M0 33.5H34" stroke="#FFFFFF" stroke-opacity="0.025" />
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="430" rx="28" fill="url(#night)" />
+  <rect width="1200" height="430" rx="28" fill="url(#bloodGlow)" />
+  <rect width="1200" height="430" rx="28" fill="url(#violetGlow)" />
+  <rect width="1200" height="430" rx="28" fill="url(#grain)" />
+
+  <!-- distant city silhouette -->
+  <g fill="#020409" opacity="0.58">
+    <path d="M0 337h48v-48h27v48h22v-81h48v81h28v-58h39v58h42v-96h37v96h31v-48h49v48h39v-77h32v77h42v-53h51v53h39v-98h40v98h34v-58h45v58h43v-83h31v83h42v-48h49v48h32v-73h42v73h42v-52h39v52h51v93H0z" />
+    <path d="M0 375h1200v55H0z" opacity="0.72" />
+  </g>
+  <g fill="#E11D48" opacity="0.48">
+    <rect x="112" y="278" width="4" height="7" rx="1" />
+    <rect x="132" y="278" width="4" height="7" rx="1" />
+    <rect x="291" y="253" width="4" height="7" rx="1" />
+    <rect x="313" y="253" width="4" height="7" rx="1" />
+    <rect x="785" y="280" width="4" height="7" rx="1" />
+    <rect x="805" y="280" width="4" height="7" rx="1" />
+    <rect x="1058" y="305" width="4" height="7" rx="1" />
+    <rect x="1078" y="305" width="4" height="7" rx="1" />
+  </g>
+
+  <!-- overlapping role cards -->
+  <g transform="rotate(-13 242 218)">
+    <rect x="107" y="104" width="176" height="236" rx="19" fill="#020409" opacity="0.55" />
+    <rect x="101" y="96" width="176" height="236" rx="19" fill="url(#cardBlue)" stroke="#0EA5E9" stroke-opacity="0.56" stroke-width="1.5" />
+    <rect x="112" y="107" width="154" height="214" rx="13" fill="none" stroke="#0EA5E9" stroke-opacity="0.2" />
+    <path d="M189 153l40 40-40 40-40-40z" fill="#0EA5E9" opacity="0.14" />
+    <path d="M189 164l29 29-29 29-29-29z" fill="none" stroke="#38BDF8" stroke-opacity="0.76" stroke-width="2" />
+    <circle cx="189" cy="193" r="8" fill="#38BDF8" opacity="0.9" />
+    <path d="M127 285h124" stroke="#38BDF8" stroke-opacity="0.38" />
+    <circle cx="189" cy="303" r="4" fill="#38BDF8" opacity="0.7" />
+  </g>
+  <g transform="rotate(11 327 220)">
+    <rect x="236" y="108" width="176" height="236" rx="19" fill="#020409" opacity="0.55" />
+    <rect x="230" y="100" width="176" height="236" rx="19" fill="url(#cardRed)" stroke="#E11D48" stroke-opacity="0.8" stroke-width="1.6" />
+    <rect x="241" y="111" width="154" height="214" rx="13" fill="none" stroke="#E11D48" stroke-opacity="0.24" />
+    <path d="M318 150c-28 0-47 20-47 45 0 17 8 31 21 39v20h52v-20c13-8 21-22 21-39 0-25-19-45-47-45z" fill="#E11D48" opacity="0.17" />
+    <path d="M289 192c8-8 16-8 24 0m10 0c8-8 16-8 24 0" fill="none" stroke="#FB7185" stroke-width="3" stroke-linecap="round" />
+    <path d="M298 253h40m-34 10h28" stroke="#FB7185" stroke-opacity="0.56" stroke-linecap="round" />
+    <path d="M261 285h114" stroke="#FB7185" stroke-opacity="0.42" />
+    <circle cx="318" cy="303" r="4" fill="#FB7185" opacity="0.8" />
+  </g>
+
+  <!-- QR-inspired mark -->
+  <g transform="translate(431 301)" opacity="0.72" fill="none" stroke="#F6C96B" stroke-width="2">
+    <rect x="0" y="0" width="39" height="39" rx="5" stroke-opacity="0.48" />
+    <rect x="6" y="6" width="10" height="10" rx="1" />
+    <rect x="23" y="6" width="10" height="10" rx="1" />
+    <rect x="6" y="23" width="10" height="10" rx="1" />
+    <path d="M24 24h4v4h-4zm7 5h3v4h-3zm-7 4h3" />
+  </g>
+
+  <!-- brand lockup -->
+  <g text-anchor="middle" direction="rtl" font-family="Cairo, 'Noto Sans Arabic', Arial, sans-serif">
+    <text x="817" y="116" fill="#F6C96B" font-size="15" font-weight="700" letter-spacing="4">MAFIA  ·  GAME MASTER</text>
+    <text x="817" y="205" fill="#F8FAFC" font-size="69" font-weight="900">مافيا عالشوارب</text>
+    <text x="817" y="257" fill="#CBD5E1" font-size="25" font-weight="500">المدينة نائمة… والحقيقة بين أيديكم</text>
+  </g>
+  <path d="M600 292h435" stroke="url(#goldLine)" stroke-width="2" />
+  <text x="817" y="329" text-anchor="middle" fill="#94A3B8" font-family="Cairo, 'Noto Sans Arabic', Arial, sans-serif" font-size="16" direction="rtl">إدارة وجهًا لوجه · أدوار سرّية · لعب تفاعلي عبر QR</text>
+  <circle cx="1061" cy="115" r="3" fill="#E11D48" />
+  <circle cx="1074" cy="115" r="3" fill="#8B5CF6" />
+  <circle cx="1087" cy="115" r="3" fill="#0EA5E9" />
+  <path d="M70 390h1060" stroke="url(#goldLine)" stroke-width="1" opacity="0.8" />
+</svg>

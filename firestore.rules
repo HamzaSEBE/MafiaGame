@@ -25,10 +25,23 @@ service cloud.firestore {
 
       // Join requests allow players to request a specific seat.
       match /joinRequests/{uid} {
-        // Player can create/read their own request.
-        allow create, read: if request.auth != null && request.auth.uid == uid;
-        // Host can read and delete requests.
-        allow read, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+        function isHost() {
+          return request.auth != null &&
+            request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+        }
+
+        function isValidPlayerRequest() {
+          return request.auth != null && request.auth.uid == uid &&
+            request.resource.data.uid == uid &&
+            request.resource.data.seatId is string &&
+            request.resource.data.displayName is string;
+        }
+
+        // Players can read their own request and create or retry it safely.
+        allow read: if (request.auth != null && request.auth.uid == uid) || isHost();
+        allow create, update: if isValidPlayerRequest();
+        // The judge reviews and removes requests after approval or rejection.
+        allow delete: if isHost();
       }
 
       // Action requests allow players to submit their votes or night actions.

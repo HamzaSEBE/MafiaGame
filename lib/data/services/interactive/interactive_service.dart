@@ -37,7 +37,10 @@ class InteractiveService {
       createdAt: DateTime.now(),
     );
 
-    await _firestore.collection('sessions').doc(sessionId).set(session.toJson());
+    await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .set(session.toJson());
 
     // Create seats and secrets
     final batch = _firestore.batch();
@@ -48,13 +51,21 @@ class InteractiveService {
         isAlive: player.isAlive,
         status: SeatStatus.unlinked,
       );
-      final ref = _firestore.collection('sessions').doc(sessionId).collection('seats').doc(player.id);
+      final ref = _firestore
+          .collection('sessions')
+          .doc(sessionId)
+          .collection('seats')
+          .doc(player.id);
       batch.set(ref, seat.toJson());
 
       final secret = InteractiveSecret(
         id: player.id,
       );
-      final secretRef = _firestore.collection('sessions').doc(sessionId).collection('secrets').doc(player.id);
+      final secretRef = _firestore
+          .collection('sessions')
+          .doc(sessionId)
+          .collection('secrets')
+          .doc(player.id);
       batch.set(secretRef, secret.toJson());
     }
     await batch.commit();
@@ -63,46 +74,90 @@ class InteractiveService {
   }
 
   Stream<InteractiveSession?> streamSession(String sessionId) {
-    return _firestore.collection('sessions').doc(sessionId).snapshots().map((doc) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .snapshots()
+        .map((doc) {
       if (!doc.exists) return null;
       return InteractiveSession.fromJson(doc.data()!);
     });
   }
 
   Stream<List<InteractiveSeat>> streamSeats(String sessionId) {
-    return _firestore.collection('sessions').doc(sessionId).collection('seats').snapshots().map((snap) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('seats')
+        .snapshots()
+        .map((snap) {
       return snap.docs.map((d) => InteractiveSeat.fromJson(d.data())).toList();
     });
   }
 
   Stream<List<JoinRequest>> streamJoinRequests(String sessionId) {
-    return _firestore.collection('sessions').doc(sessionId).collection('joinRequests').snapshots().map((snap) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('joinRequests')
+        .snapshots()
+        .map((snap) {
       return snap.docs.map((d) => JoinRequest.fromJson(d.data())).toList();
     });
   }
 
-  Future<void> approveJoinRequest(String sessionId, String seatId, String playerUid) async {
+  /// A participant can read only their own request document. Do not query the
+  /// whole joinRequests collection from the web client: Firestore rules deny it.
+  Stream<JoinRequest?> streamMyJoinRequest(String sessionId, String playerUid) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('joinRequests')
+        .doc(playerUid)
+        .snapshots()
+        .map((doc) => doc.exists ? JoinRequest.fromJson(doc.data()!) : null);
+  }
+
+  Future<void> approveJoinRequest(
+      String sessionId, String seatId, String playerUid) async {
     final batch = _firestore.batch();
-    
+
     // Update seat
-    final seatRef = _firestore.collection('sessions').doc(sessionId).collection('seats').doc(seatId);
+    final seatRef = _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('seats')
+        .doc(seatId);
     batch.update(seatRef, {
       'status': SeatStatus.linked.name,
       'linkedUid': playerUid,
     });
 
     // Delete request
-    final reqRef = _firestore.collection('sessions').doc(sessionId).collection('joinRequests').doc(playerUid);
+    final reqRef = _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('joinRequests')
+        .doc(playerUid);
     batch.delete(reqRef);
 
     await batch.commit();
   }
 
   Future<void> rejectJoinRequest(String sessionId, String playerUid) async {
-    await _firestore.collection('sessions').doc(sessionId).collection('joinRequests').doc(playerUid).delete();
+    await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('joinRequests')
+        .doc(playerUid)
+        .delete();
   }
 
-  Future<void> syncGameState(String sessionId, GameState state, Map<String, String>? requiredActions, Map<String, List<String>>? availableTargets) async {
+  Future<void> syncGameState(
+      String sessionId,
+      GameState state,
+      Map<String, String>? requiredActions,
+      Map<String, List<String>>? availableTargets) async {
     final batch = _firestore.batch();
 
     // Update public session state
@@ -116,12 +171,20 @@ class InteractiveService {
 
     // Update public seats and private secrets
     for (var player in state.players) {
-      final seatRef = _firestore.collection('sessions').doc(sessionId).collection('seats').doc(player.id);
+      final seatRef = _firestore
+          .collection('sessions')
+          .doc(sessionId)
+          .collection('seats')
+          .doc(player.id);
       batch.update(seatRef, {
         'isAlive': player.isAlive,
       });
 
-      final secretRef = _firestore.collection('sessions').doc(sessionId).collection('secrets').doc(player.id);
+      final secretRef = _firestore
+          .collection('sessions')
+          .doc(sessionId)
+          .collection('secrets')
+          .doc(player.id);
       final secretData = <String, dynamic>{
         'role': player.role.name,
         'requiredActionType': requiredActions?[player.id],
@@ -135,20 +198,31 @@ class InteractiveService {
   }
 
   Stream<List<ActionRequest>> streamActionRequests(String sessionId) {
-    return _firestore.collection('sessions').doc(sessionId).collection('actionRequests').snapshots().map((snap) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('actionRequests')
+        .snapshots()
+        .map((snap) {
       return snap.docs.map((d) => ActionRequest.fromJson(d.data())).toList();
     });
   }
 
   Future<void> clearActionRequest(String sessionId, String requestId) async {
-    await _firestore.collection('sessions').doc(sessionId).collection('actionRequests').doc(requestId).delete();
+    await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('actionRequests')
+        .doc(requestId)
+        .delete();
   }
 
   // ==========================================
   // PLAYER METHODS
   // ==========================================
 
-  Future<void> requestSeat(String sessionId, String seatId, String displayName) async {
+  Future<void> requestSeat(
+      String sessionId, String seatId, String displayName) async {
     await signInAnonymouslyIfNeeded();
     final playerUid = uid!;
 
@@ -159,24 +233,42 @@ class InteractiveService {
       timestamp: DateTime.now(),
     );
 
-    await _firestore.collection('sessions').doc(sessionId).collection('joinRequests').doc(playerUid).set(req.toJson());
+    await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('joinRequests')
+        .doc(playerUid)
+        .set(req.toJson());
   }
 
   Stream<InteractiveSeat?> streamMySeat(String sessionId, String seatId) {
-    return _firestore.collection('sessions').doc(sessionId).collection('seats').doc(seatId).snapshots().map((doc) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('seats')
+        .doc(seatId)
+        .snapshots()
+        .map((doc) {
       if (!doc.exists) return null;
       return InteractiveSeat.fromJson(doc.data()!);
     });
   }
 
   Stream<InteractiveSecret?> streamMySecret(String sessionId, String seatId) {
-    return _firestore.collection('sessions').doc(sessionId).collection('secrets').doc(seatId).snapshots().map((doc) {
+    return _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('secrets')
+        .doc(seatId)
+        .snapshots()
+        .map((doc) {
       if (!doc.exists) return null;
       return InteractiveSecret.fromJson(doc.data()!);
     });
   }
 
-  Future<void> submitAction(String sessionId, String seatId, String actionType, String targetId) async {
+  Future<void> submitAction(String sessionId, String seatId, String actionType,
+      String targetId) async {
     await signInAnonymouslyIfNeeded();
     final playerUid = uid!;
     final reqId = const Uuid().v4();
@@ -190,9 +282,13 @@ class InteractiveService {
     );
 
     final batch = _firestore.batch();
-    
+
     // Write action
-    final actionRef = _firestore.collection('sessions').doc(sessionId).collection('actionRequests').doc(reqId);
+    final actionRef = _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .collection('actionRequests')
+        .doc(reqId);
     batch.set(actionRef, action.toJson());
 
     // We no longer update the seat document from the client to prevent security rule violations!
@@ -200,7 +296,7 @@ class InteractiveService {
     // Or we can allow the client to update ONLY `hasSubmittedAction` in `secrets`.
     // Wait, the client doesn't need to write `hasSubmittedAction` to Firestore,
     // the host listens to actionRequests and processes them!
-    
+
     await batch.commit();
   }
 }

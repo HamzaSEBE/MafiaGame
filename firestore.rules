@@ -8,19 +8,40 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.hostUid;
 
-      // Seats hold the secret roles and action requests.
+      // Public seats: anyone authenticated can read (to choose a seat). Judge can write.
       match /seats/{seatId} {
-        // A player can only read their own seat. The host can read and write all seats.
-        allow read: if request.auth != null && (request.auth.uid == resource.data.linkedUid || request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid);
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
+
+      // Secret data: only the linked player or judge can read. Judge can write.
+      match /secrets/{seatId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(seatId)).data.linkedUid ||
+          request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid
+        );
         allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
       }
 
       // Join requests allow players to request a specific seat.
       match /joinRequests/{uid} {
-        // Player can create/read their own request.
-        allow create, read: if request.auth != null && request.auth.uid == uid;
-        // Host can read and delete requests.
-        allow read, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+        function isHost() {
+          return request.auth != null &&
+            request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+        }
+
+        function isValidPlayerRequest() {
+          return request.auth != null && request.auth.uid == uid &&
+            request.resource.data.uid == uid &&
+            request.resource.data.seatId is string &&
+            request.resource.data.displayName is string;
+        }
+
+        // Players can read their own request and create or retry it safely.
+        allow read: if (request.auth != null && request.auth.uid == uid) || isHost();
+        allow create, update: if isValidPlayerRequest();
+        // The judge reviews and removes requests after approval or rejection.
+        allow delete: if isHost();
       }
 
       // Action requests allow players to submit their votes or night actions.

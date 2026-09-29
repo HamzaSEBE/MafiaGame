@@ -51,12 +51,6 @@ class InteractiveSeat {
   final bool isAlive;
   final SeatStatus status;
   final String? linkedUid;
-  
-  // Secret Data (Only synced privately)
-  final Role? role;
-  final String? requiredActionType; // e.g. "vote", "investigation", "assassination"
-  final List<String>? availableTargets; 
-  final bool hasSubmittedAction;
 
   InteractiveSeat({
     required this.id,
@@ -64,10 +58,6 @@ class InteractiveSeat {
     required this.isAlive,
     required this.status,
     this.linkedUid,
-    this.role,
-    this.requiredActionType,
-    this.availableTargets,
-    this.hasSubmittedAction = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -76,10 +66,6 @@ class InteractiveSeat {
         'isAlive': isAlive,
         'status': status.name,
         'linkedUid': linkedUid,
-        'role': role?.name,
-        'requiredActionType': requiredActionType,
-        'availableTargets': availableTargets,
-        'hasSubmittedAction': hasSubmittedAction,
       };
 
   factory InteractiveSeat.fromJson(Map<String, dynamic> json) => InteractiveSeat(
@@ -88,6 +74,34 @@ class InteractiveSeat {
         isAlive: json['isAlive'] as bool? ?? true,
         status: SeatStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => SeatStatus.unlinked),
         linkedUid: json['linkedUid'] as String?,
+      );
+}
+
+class InteractiveSecret {
+  final String id;
+  final Role? role;
+  final String? requiredActionType; // e.g. "vote", "investigation", "assassination"
+  final List<String>? availableTargets; 
+  final bool hasSubmittedAction;
+
+  InteractiveSecret({
+    required this.id,
+    this.role,
+    this.requiredActionType,
+    this.availableTargets,
+    this.hasSubmittedAction = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'role': role?.name,
+        'requiredActionType': requiredActionType,
+        'availableTargets': availableTargets,
+        'hasSubmittedAction': hasSubmittedAction,
+      };
+
+  factory InteractiveSecret.fromJson(Map<String, dynamic> json) => InteractiveSecret(
+        id: json['id'] as String,
         role: json['role'] != null ? Role.values.firstWhere((e) => e.name == json['role']) : null,
         requiredActionType: json['requiredActionType'] as String?,
         availableTargets: (json['availableTargets'] as List?)?.map((e) => e as String).toList(),

@@ -132,7 +132,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? roleColor.withValues(alpha: 0.2)
-                              : const Color(0xFF1A1A22),
+                              : AppTheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
@@ -185,8 +185,8 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF13131A),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceHigh,
                   border: Border(top: BorderSide(color: Colors.white10)),
                 ),
                 child: SafeArea(

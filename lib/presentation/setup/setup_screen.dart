@@ -71,7 +71,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A22),
+        backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('حذف اللاعب المحفوظ؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
         content: Text('هل تريد حذف "$name" من القائمة المحفوظة؟', style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
@@ -178,11 +178,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
           // Elegant Background
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment(0, -0.8),
                   radius: 1.5,
-                  colors: [Color(0xFF261D15), Color(0xFF100C09), Color(0xFF07070B)],
+                  colors: [AppTheme.surfaceHigh, AppTheme.surface, AppTheme.background],
                 ),
               ),
             ),
@@ -279,12 +279,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: (players.length >= 4 && _totalRoles == players.length)
-                            ? (widget.isInteractive ? [const Color(0xFFFF512F), const Color(0xFFF09819)] : [const Color(0xFFDD2476), const Color(0xFF900C3F)])
+                            ? (widget.isInteractive ? [AppTheme.primaryCardStart, AppTheme.primaryCardEnd] : [AppTheme.secondaryCardStart, AppTheme.secondaryCardEnd])
                             : [Colors.grey.shade800, Colors.grey.shade900],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: (players.length >= 4 && _totalRoles == players.length)
-                          ? [BoxShadow(color: widget.isInteractive ? const Color(0xFFFF512F) : const Color(0xFFDD2476), blurRadius: 10, spreadRadius: 1)]
+                          ? [BoxShadow(color: widget.isInteractive ? AppTheme.glowColor : AppTheme.secondaryCardStart, blurRadius: 10, spreadRadius: 1)]
                           : [],
                     ),
                     child: Material(

@@ -1,132 +1,181 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/domain/enums/role.dart';
-import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_nightfall/presentation/settings/role_names_screen.dart';
+import 'package:mafia_nightfall/presentation/premium/pricing_screen.dart';
+import 'package:mafia_nightfall/application/premium_service.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPremium = ref.watch(premiumProvider);
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  final Map<Role, TextEditingController> _controllers = {};
-
-  @override
-  void initState() {
-    super.initState();
-    for (var role in Role.values) {
-      _controllers[role] = TextEditingController(text: AppTheme.roleArabicName(role));
-    }
-  }
-
-  @override
-  void dispose() {
-    for (var ctrl in _controllers.values) {
-      ctrl.dispose();
-    }
-    super.dispose();
-  }
-
-  void _saveSettings() {
-    for (var role in Role.values) {
-      final text = _controllers[role]?.text.trim() ?? '';
-      if (text.isNotEmpty) {
-        AppTheme.customRoleNames[role] = text;
-      } else {
-        AppTheme.customRoleNames.remove(role);
-      }
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حفظ الإعدادات بنجاح', style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
-    );
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF07070B),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('إعدادات الأسماء', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text('الإعدادات', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Stack(
+      body: ListView(
+        padding: const EdgeInsets.all(24),
         children: [
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(0, -0.6),
-                  radius: 1.5,
-                  colors: [Color(0xFF151826), Color(0xFF0A0C13), Color(0xFF07070B)],
-                ),
-              ),
-            ),
+          if (!isPremium) ...[
+            _buildPremiumBanner(context),
+            const SizedBox(height: 24),
+          ],
+          
+          _buildSettingsTile(
+            context: context,
+            title: 'تغيير أسماء الأدوار',
+            subtitle: 'تخصيص أسماء الأدوار كما تحب',
+            icon: Icons.edit_note,
+            iconColor: Colors.blueAccent,
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const RoleNamesScreen()));
+            },
           ),
-          Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: Role.values.map((role) {
-                    final isMafia = role.toString().toLowerCase().contains('mafia');
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isMafia ? Colors.redAccent.withValues(alpha: 0.2) : Colors.blueAccent.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isMafia ? Icons.local_fire_department : Icons.shield, 
-                            color: isMafia ? Colors.redAccent : Colors.blueAccent, 
-                            size: 32
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _controllers[role],
-                              style: const TextStyle(color: Colors.white, fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-                              decoration: InputDecoration(
-                                labelText: 'اسم الدور (${AppTheme.roleArabicName(role)})',
-                                labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontFamily: 'Cairo'),
-                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
-                                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orangeAccent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      elevation: 10,
-                      shadowColor: Colors.orangeAccent.withValues(alpha: 0.5),
-                    ),
-                    onPressed: _saveSettings,
-                    child: const Text('حفظ الإعدادات', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-                  ),
-                ),
-              ),
-            ],
+          
+          const SizedBox(height: 16),
+          
+          _buildSettingsTile(
+            context: context,
+            title: 'تغيير ثيم التطبيق',
+            subtitle: 'تغيير الألوان والخلفيات (Premium)',
+            icon: Icons.palette,
+            iconColor: isPremium ? Colors.purpleAccent : Colors.grey,
+            isPremiumFeature: true,
+            isLocked: !isPremium,
+            onTap: () {
+              if (!isPremium) {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PricingScreen()));
+              } else {
+Navigator.push(context, MaterialPageRoute(builder: (_) => const ThemesScreen()));
+              }
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          _buildSettingsTile(
+            context: context,
+            title: 'تغيير خلفية اللعب',
+            subtitle: 'تخصيص الصور الخلفية (Premium)',
+            icon: Icons.wallpaper,
+            iconColor: isPremium ? Colors.greenAccent : Colors.grey,
+            isPremiumFeature: true,
+            isLocked: !isPremium,
+            onTap: () {
+              if (!isPremium) {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const PricingScreen()));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('شاشة الخلفيات قيد التطوير!', style: TextStyle(fontFamily: 'Cairo'))),
+                );
+              }
+            },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumBanner(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const PricingScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFD700), Color(0xFFB8860B)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.workspace_premium, color: Colors.white, size: 40),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('النسخة الاحترافية 👑', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: 'Cairo')),
+                  Text('افتح جميع الميزات والثيمات', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontFamily: 'Cairo')),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+    bool isPremiumFeature = false,
+    bool isLocked = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isPremiumFeature && isLocked ? Colors.white.withValues(alpha: 0.1) : iconColor.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isLocked ? Colors.grey.withValues(alpha: 0.1) : iconColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(title, style: TextStyle(color: isLocked ? Colors.grey : Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                      if (isPremiumFeature) ...[
+                        const SizedBox(width: 8),
+                        Icon(isLocked ? Icons.lock : Icons.workspace_premium, color: const Color(0xFFFFD700), size: 16),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14, fontFamily: 'Cairo')),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.white.withValues(alpha: 0.3), size: 16),
+          ],
+        ),
       ),
     );
   }

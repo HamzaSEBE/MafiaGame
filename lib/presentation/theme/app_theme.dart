@@ -163,7 +163,7 @@ class AppTheme {
       case Role.citizensGirl: return Icons.health_and_safety;
       case Role.citizensBoy: return Icons.bolt;
       case Role.goodCitizen: return Icons.person;
-      case Role.joker: return Icons.sentiment_very_dissatisfied;
+      case Role.joker: return Icons.theater_comedy;
     }
   }
 

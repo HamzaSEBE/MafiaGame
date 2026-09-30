@@ -62,11 +62,13 @@ class VictoryEngine {
         return VictoryStatus.citizensWin;
       } 
       
-      // Check if Citizens still have a legal path to eliminate Mafia
-      bool citizensCanWin = false;
       int nonMafiaVotes = 0;
       int mafiaVotes = 0;
+      bool hasUnusedSniper = false;
+      bool hasDoctorThatCanProtect = false;
       
+      final pLimit = state.rules.abilityRules.protectionTargetLimit;
+
       for (var p in alivePlayers) {
         int weight = p.isCitizenSheikhRevealed ? 3 : 1;
         if (p.role.team == Team.mafia) {
@@ -74,25 +76,36 @@ class VictoryEngine {
         } else {
           nonMafiaVotes += weight;
           
-          if (p.role == Role.citizensBoy) {
-            citizensCanWin = true;
-          }
           if (p.hasSniper) {
             final hasShot = state.eventHistory.any((e) => e.type == EventType.sniperKill);
-            if (!hasShot) citizensCanWin = true;
+            if (!hasShot) hasUnusedSniper = true;
+          }
+          if (p.role == Role.citizensGirl) {
+            // Check if she can protect ANY alive citizen (or herself)
+            for (var target in alivePlayers) {
+              if (target.role.team == Team.citizens || target.id == p.id) {
+                final pastProtections = state.eventHistory.where((e) =>
+                    e.type == EventType.protection &&
+                    e.actorId == p.id &&
+                    e.targetId == target.id);
+                if (pLimit == -1 || pastProtections.length < pLimit) {
+                  hasDoctorThatCanProtect = true;
+                  break;
+                }
+              }
+            }
           }
         }
       }
       
-      // If Citizens have more voting power than Mafia, they can still legally outvote them.
-      if (nonMafiaVotes > mafiaVotes) {
-        citizensCanWin = true;
-      }
-      
-      // If Citizens have absolutely no remaining legal way to eliminate Mafia, and Mafia is still alive.
-      // The Mafia is guaranteed to win eventually.
-      if (!citizensCanWin) {
-        return VictoryStatus.mafiaWin;
+      // If Citizens have equal or less voting power than Mafia, Mafia wins...
+      if (nonMafiaVotes <= mafiaVotes) {
+        // ...EXCEPT in one single case: Both an unused Sniper and a Doctor who can still protect someone are alive.
+        if (hasUnusedSniper && hasDoctorThatCanProtect) {
+          // They get one last night to try and turn the tide!
+        } else {
+          return VictoryStatus.mafiaWin;
+        }
       }
     }
 

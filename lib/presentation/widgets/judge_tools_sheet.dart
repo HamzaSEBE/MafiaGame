@@ -225,6 +225,16 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
             icon = Icons.nights_stay;
             color = Colors.indigoAccent;
             break;
+          case EventType.sniperKill:
+            desc = 'القناص اغتال ${target?.name ?? "شخصاً"}';
+            icon = Icons.my_location;
+            color = Colors.amberAccent;
+            break;
+          case EventType.citizenSheikhReveal:
+            desc = 'أفصح شيخ المواطنين عن نفسه';
+            icon = Icons.campaign;
+            color = Colors.orangeAccent;
+            break;
         }
 
         return Container(

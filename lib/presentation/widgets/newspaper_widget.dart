@@ -428,6 +428,8 @@ class NewspaperWidget extends StatelessWidget {
     if (gameState.winner == Team.mafia) winnerStr = 'المافيا';
     else if (gameState.winner == Team.independent) winnerStr = 'المهرج (الجوكر)';
     else winnerStr = 'المواطنون';
+    
+    final reasonText = gameState.victoryReason != null ? 'السبب: ${gameState.victoryReason}' : '';
 
     final isMafia = gameState.winner == Team.mafia;
     final isJoker = gameState.winner == Team.independent;

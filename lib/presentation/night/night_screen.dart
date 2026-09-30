@@ -148,6 +148,25 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         eventType: EventType.protection,
       ));
     }
+
+    // 5. Sniper Step
+    if (state.rules.abilityRules.sniper) {
+      final sniper = alivePlayers.where((p) => p.hasSniper).firstOrNull;
+      if (sniper != null) {
+        final hasShot = state.eventHistory.any((e) => e.type == EventType.sniperKill);
+        if (!hasShot) {
+          _activeSteps.add(_DynamicNightStep(
+            actor: sniper,
+            arabicTitle: 'القناص',
+            arabicSubtitle: 'بواسطة المواطن القناص',
+            arabicAction:
+                'بصوت عالي: "القناص يفتح.. هل تريد القنص الليلة؟ اختر هدفك أو تخطى.. القناص يغمض"',
+            color: Colors.amberAccent,
+            eventType: EventType.sniperKill,
+          ));
+        }
+      }
+    }
   }
 
   Future<void> _continueFromIntroduction() async {
@@ -187,12 +206,14 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       if (target.role.team == Team.mafia) return false;
     }
 
+    final limit = state.rules.abilityRules.repeatedTargetLimit;
+
     if (step.eventType == EventType.silence) {
       final pastSilences = state.eventHistory.where((e) =>
           e.type == EventType.silence &&
           e.actorId == step.actor.id &&
           e.targetId == target.id);
-      if (pastSilences.isNotEmpty) return false;
+      if (limit != -1 && pastSilences.length >= limit) return false;
     }
 
     if (step.eventType == EventType.protection) {
@@ -200,10 +221,14 @@ class _NightScreenState extends ConsumerState<NightScreen> {
           e.type == EventType.protection &&
           e.actorId == step.actor.id &&
           e.targetId == target.id);
-      if (pastProtections.isNotEmpty) return false;
+      if (limit != -1 && pastProtections.length >= limit) return false;
     }
 
     if (step.eventType == EventType.investigation) {
+      if (target.id == step.actor.id) return false;
+    }
+    
+    if (step.eventType == EventType.sniperKill) {
       if (target.id == step.actor.id) return false;
     }
 
@@ -283,7 +308,25 @@ class _NightScreenState extends ConsumerState<NightScreen> {
   }
 
   void _showInvestigationResult(Player target) {
-    final isMafia = target.role.team == Team.mafia;
+    final state = ref.read(gameOrchestratorProvider);
+    final aRules = state.rules.abilityRules;
+    
+    bool isMafia = target.role.team == Team.mafia;
+    bool isJoker = target.role == Role.joker;
+    
+    if (target.role == Role.mafiaSheikh && !aRules.mafiaSheikhReveal) {
+      isMafia = false; // Hidden
+    }
+    
+    String resultText = isMafia ? 'من المافيا!' : 'من المواطنين';
+    Color resultColor = isMafia ? Colors.redAccent : Colors.greenAccent;
+    IconData resultIcon = isMafia ? Icons.warning_rounded : Icons.check_circle_outline;
+    
+    if (isJoker && aRules.jokerReveal) {
+      resultText = 'المهرج (الجوكر)!';
+      resultColor = Colors.purpleAccent;
+      resultIcon = Icons.theater_comedy;
+    }
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -292,7 +335,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-                color: isMafia ? Colors.redAccent : Colors.greenAccent,
+                color: resultColor,
                 width: 2)),
         title: const Text('نتيجة التحقيق',
             style: TextStyle(
@@ -302,9 +345,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isMafia ? Icons.warning_rounded : Icons.check_circle_outline,
+            Icon(resultIcon,
                 size: 64,
-                color: isMafia ? Colors.redAccent : Colors.greenAccent),
+                color: resultColor),
             const SizedBox(height: 16),
             Text('اللاعب ${target.name}',
                 style: const TextStyle(
@@ -314,9 +357,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                     color: Colors.white)),
             const SizedBox(height: 8),
             Text(
-              isMafia ? 'من المافيا!' : 'من المواطنين',
+              resultText,
               style: TextStyle(
-                color: isMafia ? Colors.redAccent : Colors.greenAccent,
+                color: resultColor,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Cairo',

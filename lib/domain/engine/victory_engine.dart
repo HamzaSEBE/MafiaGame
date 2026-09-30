@@ -43,27 +43,48 @@ class VictoryEngine {
       }
     }
 
-    // 1. If all mafia are dead, citizens win immediately (Joker loses because he survived!).
-    if (mafiaCount == 0) {
+    final vRules = state.rules.victoryRules;
+
+    // RULE: Correct Mafia Executions
+    if (vRules.correctMafiaExecutions && state.correctMafiaExecutionsCount >= vRules.requiredCorrectExecutions) {
       return VictoryStatus.citizensWin;
-    } 
-    
-    // 2. If Mafia strictly outnumbers everyone else, they have an absolute majority.
-    if (mafiaCount > citizensCount + jokerCount) {
-      return VictoryStatus.mafiaWin;
-    } 
-    
-    // 3. If Mafia equals Citizens + Jokers (e.g. 1v1, 2v2)
-    if (mafiaCount == (citizensCount + jokerCount)) {
-      if (hasAliveDoctor || hasAliveCitizenBoy) {
-        return VictoryStatus.continueGame;
-      }
-      return VictoryStatus.mafiaWin;
     }
 
-    // 4. Special case: If 0 citizens left, but Joker is alive. Mafia wins because they won't vote Joker.
-    if (citizensCount == 0 && mafiaCount > 0) {
-      return VictoryStatus.mafiaWin;
+    // RULE: Initial Mafia Count Parity
+    if (vRules.initialMafiaParity) {
+      if (mafiaCount == 0) {
+        return VictoryStatus.citizensWin;
+      }
+      if (citizensCount <= state.initialMafiaCount) {
+        return VictoryStatus.mafiaWin;
+      }
+      return VictoryStatus.continueGame;
+    }
+
+    // RULE: Classic Victory (Default)
+    if (vRules.classicVictory) {
+      // 1. If all mafia are dead, citizens win immediately (Joker loses because he survived!).
+      if (mafiaCount == 0) {
+        return VictoryStatus.citizensWin;
+      } 
+      
+      // 2. If Mafia strictly outnumbers everyone else, they have an absolute majority.
+      if (mafiaCount > citizensCount + jokerCount) {
+        return VictoryStatus.mafiaWin;
+      } 
+      
+      // 3. If Mafia equals Citizens + Jokers (e.g. 1v1, 2v2)
+      if (mafiaCount == (citizensCount + jokerCount)) {
+        if (hasAliveDoctor || hasAliveCitizenBoy) {
+          return VictoryStatus.continueGame;
+        }
+        return VictoryStatus.mafiaWin;
+      }
+
+      // 4. Special case: If 0 citizens left, but Joker is alive. Mafia wins because they won't vote Joker.
+      if (citizensCount == 0 && mafiaCount > 0) {
+        return VictoryStatus.mafiaWin;
+      }
     }
 
     return VictoryStatus.continueGame;

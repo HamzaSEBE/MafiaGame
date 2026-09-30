@@ -360,15 +360,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: isPrimary
-              ? const LinearGradient(
-                  colors: [Color(0xFF8B0000), Color(0xFF4A0000)], // Deep Mafia Red
+              ? LinearGradient(
+                  colors: [AppTheme.primaryCardStart, AppTheme.primaryCardEnd], // Deep Mafia Red
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
               : null,
           color: isPrimary ? null : Colors.white.withValues(alpha: 0.05),
           border: Border.all(
-            color: isPrimary ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
+            color: isPrimary ? AppTheme.iconColor1.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
             width: isPrimary ? 1.5 : 1,
           ),
           boxShadow: isPrimary

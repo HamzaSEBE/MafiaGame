@@ -48,6 +48,21 @@ class AppTheme {
 
 
 
+
+  // Semantic UI Colors
+  static Color primaryCardStart = const Color(0xFF8B0000);
+  static Color primaryCardEnd = const Color(0xFF4A0000);
+  
+  static Color secondaryCardStart = Colors.purpleAccent;
+  static Color secondaryCardEnd = Colors.deepPurple;
+  
+  static Color glowColor = const Color(0xFF8B0000);
+  static Color borderHighlight = Colors.redAccent;
+  
+  static Color iconColor1 = Colors.redAccent;
+  static Color iconColor2 = Colors.amber;
+  static Color iconColor3 = Colors.blueAccent;
+
   static void applyTheme(String themeId) {
     switch (themeId) {
       case 'midnight_blue':

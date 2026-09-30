@@ -59,9 +59,9 @@ class AbilityRules {
   const AbilityRules({
     this.protectionTargetLimit = 1,
     this.silenceTargetLimit = 1,
-    this.mafiaSheikhReveal = false,
+    this.mafiaSheikhReveal = true,
     this.jokerReveal = false,
-    this.citizenSheikhReveal = true,
+    this.citizenSheikhReveal = false,
     this.sniper = false,
   });
 
@@ -84,9 +84,9 @@ class AbilityRules {
     return AbilityRules(
       protectionTargetLimit: pLimit,
       silenceTargetLimit: sLimit,
-      mafiaSheikhReveal: json['mafiaSheikhReveal'] ?? false,
+      mafiaSheikhReveal: json['mafiaSheikhReveal'] ?? true,
       jokerReveal: json['jokerReveal'] ?? false,
-      citizenSheikhReveal: json['citizenSheikhReveal'] ?? true,
+      citizenSheikhReveal: json['citizenSheikhReveal'] ?? false,
       sniper: json['sniper'] ?? false,
     );
   }

@@ -142,7 +142,7 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
           
           ListTile(
             title: const Text('حد الحماية المتكررة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('كم ليلة مختلفة يمكن للطبيب حماية نفس الشخص.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            subtitle: const Text('أقصى عدد ليالٍ متتالية يمكن فيها حماية/إسكات نفس الشخص.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
             trailing: DropdownButton<int>(
               value: rules.abilityRules.protectionTargetLimit,
               dropdownColor: const Color(0xFF1E1E24),
@@ -173,7 +173,7 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
           
           ListTile(
             title: const Text('حد الإسكات المتكرر', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('كم ليلة مختلفة يمكن للسفاح إسكات نفس الشخص.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            subtitle: const Text('أقصى عدد ليالٍ متتالية يمكن فيها حماية/إسكات نفس الشخص.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
             trailing: DropdownButton<int>(
               value: rules.abilityRules.silenceTargetLimit,
               dropdownColor: const Color(0xFF1E1E24),
@@ -204,7 +204,7 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
           
           SwitchListTile(
             title: const Text('كشف شيخ المافيا بشكل مستقل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('إذا حقق المحقق في شيخ المافيا، يظهر له كـ "شيخ المافيا" بدلاً من إخفائه كمواطن.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            subtitle: const Text('عند التفعيل يظهر شيخ المافيا للمحقق كمافيا بدلاً من مواطن.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
             value: rules.abilityRules.mafiaSheikhReveal,
             activeColor: Colors.orangeAccent,
             onChanged: (val) {
@@ -226,7 +226,7 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
           
           SwitchListTile(
             title: const Text('كشف الجوكر بشكل مستقل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('هل يظهر الجوكر لشيخ المواطنين كجوكر أم يبقى مخفياً كمواطن؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            subtitle: const Text('عند التفعيل يُكشف الجوكر لشيخ المواطنين كجوكر، وعند الإيقاف يبقى مخفياً كمواطن.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
             value: rules.abilityRules.jokerReveal,
             activeColor: Colors.orangeAccent,
             onChanged: (val) {
@@ -248,7 +248,7 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
           
           SwitchListTile(
             title: const Text('إفصاح شيخ المواطنين', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('قدرة مستقلة: يسمح لشيخ المواطنين بالكشف علناً ليصبح صوته بـ 3 أصوات.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            subtitle: const Text('يكشف الشيخ دوره علناً مرة واحدة ويصبح صوته بـ3 أصوات.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
             value: rules.abilityRules.citizenSheikhReveal,
             activeColor: Colors.orangeAccent,
             onChanged: (val) {
@@ -270,7 +270,7 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
           
           SwitchListTile(
             title: const Text('القناص', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('منح قدرة قنص (لمرة واحدة) لأحد المواطنين العشوائيين.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            subtitle: const Text('يملك القناص رصاصة واحدة يقتل بها لاعباً في الليل.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
             value: rules.abilityRules.sniper,
             activeColor: Colors.orangeAccent,
             onChanged: (val) {

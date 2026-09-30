@@ -835,6 +835,17 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                           fontFamily: 'Cairo')),
+                                  if (voter.isCitizenSheikhRevealed) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orangeAccent,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text('x3', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                  ],
                                   const Spacer(),
                                   if (votesReceived > 0)
                                     Container(

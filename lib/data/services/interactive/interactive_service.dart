@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/domain/entities/interactive/models.dart';
 import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
+import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:uuid/uuid.dart';
 
 final interactiveServiceProvider = Provider((ref) => InteractiveService());
@@ -181,6 +182,12 @@ class InteractiveService {
     final hasActionPrompts = actionPrompts != null
         ? actionPrompts.values.any((prompts) => prompts.isNotEmpty)
         : requiredActions?.isNotEmpty ?? false;
+    String? globalAnnouncement;
+    if (state.eventHistory.isNotEmpty && state.eventHistory.last.type == EventType.citizenSheikhReveal) {
+      final sheikhName = state.getPlayerById(state.eventHistory.last.actorId ?? '')?.name ?? 'شيخ المواطنين';
+      globalAnnouncement = 'إفصاح شيخ المواطنين! اللاعب $sheikhName كشف عن نفسه! أصبح صوته الآن بـ 3 أصوات.';
+    }
+
     batch.update(sessionRef, {
       'status': (state.phase == Phase.winCheck
               ? SessionStatus.finished
@@ -192,6 +199,7 @@ class InteractiveService {
       'actionsPhase': hasActionPrompts ? state.phase.name : null,
       'actionsRound': hasActionPrompts ? state.round : null,
       'winner': state.winner?.name,
+      if (globalAnnouncement != null) 'globalAnnouncement': globalAnnouncement,
     });
 
     // Update public seats and private secrets
@@ -203,6 +211,7 @@ class InteractiveService {
           .doc(player.id);
       batch.update(seatRef, {
         'isAlive': player.isAlive,
+        'isCitizenSheikhRevealed': player.isCitizenSheikhRevealed,
       });
 
       final secretRef = _firestore

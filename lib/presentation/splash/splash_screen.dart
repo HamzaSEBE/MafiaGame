@@ -96,7 +96,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 const SizedBox(height: 48),
 
                 // Title animation
-                const Text(
+                Text(
                   'مافيا عالشوارب',
                   style: TextStyle(
                     color: Colors.white,
@@ -122,7 +122,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.mafiaPrimary,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(color: AppTheme.mafiaPrimary, blurRadius: 10),
                     ],
                   ),

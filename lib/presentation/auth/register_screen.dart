@@ -114,8 +114,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'الاسم الكامل',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.person, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.person, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -131,8 +131,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'اسم المستخدم بالإنجليزية',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.alternate_email, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.alternate_email, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -152,8 +152,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'البريد الإلكتروني',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.email, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.email, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,8 +173,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'كلمة المرور',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.lock, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.lock, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -200,8 +200,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'تأكيد كلمة المرور',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.lock_outline, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -227,7 +227,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('لديك حساب؟ سجل الدخول', style: TextStyle(color: AppTheme.textPrimary, fontFamily: 'Cairo')),
+                      child: Text('لديك حساب؟ سجل الدخول', style: TextStyle(color: AppTheme.textPrimary, fontFamily: 'Cairo')),
                     ),
                   ],
                 ),

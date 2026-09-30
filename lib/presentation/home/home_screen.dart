@@ -94,7 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                           border: Border.all(color: AppTheme.mafiaAccent.withValues(alpha: 0.2)),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.theater_comedy, // Or any elegant icon, local asset is better if we had one
                           size: 70,
                           color: AppTheme.mafiaAccent,
@@ -110,7 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           fontFamily: 'Cairo',
                           letterSpacing: -1,
                           shadows: [
-                            Shadow(color: AppTheme.mafiaAccent.withValues(alpha: 0.5), blurRadius: 30, offset: const Offset(0, 4)),
+                            Shadow(color: AppTheme.mafiaAccent.withValues(alpha: 0.5), blurRadius: 30, offset: Offset(0, 4)),
                           ],
                         ),
                       ),
@@ -272,7 +272,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       MaterialPageRoute(builder: (_) => const SettingsScreen()),
                     );
                   },
-                  icon: const Icon(Icons.settings, color: Colors.white70),
+                  icon: Icon(Icons.settings, color: Colors.white70),
                   splashRadius: 24,
                 ),
                 const Spacer(),
@@ -328,7 +328,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                           image: avatarImage != null ? DecorationImage(image: avatarImage, fit: BoxFit.cover) : null,
                         ),
-                        child: avatarImage == null ? const Icon(Icons.person, color: AppTheme.textSecondary) : null,
+                        child: avatarImage == null ? Icon(Icons.person, color: AppTheme.textSecondary) : null,
                       ),
                     ],
                   ),
@@ -456,7 +456,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               alignment: Alignment.center,
               children: [
                 Icon(Icons.public, color: Colors.deepPurpleAccent.withValues(alpha: 0.3), size: 36),
-                const Icon(Icons.public, color: Colors.white, size: 28),
+                Icon(Icons.public, color: Colors.white, size: 28),
               ],
             ),
             const SizedBox(width: 16),

@@ -67,7 +67,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     future: ref.read(playerStatsRepoProvider).loadStats(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary));
+                        return Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary));
                       }
                       if (snapshot.hasError) {
                         return const Center(child: Text('خطأ في تحميل البيانات', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')));
@@ -104,11 +104,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
               'إحصائيات اللاعبين',
               style: TextStyle(
@@ -121,7 +121,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+            icon: Icon(Icons.delete_forever, color: Colors.redAccent),
             tooltip: 'حذف جميع الإحصائيات',
             onPressed: () {
               showDialog(
@@ -129,12 +129,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 builder: (ctx) => AlertDialog(
                   backgroundColor: const Color(0xFF1A1A22),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Text('حذف جميع الإحصائيات؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-                  content: const Text('سيتم حذف إحصائيات جميع اللاعبين نهائياً. هل أنت متأكد؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                  title: Text('حذف جميع الإحصائيات؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                  content: Text('سيتم حذف إحصائيات جميع اللاعبين نهائياً. هل أنت متأكد؟', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+                      child: Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -149,7 +149,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                           (context as Element).markNeedsBuild();
                         }
                       },
-                      child: const Text('حذف الكل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                      child: Text('حذف الكل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
                     ),
                   ],
                 ),
@@ -215,7 +215,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 children: [
                   Text(
                     p.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -249,7 +249,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               children: [
                 Text(
                   '$winRate%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,

@@ -129,7 +129,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
         children: [
           const AnimatedBackground(),
           _history == null
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary))
+              ? Center(child: CircularProgressIndicator(color: AppTheme.mafiaPrimary))
               : _history!.isEmpty
                   ? const Center(child: Text('لا يوجد سجل بعد', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 18)))
                   : Column(

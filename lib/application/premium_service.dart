@@ -1,34 +1,43 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
 
 class PremiumNotifier extends StateNotifier<bool> {
   final Ref ref;
+  StreamSubscription? _subscription;
 
   PremiumNotifier(this.ref) : super(false) {
     _init();
   }
 
   void _init() {
-    // Listen to user changes
     ref.listen(authServiceProvider, (previous, next) {
       final user = next.currentUser;
+      
+      _subscription?.cancel();
+      
       if (user != null) {
-        // Listen to Firestore for premium status
-        FirebaseFirestore.instance
+        _subscription = FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .snapshots()
             .listen((snapshot) {
           if (snapshot.exists && snapshot.data() != null) {
             final isPremium = snapshot.data()!['isPremium'] ?? false;
-            state = isPremium;
+            if (mounted) state = isPremium;
           }
         });
       } else {
-        state = false;
+        if (mounted) state = false;
       }
     }, fireImmediately: true);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> unlockPremium() async {
@@ -38,7 +47,7 @@ class PremiumNotifier extends StateNotifier<bool> {
         'isPremium': true,
       }, SetOptions(merge: true));
     }
-    state = true;
+    if (mounted) state = true;
   }
 }
 

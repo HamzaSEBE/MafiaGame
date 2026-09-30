@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
@@ -319,6 +320,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     return GamePopScope(
       child: Scaffold(
         

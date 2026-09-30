@@ -1,4 +1,5 @@
 import 'package:mafia_nightfall/data/services/auth_service.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:mafia_nightfall/presentation/auth/auth_wrapper.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -141,6 +142,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     return Scaffold(
       
       appBar: AppBar(

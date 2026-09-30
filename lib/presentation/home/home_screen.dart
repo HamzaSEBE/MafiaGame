@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'dart:convert';
 import 'package:mafia_nightfall/presentation/stats/stats_screen.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
+    ref.watch(selectedThemeProvider);
     final user = ref.watch(authServiceProvider).currentUser;
     
     return Scaffold(

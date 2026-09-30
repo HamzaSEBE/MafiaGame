@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
@@ -30,6 +31,7 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     final state = ref.watch(gameOrchestratorProvider);
     final presentRoles = state.players.map((p) => p.role).toSet().toList();
     final events = state.eventHistory;

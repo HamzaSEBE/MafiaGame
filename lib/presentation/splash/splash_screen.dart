@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mafia_nightfall/presentation/auth/auth_wrapper.dart';
@@ -38,6 +39,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     return Scaffold(
       backgroundColor: const Color(0xFF030712), // Deep, cinematic black
       body: Stack(

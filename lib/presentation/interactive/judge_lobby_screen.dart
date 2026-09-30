@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -143,6 +144,7 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     if (_isCreating || _sessionId == null) {
       return _guardSystemBack(Scaffold(
         

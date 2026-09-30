@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -102,6 +103,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     if (_sessionEnded) return const WebSessionEndedScreen();
 
     final service = ref.read(interactiveServiceProvider);

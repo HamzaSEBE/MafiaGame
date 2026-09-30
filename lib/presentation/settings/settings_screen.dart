@@ -11,6 +11,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(selectedThemeProvider);
     final isPremium = ref.watch(premiumProvider);
 
     return Scaffold(

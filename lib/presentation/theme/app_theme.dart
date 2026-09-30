@@ -4,50 +4,106 @@ import 'package:mafia_nightfall/domain/enums/team.dart';
 
 class AppTheme {
   // ─── Colors ────────────────────────────────────────────────────────────────
-  static const Color background    = Color(0xFF0F172A); // Deep slate
-  static const Color surface       = Color(0xFF1E293B);
-  static const Color surfaceHigh   = Color(0xFF334155);
+  static Color background    = Color(0xFF0F172A); // Deep slate
+  static Color surface       = Color(0xFF1E293B);
+  static Color surfaceHigh   = Color(0xFF334155);
   
-  static const Color accent = Color(0xFF8B5CF6); // Rich purple for neutral/GM actions
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
+  static Color accent = Color(0xFF8B5CF6); // Rich purple for neutral/GM actions
+  static Color textPrimary = Color(0xFFF8FAFC);
+  static Color textSecondary = Color(0xFF94A3B8);
 
   // Mafia team colors (Blood Red / Crimson)
-  static const Color mafiaPrimary = Color(0xFFE11D48);
-  static const Color mafiaAccent = Color(0xFF9F1239);
+  static Color mafiaPrimary = Color(0xFFE11D48);
+  static Color mafiaAccent = Color(0xFF9F1239);
   
   // Citizen team colors (Cyan / Blue)
-  static const Color citizensPrimary = Color(0xFF0EA5E9);
-  static const Color citizensAccent = Color(0xFF0284C7);
+  static Color citizensPrimary = Color(0xFF0EA5E9);
+  static Color citizensAccent = Color(0xFF0284C7);
 
   // Status colors
-  static const Color error = Color(0xFFEF4444);
-  static const Color success = Color(0xFF22C55E);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color death = Color(0xFF64748B); // Slate 500
+  static Color error = Color(0xFFEF4444);
+  static Color success = Color(0xFF22C55E);
+  static Color warning = Color(0xFFF59E0B);
+  static Color death = Color(0xFF64748B); // Slate 500
 
 
   // Reusable Gradients for absolute masterpiece look
-  static const LinearGradient mafiaGradient = LinearGradient(
+  static LinearGradient mafiaGradient = LinearGradient(
     colors: [mafiaPrimary, mafiaAccent],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
-  static const LinearGradient citizenGradient = LinearGradient(
+  static LinearGradient citizenGradient = LinearGradient(
     colors: [citizensPrimary, citizensAccent],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient backgroundGradient = LinearGradient(
+  static LinearGradient backgroundGradient = LinearGradient(
     colors: [Color(0xFF0F172A), Color(0xFF020617)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
 
+
+  static void applyTheme(String themeId) {
+    switch (themeId) {
+      case 'midnight_blue':
+        background = const Color(0xFF0A1118);
+        surface = const Color(0xFF1E293B);
+        surfaceHigh = const Color(0xFF334155);
+        accent = const Color(0xFF0EA5E9);
+        backgroundGradient = const LinearGradient(
+          colors: [Color(0xFF0A1118), Color(0xFF020617)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        );
+        break;
+      case 'emerald_shadow':
+        background = const Color(0xFF00120B);
+        surface = const Color(0xFF00251A);
+        surfaceHigh = const Color(0xFF004D40);
+        accent = const Color(0xFF10B981);
+        backgroundGradient = const LinearGradient(
+          colors: [Color(0xFF00120B), Color(0xFF000503)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        );
+        break;
+      case 'royal_gold':
+        background = const Color(0xFF1A1500);
+        surface = const Color(0xFF332A00);
+        surfaceHigh = const Color(0xFF4D4000);
+        accent = const Color(0xFFFFD700);
+        backgroundGradient = const LinearGradient(
+          colors: [Color(0xFF1A1500), Color(0xFF000000)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        );
+        break;
+      case 'dark_blood':
+      default:
+        background = const Color(0xFF0F172A);
+        surface = const Color(0xFF1E293B);
+        surfaceHigh = const Color(0xFF334155);
+        accent = const Color(0xFF8B0000); // Dark red instead of purple
+        backgroundGradient = const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF020617)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        );
+        break;
+    }
+    
+    // specialAction is usually same as accent
+    specialAction = accent;
+  }
+
   static ThemeData getTheme(String themeId) {
+    applyTheme(themeId); // Ensure variables are updated before returning ThemeData
+
     Color bg = const Color(0xFF07070B);
     Color primary = accent;
 
@@ -81,7 +137,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: textPrimary),
         displayMedium: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: textPrimary),
         displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: textPrimary),
@@ -100,7 +156,7 @@ class AppTheme {
       scaffoldBackgroundColor: background,
       primaryColor: accent,
       fontFamily: 'Cairo',
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge:  TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: textPrimary),
         displayMedium: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: textPrimary),
         displaySmall:  TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: textPrimary),
@@ -110,7 +166,7 @@ class AppTheme {
         bodyMedium:    TextStyle(fontSize: 14, color: textSecondary),
         labelLarge:    TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 2, color: textPrimary),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: background,
         elevation: 0,
         centerTitle: true,
@@ -136,7 +192,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: textPrimary,
-          side: const BorderSide(color: surfaceHigh, width: 2),
+          side: BorderSide(color: surfaceHigh, width: 2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
@@ -147,7 +203,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: surfaceHigh, width: 1),
+          side: BorderSide(color: surfaceHigh, width: 1),
         ),
         margin: const EdgeInsets.symmetric(vertical: 8),
       ),
@@ -156,7 +212,7 @@ class AppTheme {
 
   // --- Helper Methods for UI ---
 
-  static const Color specialAction = accent;
+  static Color specialAction = accent;
 
   static Color teamColor(Role role) {
     if (role.team == Team.mafia) return mafiaPrimary;

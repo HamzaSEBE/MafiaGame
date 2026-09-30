@@ -64,7 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ في تسجيل الدخول: ${e.toString()}', style: const TextStyle(fontFamily: 'Cairo'))),
+            SnackBar(content: Text('خطأ في تسجيل الدخول: ${e.toString()}', style: TextStyle(fontFamily: 'Cairo'))),
           );
         }
       } finally {
@@ -87,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تسجيل الدخول عبر جوجل: ${e.toString()}', style: const TextStyle(fontFamily: 'Cairo'))),
+          SnackBar(content: Text('فشل تسجيل الدخول عبر جوجل: ${e.toString()}', style: TextStyle(fontFamily: 'Cairo'))),
         );
       }
     } finally {
@@ -118,9 +118,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.security, size: 80, color: AppTheme.mafiaPrimary),
+                    Icon(Icons.security, size: 80, color: AppTheme.mafiaPrimary),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'تسجيل الدخول',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -133,11 +133,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 40),
                     TextFormField(
                       controller: _emailController,
-                      style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                      style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
                       decoration: InputDecoration(
                         labelText: 'البريد الإلكتروني أو اسم المستخدم',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.person, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.person, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -151,11 +151,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                      style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
                       decoration: InputDecoration(
                         labelText: 'كلمة المرور',
-                        labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: const Icon(Icons.lock, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                        prefixIcon: Icon(Icons.lock, color: AppTheme.textSecondary),
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,7 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           context,
                           MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                         ),
-                        child: const Text('نسيت كلمة المرور؟', style: TextStyle(color: AppTheme.mafiaAccent, fontFamily: 'Cairo')),
+                        child: Text('نسيت كلمة المرور؟', style: TextStyle(color: AppTheme.mafiaAccent, fontFamily: 'Cairo')),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -186,14 +186,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('دخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                          : Text('دخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                     ),
                     const SizedBox(height: 20),
 
                     Row(
                       children: [
                         Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text('أو', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 14)),
                         ),
@@ -279,7 +279,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 16),
-                                  const Text(
+                                  Text(
                                     'الدخول بحساب Google',
                                     style: TextStyle(
                                       fontSize: 17,
@@ -301,13 +301,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('ليس لديك حساب؟', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo')),
+                        Text('ليس لديك حساب؟', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo')),
                         TextButton(
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const RegisterScreen()),
                           ),
-                          child: const Text('إنشاء حساب', style: TextStyle(color: AppTheme.citizensPrimary, fontFamily: 'Cairo')),
+                          child: Text('إنشاء حساب', style: TextStyle(color: AppTheme.citizensPrimary, fontFamily: 'Cairo')),
                         ),
                       ],
                     ),

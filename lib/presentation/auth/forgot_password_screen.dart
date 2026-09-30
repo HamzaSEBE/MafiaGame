@@ -51,7 +51,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -59,14 +59,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_reset, size: 80, color: AppTheme.mafiaPrimary),
+              Icon(Icons.lock_reset, size: 80, color: AppTheme.mafiaPrimary),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'استعادة كلمة المرور',
                 style: TextStyle(color: AppTheme.textPrimary, fontSize: 28, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 16, fontFamily: 'Cairo'),
@@ -75,11 +75,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: AppTheme.textPrimary),
+                style: TextStyle(color: AppTheme.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'البريد الإلكتروني',
-                  labelStyle: const TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                  prefixIcon: const Icon(Icons.email, color: AppTheme.textSecondary),
+                  labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
+                  prefixIcon: Icon(Icons.email, color: AppTheme.textSecondary),
                   filled: true,
                   fillColor: AppTheme.surface,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -97,13 +97,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   onPressed: _isLoading ? null : _resetPassword,
                   child: _isLoading 
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('إرسال رابط إعادة التعيين', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                      : Text('إرسال رابط إعادة التعيين', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
                 ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('العودة لتسجيل الدخول', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 16)),
+                child: Text('العودة لتسجيل الدخول', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo', fontSize: 16)),
               ),
             ],
           ),

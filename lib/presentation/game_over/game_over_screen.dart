@@ -184,7 +184,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                     const SizedBox(height: 8),
                     Text(
                       winSubtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppTheme.textSecondary,
                           fontFamily: 'Cairo',
                           fontSize: 15),
@@ -193,7 +193,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                     const SizedBox(height: 20),
                     Text(
                       'عدد الجولات: $rounds',
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppTheme.textSecondary, fontSize: 13),
                     ),
                   ],
@@ -210,7 +210,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                         labelColor: AppTheme.mafiaAccent,
                         unselectedLabelColor: AppTheme.textSecondary,
                         indicatorColor: AppTheme.mafiaAccent,
-                        labelStyle: const TextStyle(
+                        labelStyle: TextStyle(
                             fontFamily: 'Cairo', fontWeight: FontWeight.w600),
                         tabs: [
                           Tab(text: 'المافيا: ${mafiaPlayers.length}'),
@@ -249,8 +249,8 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                         backgroundColor: AppTheme.surface,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      icon: const Icon(Icons.home),
-                      label: const Text('الرئيسية'),
+                      icon: Icon(Icons.home),
+                      label: Text('الرئيسية'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -266,8 +266,8 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                         backgroundColor: Colors.amber,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      icon: const Icon(Icons.menu_book, color: Colors.black87),
-                      label: const Text('جريدة المدينة',
+                      icon: Icon(Icons.menu_book, color: Colors.black87),
+                      label: Text('جريدة المدينة',
                           style: TextStyle(color: Colors.black87)),
                     ),
                   ),
@@ -290,7 +290,7 @@ class _PlayerList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (players.isEmpty) {
-      return const Center(
+      return Center(
           child:
               Text('لا يوجد', style: TextStyle(color: AppTheme.textSecondary)));
     }
@@ -326,7 +326,7 @@ class _PlayerList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(p.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             fontFamily: 'Cairo',

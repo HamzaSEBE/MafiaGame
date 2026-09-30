@@ -3,14 +3,7 @@ import re
 with open('lib/presentation/night/night_screen.dart', 'r') as f:
     content = f.read()
 
-old_result = """  void _showInvestigationResult(Player target) {
-    final isMafia = target.role.team == Team.mafia;"""
-
-new_result = """  void _showInvestigationResult(Player target) {
-    final state = ref.read(gameOrchestratorProvider);
-    final aRules = state.rules.abilityRules;
-    
-    bool isMafia = target.role.team == Team.mafia;
+old_logic = """    bool isMafia = target.role.team == Team.mafia;
     bool isJoker = target.role == Role.joker;
     
     if (target.role == Role.mafiaSheikh && !aRules.mafiaSheikhReveal) {
@@ -27,11 +20,37 @@ new_result = """  void _showInvestigationResult(Player target) {
       resultIcon = Icons.theater_comedy;
     }"""
 
-content = content.replace(old_result, new_result)
+new_logic = """    bool isMafia = target.role.team == Team.mafia;
+    bool isJoker = target.role == Role.joker;
+    
+    String resultText = 'من المواطنين';
+    Color resultColor = Colors.greenAccent;
+    IconData resultIcon = Icons.check_circle_outline;
 
-content = content.replace("color: isMafia ? Colors.redAccent : Colors.greenAccent", "color: resultColor")
-content = content.replace("Icon(isMafia ? Icons.warning_rounded : Icons.check_circle_outline", "Icon(resultIcon")
-content = content.replace("isMafia ? 'من المافيا!' : 'من المواطنين'", "resultText")
+    if (isMafia) {
+      if (target.role == Role.mafiaSheikh) {
+        if (aRules.mafiaSheikhReveal) {
+          resultText = 'شيخ المافيا!';
+          resultColor = Colors.redAccent;
+          resultIcon = Icons.warning_rounded;
+        } else {
+          // Hidden as citizen
+          resultText = 'من المواطنين';
+          resultColor = Colors.greenAccent;
+          resultIcon = Icons.check_circle_outline;
+        }
+      } else {
+        resultText = 'من المافيا!';
+        resultColor = Colors.redAccent;
+        resultIcon = Icons.warning_rounded;
+      }
+    } else if (isJoker && aRules.jokerReveal) {
+      resultText = 'المهرج (الجوكر)!';
+      resultColor = Colors.purpleAccent;
+      resultIcon = Icons.theater_comedy;
+    }"""
+
+content = content.replace(old_logic, new_logic)
 
 with open('lib/presentation/night/night_screen.dart', 'w') as f:
     f.write(content)

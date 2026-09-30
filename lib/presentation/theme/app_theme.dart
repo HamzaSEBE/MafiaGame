@@ -295,16 +295,16 @@ class AppTheme {
   static Color specialAction = accent;
 
   static Color teamColor(Role role) {
-    if (role.team == Team.mafia) return mafiaPrimary;
+    if (role.team == Team.mafia) return const Color(0xFF8B0000);
     if (role.team == Team.independent) return Colors.purpleAccent;
-    return citizensPrimary;
+    return accent;
   }
 
   static Color roleColor(Role role) {
-    if (role.team == Team.mafia) return mafiaPrimary;
+    if (role.team == Team.mafia) return const Color(0xFF8B0000);
     if (role.team == Team.independent) return Colors.purpleAccent;
-    if (role == Role.goodCitizen) return citizensPrimary;
-    return specialAction;
+    if (role == Role.goodCitizen) return Colors.white;
+    return accent;
   }
 
   static Map<Role, String> customRoleNames = {};

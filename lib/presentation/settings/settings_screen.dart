@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/settings/role_names_screen.dart';
 import 'package:mafia_nightfall/presentation/premium/pricing_screen.dart';
 import 'package:mafia_nightfall/application/premium_service.dart';
@@ -33,7 +34,7 @@ class SettingsScreen extends ConsumerWidget {
             title: 'تغيير أسماء الأدوار',
             subtitle: 'تخصيص أسماء الأدوار كما تحب',
             icon: Icons.edit_note,
-            iconColor: Colors.blueAccent,
+            iconColor: AppTheme.iconColor3,
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const RoleNamesScreen()));
             },
@@ -46,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
             title: 'تغيير ثيم التطبيق',
             subtitle: 'تغيير الألوان والخلفيات (Premium)',
             icon: Icons.palette,
-            iconColor: isPremium ? Colors.purpleAccent : Colors.grey,
+            iconColor: isPremium ? AppTheme.iconColor1 : Colors.grey,
             isPremiumFeature: true,
             isLocked: !isPremium,
             onTap: () {
@@ -65,7 +66,7 @@ Navigator.push(context, MaterialPageRoute(builder: (_) => const ThemesScreen()))
             title: 'تغيير خلفية اللعب',
             subtitle: 'تخصيص الصور الخلفية (Premium)',
             icon: Icons.wallpaper,
-            iconColor: isPremium ? Colors.greenAccent : Colors.grey,
+            iconColor: isPremium ? AppTheme.iconColor2 : Colors.grey,
             isPremiumFeature: true,
             isLocked: !isPremium,
             onTap: () {

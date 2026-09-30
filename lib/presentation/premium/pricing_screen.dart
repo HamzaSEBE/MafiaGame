@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/application/premium_service.dart';
 
 class PricingScreen extends ConsumerWidget {
@@ -19,7 +20,7 @@ class PricingScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Icon(Icons.workspace_premium, size: 80, color: Color(0xFFFFD700)),
+            Icon(Icons.workspace_premium, size: 80, color: AppTheme.accent),
             const SizedBox(height: 16),
             const Text(
               'افتح جميع الميزات!',
@@ -40,7 +41,7 @@ class PricingScreen extends ConsumerWidget {
               price: r'$1.99',
               period: '/ شهر',
               description: 'إلغاء في أي وقت. مثالي للتجربة.',
-              color: Colors.blueAccent,
+              color: AppTheme.iconColor3,
             ),
             
             const SizedBox(height: 24),
@@ -52,7 +53,7 @@ class PricingScreen extends ConsumerWidget {
               price: r'$20.00',
               period: ' تدفع مرة واحدة',
               description: 'أفضل قيمة! افتح كل شيء للأبد ولن تدفع مجدداً.',
-              color: const Color(0xFFFFD700),
+              color: AppTheme.accent,
               isPopular: true,
             ),
           ],
@@ -157,7 +158,7 @@ class PricingScreen extends ConsumerWidget {
             child: const Text('إلغاء', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700), foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accent, foregroundColor: Colors.black),
             onPressed: () {
               ref.read(premiumProvider.notifier).unlockPremium();
               Navigator.pop(ctx); // Close dialog

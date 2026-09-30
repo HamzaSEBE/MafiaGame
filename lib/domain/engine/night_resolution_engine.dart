@@ -51,12 +51,32 @@ class NightResolutionEngine {
     }
 
     // 5. Calculate deaths
-    final deadPlayerIds = <String>{};
-    for (var targetId in finalAssassinationTargets) {
-      if (!protectedTargetIds.contains(targetId)) {
-        deadPlayerIds.add(targetId);
+    final mafiaDeadIds = <String>{};
+    final sniperDeadIds = <String>{};
+    final protectedFromMafiaIds = <String>{};
+    final protectedFromSniperIds = <String>{};
+
+    // Separate mafia targets and sniper targets
+    final mafiaTargets = assassinations.map((e) => e.targetId!).toSet();
+    final sniperTargets = sniperKills.map((e) => e.targetId!).toSet();
+
+    for (var targetId in mafiaTargets) {
+      if (protectedTargetIds.contains(targetId)) {
+        protectedFromMafiaIds.add(targetId);
+      } else {
+        mafiaDeadIds.add(targetId);
       }
     }
+
+    for (var targetId in sniperTargets) {
+      if (protectedTargetIds.contains(targetId)) {
+        protectedFromSniperIds.add(targetId);
+      } else {
+        sniperDeadIds.add(targetId);
+      }
+    }
+
+    final deadPlayerIds = {...mafiaDeadIds, ...sniperDeadIds};
 
     // 6. Calculate silences
     final silencedPlayerIds = silences.map((e) => e.targetId!).toSet();
@@ -70,14 +90,10 @@ class NightResolutionEngine {
         isAlive = false;
       }
 
-      // If a player died, they shouldn't be silenced (or it doesn't matter, but let's clear it)
       if (!isAlive) {
         isSilenced = false;
       }
 
-      // If they were already silenced from previous rounds, clear it unless re-silenced.
-      // Wait, silence applies for the NEXT day. So anyone targeted by silence tonight is silenced tomorrow.
-      
       return p.copyWith(
         isAlive: isAlive,
         isSilenced: isSilenced,
@@ -94,9 +110,12 @@ class NightResolutionEngine {
       timestamp: DateTime.now(),
       metadata: {
         'assassinatedIds': deadPlayerIds.toList(),
+        'mafiaDeadIds': mafiaDeadIds.toList(),
+        'sniperDeadIds': sniperDeadIds.toList(),
         'protectedIds': protectedTargetIds.toList(),
         'silencedIds': silencedPlayerIds.toList(),
-        'successfulProtections': finalAssassinationTargets.where((t) => protectedTargetIds.contains(t)).toList(),
+        'protectedFromMafiaIds': protectedFromMafiaIds.toList(),
+        'protectedFromSniperIds': protectedFromSniperIds.toList(),
       },
     );
 

@@ -7,6 +7,7 @@ import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
+import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/day/day_screen.dart';
@@ -45,6 +46,93 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
         }
       }
     });
+  }
+
+  Widget _buildProtectionCard(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shield_moon, color: color, size: 40),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    color: color,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Cairo')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeathCard(
+      GameState state, String id, String title, Color color) {
+    final player = state.getPlayerById(id);
+    if (player == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppTheme.roleColor(player.role).withValues(alpha: 0.5),
+            width: 2),
+      ),
+      child: Column(
+        children: [
+          Text(title,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Cairo')),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border:
+                  Border.all(color: AppTheme.roleColor(player.role), width: 3),
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                AppTheme.roleImage(player.role),
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            player.name,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo'),
+          ),
+          Text(
+            AppTheme.roleArabicName(player.role),
+            style: TextStyle(
+                color: AppTheme.roleColor(player.role),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _goToDay() {
@@ -243,39 +331,31 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     final state = ref.watch(gameOrchestratorProvider);
 
-    if (state.phase == Phase.winCheck && widget.interactiveSessionId == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const GameOverScreen()));
-      });
-      return const Scaffold();
-    }
+    final summaryEvent = state.eventHistory
+        .where((e) => e.type == EventType.nightResolutionSummary)
+        .lastOrNull;
 
-    final summaryEvent = state.eventHistory.lastWhere(
-      (e) => e.type == EventType.nightResolutionSummary,
-      orElse: () => GameEvent(
-        id: '',
-        gameId: '',
-        round: state.round,
-        phase: Phase.nightResolution,
-        type: EventType.nightResolutionSummary,
-        timestamp: DateTime.now(),
-      ),
-    );
+    final mafiaDeadIds =
+        (summaryEvent?.metadata['mafiaDeadIds'] as List?)?.cast<String>() ?? [];
+    final sniperDeadIds =
+        (summaryEvent?.metadata['sniperDeadIds'] as List?)?.cast<String>() ??
+            [];
+    final silencedIds =
+        (summaryEvent?.metadata['silencedIds'] as List?)?.cast<String>() ?? [];
 
-    final assassinatedIds =
-        (summaryEvent.metadata['assassinatedIds'] as List<dynamic>?)
+    final protectedFromMafiaIds =
+        (summaryEvent?.metadata['protectedFromMafiaIds'] as List?)
                 ?.cast<String>() ??
             [];
-    final silencedIds = (summaryEvent.metadata['silencedIds'] as List<dynamic>?)
-            ?.cast<String>() ??
-        [];
-    final successfulProtections =
-        (summaryEvent.metadata['successfulProtections'] as List<dynamic>?)
+    final protectedFromSniperIds =
+        (summaryEvent?.metadata['protectedFromSniperIds'] as List?)
                 ?.cast<String>() ??
             [];
+
+    final assassinatedIds = [...mafiaDeadIds, ...sniperDeadIds];
 
     String getNames(List<String> ids) {
       if (ids.isEmpty) return 'لا أحد';
@@ -287,7 +367,6 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        
         appBar: AppBar(
           title: const Text('ملخص الليل (للحكم فقط)',
               style: TextStyle(
@@ -339,103 +418,43 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const SizedBox(height: 16),
-                            if (successfulProtections.isNotEmpty)
-                              Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.greenAccent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.greenAccent.withValues(alpha: 0.5),
-                              width: 2),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.shield_moon,
-                                color: Colors.greenAccent, size: 40),
-                            SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                  'بنت المواطنين حمت الهدف بنجاح! لم يُقتل أحد.',
-                                  style: TextStyle(
-                                      color: Colors.greenAccent,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Cairo')),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (assassinatedIds.isNotEmpty)
-                      ...assassinatedIds.map((id) {
-                        final player = state.getPlayerById(id);
-                        if (player == null) return const SizedBox.shrink();
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                                color: AppTheme.roleColor(player.role)
-                                    .withValues(alpha: 0.5),
-                                width: 2),
-                          ),
-                          child: Column(
-                            children: [
-                              const Text('ضحية الليل (تم اغتياله):',
-                                  style: TextStyle(
-                                      color: Colors.redAccent,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Cairo')),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: AppTheme.roleColor(player.role),
-                                      width: 3),
-                                ),
-                                child: ClipOval(
-                                  child: Image.asset(
-                                    AppTheme.roleImage(player.role),
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
+                            if (protectedFromMafiaIds.isNotEmpty)
+                              ...protectedFromMafiaIds.map((id) {
+                                final player = state.getPlayerById(id);
+                                return _buildProtectionCard(
+                                    'حمت ${player?.name ?? ''} من اغتيال المافيا!',
+                                    Colors.greenAccent);
+                              }),
+                            if (protectedFromSniperIds.isNotEmpty)
+                              ...protectedFromSniperIds.map((id) {
+                                final player = state.getPlayerById(id);
+                                return _buildProtectionCard(
+                                    'حمت ${player?.name ?? ''} من قنص القناص!',
+                                    Colors.tealAccent);
+                              }),
+                            if (mafiaDeadIds.isNotEmpty)
+                              ...mafiaDeadIds.map((id) {
+                                return _buildDeathCard(
+                                    state,
+                                    id,
+                                    'ضحية الليل (تم اغتياله):',
+                                    Colors.redAccent);
+                              }),
+                            if (sniperDeadIds.isNotEmpty)
+                              ...sniperDeadIds.map((id) {
+                                return _buildDeathCard(
+                                    state,
+                                    id,
+                                    'ضحية الليل (تم قنصه):',
+                                    Colors.orangeAccent);
+                              }),
+                            if (silencedIds.isNotEmpty)
+                              _SummaryCard(
+                                title: 'تم إسكاتهم (لا يحق لهم الكلام):',
+                                names: getNames(silencedIds),
+                                icon: Icons.volume_off,
+                                color: Colors.blueAccent,
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                player.name,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Cairo'),
-                              ),
-                              Text(
-                                AppTheme.roleArabicName(player.role),
-                                style: const TextStyle(
-                                    color: Colors.redAccent,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Cairo'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    if (silencedIds.isNotEmpty)
-                      _SummaryCard(
-                        title: 'تم إسكاتهم (لا يحق لهم الكلام):',
-                        names: getNames(silencedIds),
-                        icon: Icons.volume_off,
-                        color: Colors.blueAccent,
-                      ),
                           ],
                         ),
                       ),
@@ -458,24 +477,29 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: state.phase == Phase.triggeredAbility
                               ? Colors.orangeAccent
-                              : Colors.orangeAccent,
-                          elevation: 10,
-                          shadowColor:
-                              Colors.orangeAccent.withValues(alpha: 0.5),
+                              : Colors.redAccent,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16)),
+                          elevation: 10,
                         ),
-                        child: Text(
-                            state.phase == Phase.winCheck
-                                ? 'عرض النتيجة النهائية'
-                                : state.phase == Phase.triggeredAbility
-                                    ? 'رد فعل المواطن الشجاع!'
-                                    : 'بدء النهار',
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Cairo',
-                                color: Colors.black)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              state.phase == Phase.triggeredAbility
+                                  ? 'رد فعل المواطن الشجاع!'
+                                  : 'متابعة',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Cairo'),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward,
+                                color: Colors.white),
+                          ],
+                        ),
                       ),
                     ),
                   ],

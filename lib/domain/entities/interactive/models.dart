@@ -16,6 +16,7 @@ class InteractiveSession {
   final int? actionsRound;
   final Team? winner;
   final DateTime createdAt;
+  final String? globalAnnouncement;
 
   InteractiveSession({
     required this.id,
@@ -28,6 +29,7 @@ class InteractiveSession {
     this.actionsRound,
     this.winner,
     required this.createdAt,
+    this.globalAnnouncement,
   });
 
   Map<String, dynamic> toJson() => {
@@ -41,6 +43,7 @@ class InteractiveSession {
         'actionsRound': actionsRound,
         'winner': winner?.name,
         'createdAt': createdAt.toIso8601String(),
+        'globalAnnouncement': globalAnnouncement,
       };
 
   factory InteractiveSession.fromJson(Map<String, dynamic> json) =>
@@ -64,6 +67,7 @@ class InteractiveSession {
             ? Team.values.firstWhere((e) => e.name == json['winner'])
             : null,
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+        globalAnnouncement: json['globalAnnouncement'] as String?,
       );
 }
 
@@ -73,6 +77,7 @@ class InteractiveSeat {
   final bool isAlive;
   final SeatStatus status;
   final String? linkedUid;
+  final bool isCitizenSheikhRevealed;
 
   InteractiveSeat({
     required this.id,
@@ -80,6 +85,7 @@ class InteractiveSeat {
     required this.isAlive,
     required this.status,
     this.linkedUid,
+    this.isCitizenSheikhRevealed = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -88,6 +94,7 @@ class InteractiveSeat {
         'isAlive': isAlive,
         'status': status.name,
         'linkedUid': linkedUid,
+        'isCitizenSheikhRevealed': isCitizenSheikhRevealed,
       };
 
   factory InteractiveSeat.fromJson(Map<String, dynamic> json) =>
@@ -98,6 +105,7 @@ class InteractiveSeat {
         status: SeatStatus.values.firstWhere((e) => e.name == json['status'],
             orElse: () => SeatStatus.unlinked),
         linkedUid: json['linkedUid'] as String?,
+        isCitizenSheikhRevealed: json['isCitizenSheikhRevealed'] as bool? ?? false,
       );
 }
 

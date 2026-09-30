@@ -322,7 +322,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     if (isMafia) {
       if (target.role == Role.mafiaSheikh) {
         if (aRules.mafiaSheikhReveal) {
-          resultText = 'شيخ المافيا!';
+          resultText = 'من المافيا!';
           resultColor = Colors.redAccent;
           resultIcon = Icons.warning_rounded;
         } else {

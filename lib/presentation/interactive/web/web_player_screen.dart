@@ -108,7 +108,6 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
 
     final service = ref.read(interactiveServiceProvider);
     return Scaffold(
-      
       appBar: AppBar(
         title:
             const Text('بطاقتك السرية', style: TextStyle(fontFamily: 'Cairo')),
@@ -444,12 +443,32 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
                             const SizedBox(height: 8),
                             ...targets.map((target) => RadioListTile<String>(
                                   contentPadding: EdgeInsets.zero,
-                                  title: Text(
-                                    target.playerName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Cairo',
-                                    ),
+                                  title: Row(
+                                    children: [
+                                      Text(
+                                        target.playerName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Cairo',
+                                        ),
+                                      ),
+                                      if (target.isCitizenSheikhRevealed) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                              color: Colors.orangeAccent,
+                                              borderRadius:
+                                                  BorderRadius.circular(8)),
+                                          child: const Text('x3',
+                                              style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold)),
+                                        )
+                                      ]
+                                    ],
                                   ),
                                   value: target.id,
                                   groupValue: selectedTarget,

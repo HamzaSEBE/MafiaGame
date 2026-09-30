@@ -79,10 +79,35 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
         service.streamActionRequests(widget.sessionId).listen(
       (actions) {
         _liveActions = actions;
+        _processInstantActions(actions);
         _publishAvailableInvestigationResults();
       },
       onError: (_) {},
     );
+  }
+
+  void _processInstantActions(List<ActionRequest> actions) {
+    if (!mounted || _liveSession == null) return;
+    final state = ref.read(gameOrchestratorProvider);
+    final service = ref.read(interactiveServiceProvider);
+
+    for (final action in actions) {
+      if (action.actionType == 'citizenSheikhReveal') {
+        final seat = _seatForUid(_liveSeats, action.uid);
+        if (seat != null) {
+          final player = state.getPlayerById(seat.id);
+          if (player != null &&
+              player.role == Role.citizensSheikh &&
+              !player.isCitizenSheikhRevealed) {
+            ref
+                .read(gameOrchestratorProvider.notifier)
+                .citizenSheikhReveal(seat.id);
+            _syncStateToClients();
+            service.clearActionRequest(widget.sessionId, action.id);
+          }
+        }
+      }
+    }
   }
 
   Future<void> _publishAvailableInvestigationResults() async {
@@ -638,7 +663,6 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
         !_nightActionRounds.contains(state.round);
 
     return Scaffold(
-      
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'العودة إلى ساحة اللاعبين',

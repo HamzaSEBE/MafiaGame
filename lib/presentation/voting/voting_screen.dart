@@ -157,8 +157,13 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
     }
 
     final voteCounts = <String, int>{};
-    for (var target in votes.values) {
-      voteCounts[target] = (voteCounts[target] ?? 0) + 1;
+    for (var entry in votes.entries) {
+      final voterId = entry.key;
+      final targetId = entry.value;
+      final voterPlayer =
+          ref.read(gameOrchestratorProvider).getPlayerById(voterId);
+      final weight = (voterPlayer?.isCitizenSheikhRevealed == true) ? 3 : 1;
+      voteCounts[targetId] = (voteCounts[targetId] ?? 0) + weight;
     }
 
     int maxVotes = voteCounts.values.reduce((a, b) => a > b ? a : b);
@@ -709,14 +714,18 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
 
     // Calculate votes for each candidate for the badges
     final voteCounts = <String, int>{};
-    for (var target in votes.values) {
-      voteCounts[target] = (voteCounts[target] ?? 0) + 1;
+    for (var entry in votes.entries) {
+      final voterId = entry.key;
+      final targetId = entry.value;
+      final voterPlayer =
+          ref.read(gameOrchestratorProvider).getPlayerById(voterId);
+      final weight = (voterPlayer?.isCitizenSheikhRevealed == true) ? 3 : 1;
+      voteCounts[targetId] = (voteCounts[targetId] ?? 0) + weight;
     }
 
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
@@ -732,6 +741,65 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
               tooltip: 'أدوات الحكم',
               onPressed: () => JudgeToolsSheet.show(context),
             ),
+            if (ref
+                .read(gameOrchestratorProvider)
+                .rules
+                .abilityRules
+                .citizenSheikhReveal)
+              IconButton(
+                icon: const Icon(Icons.campaign, color: Colors.orangeAccent),
+                tooltip: 'إفصاح شيخ المواطنين',
+                onPressed: () {
+                  final state = ref.read(gameOrchestratorProvider);
+                  final sheikh = state.alivePlayers
+                      .where((p) =>
+                          p.role == Role.citizensSheikh &&
+                          !p.isCitizenSheikhRevealed)
+                      .firstOrNull;
+                  if (sheikh == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text(
+                          'لا يمكن الكشف: شيخ المواطنين ميت أو كشف عن نفسه مسبقاً',
+                          style: TextStyle(fontFamily: 'Cairo')),
+                      backgroundColor: Colors.redAccent,
+                    ));
+                    return;
+                  }
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: const Color(0xFF1E1E24),
+                      title: const Text('إفصاح شيخ المواطنين',
+                          style: TextStyle(
+                              color: Colors.white, fontFamily: 'Cairo')),
+                      content: Text(
+                          'هل أنت متأكد من أن ${sheikh.name} يريد الكشف عن هويته؟ سيصبح صوته بـ 3 أصوات لآخر اللعبة.',
+                          style: const TextStyle(
+                              color: Colors.white70, fontFamily: 'Cairo')),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('إلغاء',
+                                style: TextStyle(
+                                    color: Colors.white54,
+                                    fontFamily: 'Cairo'))),
+                        TextButton(
+                          onPressed: () {
+                            ref
+                                .read(gameOrchestratorProvider.notifier)
+                                .citizenSheikhReveal(sheikh.id);
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('تأكيد الكشف',
+                              style: TextStyle(
+                                  color: Colors.orangeAccent,
+                                  fontFamily: 'Cairo')),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             TextButton(
               onPressed: () {
                 if (remote) {
@@ -838,12 +906,17 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                                   if (voter.isCitizenSheikhRevealed) ...[
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: Colors.orangeAccent,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Text('x3', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                                      child: const Text('x3',
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12)),
                                     ),
                                   ],
                                   const Spacer(),
@@ -930,7 +1003,6 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
   }
 
   Widget _remoteError(String message) => Scaffold(
-        
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

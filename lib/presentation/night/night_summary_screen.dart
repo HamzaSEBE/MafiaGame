@@ -286,7 +286,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         appBar: AppBar(
           title: const Text('ملخص الليل (للحكم فقط)',
               style: TextStyle(

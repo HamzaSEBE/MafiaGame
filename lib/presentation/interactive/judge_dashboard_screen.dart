@@ -636,7 +636,7 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
         !_nightActionRounds.contains(state.round);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'العودة إلى ساحة اللاعبين',

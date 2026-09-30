@@ -321,7 +321,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
   Widget build(BuildContext context) {
     return GamePopScope(
       child: Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         body: Stack(
           children: [
             if (_screenState == 0) _buildLockScreen(),

@@ -66,7 +66,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
     final players = state.players;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

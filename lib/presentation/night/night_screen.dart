@@ -414,7 +414,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         return GamePopScope(
           onExit: widget.onInteractiveExit,
           child: Scaffold(
-            backgroundColor: const Color(0xFF07070B),
+            
             body: Stack(
               children: [
                 Positioned.fill(
@@ -504,7 +504,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         );
       }
       return Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         body: Center(
           child: ElevatedButton(
             onPressed: () {
@@ -525,7 +525,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,

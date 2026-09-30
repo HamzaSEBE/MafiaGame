@@ -106,7 +106,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(0, -0.4),
             radius: 1.5,
@@ -116,7 +116,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.screen_lock_portrait, size: 80, color: Colors.white24),
+            Icon(Icons.screen_lock_portrait, size: 80, color: Colors.white24),
             const SizedBox(height: 30),
             Text(
               'مرر الهاتف إلى',
@@ -125,12 +125,12 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
             const SizedBox(height: 10),
             Text(
               _currentPlayer.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 42, 
                 fontWeight: FontWeight.w900, 
-                color: Colors.orangeAccent, 
+                color: AppTheme.glowColor, 
                 fontFamily: 'Cairo',
-                shadows: [Shadow(color: Colors.orangeAccent, blurRadius: 20)],
+                shadows: [Shadow(color: AppTheme.glowColor, blurRadius: 20)],
               ),
             ),
             const SizedBox(height: 60),
@@ -146,18 +146,18 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5), width: 1.5),
+                    border: Border.all(color: AppTheme.glowColor.withValues(alpha: 0.5), width: 1.5),
                   ),
                   child: Row(
                     children: [
                       Container(
                         width: 60,
                         height: 60,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.orangeAccent,
+                          color: AppTheme.glowColor,
                         ),
-                        child: const Icon(Icons.arrow_forward_ios, color: Colors.black),
+                        child: Icon(Icons.arrow_forward_ios, color: Colors.black),
                       ),
                       const Expanded(
                         child: Text(
@@ -175,7 +175,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
             const SizedBox(height: 20),
             Text(
               'تحذير: لا تحاول كشف الدور قبل تسليم الهاتف!',
-              style: TextStyle(color: Colors.redAccent.withValues(alpha: 0.5), fontSize: 12, fontFamily: 'Cairo'),
+              style: TextStyle(color: AppTheme.glowColor.withValues(alpha: 0.5), fontSize: 12, fontFamily: 'Cairo'),
             )
           ],
         ),
@@ -196,7 +196,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
             if (!_isHolding) ...[
               FadeTransition(
                 opacity: _pulseCtrl,
-                child: const Icon(Icons.fingerprint, size: 120, color: Colors.orangeAccent),
+                child: Icon(Icons.fingerprint, size: 120, color: AppTheme.glowColor),
               ),
               const SizedBox(height: 40),
               const Text(
@@ -223,12 +223,12 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent : Colors.blueAccent,
+                    color: AppTheme.glowColor,
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent.withValues(alpha: 0.3) : Colors.blueAccent.withValues(alpha: 0.3),
+                      color: AppTheme.glowColor,
                       blurRadius: 40,
                     )
                   ],
@@ -241,12 +241,12 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent : Colors.blueAccent,
+                          color: AppTheme.glowColor,
                           width: 3,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: (_currentPlayer.role.name.toLowerCase().contains('mafia')) ? Colors.redAccent.withValues(alpha: 0.5) : Colors.blueAccent.withValues(alpha: 0.5),
+                            color: AppTheme.glowColor.withValues(alpha: 0.5),
                             blurRadius: 20,
                           ),
                         ],
@@ -263,12 +263,12 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                     const SizedBox(height: 20),
                     Text(
                       _currentPlayer.name,
-                      style: const TextStyle(fontSize: 20, color: Colors.white70, fontFamily: 'Cairo'),
+                      style: TextStyle(fontSize: 20, color: Colors.white70, fontFamily: 'Cairo'),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       AppTheme.roleArabicName(_currentPlayer.role),
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo'),
+                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo'),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -280,7 +280,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
                       ),
                       child: Text(
                         AppTheme.roleAbilityDescription(_currentPlayer.role),
-                        style: const TextStyle(fontSize: 13, color: Colors.white54, fontFamily: 'Cairo'),
+                        style: TextStyle(fontSize: 13, color: Colors.white54, fontFamily: 'Cairo'),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -297,11 +297,11 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
   Widget _buildAlarmScreen() {
     return Container(
       width: double.infinity,
-      color: Colors.red.shade900,
+      color: AppTheme.background,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.warning_amber_rounded, size: 120, color: Colors.white),
+          Icon(Icons.warning_amber_rounded, size: 120, color: Colors.white),
           const SizedBox(height: 20),
           const Text(
             'محاولة غش!',
@@ -310,7 +310,7 @@ class _RoleRevealScreenState extends ConsumerState<RoleRevealScreen> with Ticker
           const SizedBox(height: 10),
           Text(
             'اللاعب السابق يحاول كشف دور ${_currentPlayer.name}!',
-            style: const TextStyle(fontSize: 20, color: Colors.white70, fontFamily: 'Cairo'),
+            style: TextStyle(fontSize: 20, color: Colors.white70, fontFamily: 'Cairo'),
             textAlign: TextAlign.center,
           ),
         ],

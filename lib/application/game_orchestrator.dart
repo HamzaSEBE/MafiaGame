@@ -18,7 +18,7 @@ final gameOrchestratorProvider =
     NotifierProvider<GameOrchestrator, GameState>(GameOrchestrator.new);
 
 class GameOrchestrator extends Notifier<GameState> {
-  final GameRuleset _ruleset = const GameRuleset();
+  
 
   @override
   GameState build() {
@@ -75,6 +75,34 @@ class GameOrchestrator extends Notifier<GameState> {
     state = state.copyWith(players: reassigned);
   }
 
+  void updateRules(GameRuleset rules) {
+    state = state.copyWith(rules: rules);
+  }
+
+  void citizenSheikhReveal(String playerId) {
+    final players = state.players.map((p) {
+      if (p.id == playerId && p.role == Role.citizensSheikh) {
+        return p.copyWith(isCitizenSheikhRevealed: true);
+      }
+      return p;
+    }).toList();
+    
+    final event = GameEvent(
+      id: const Uuid().v4(),
+      gameId: state.id,
+      round: state.round,
+      phase: state.phase,
+      type: EventType.citizenSheikhReveal,
+      actorId: playerId,
+      timestamp: DateTime.now(),
+    );
+    
+    state = state.copyWith(
+      players: players,
+      eventHistory: [...state.eventHistory, event]
+    );
+  }
+
   /// Shuffle and assign roles based on [roleConfig] (Map<Role, count>).
   /// Returns an error string if the total doesn't match player count, else null.
   String? assignRoles(Map<Role, int> roleConfig) {
@@ -100,9 +128,27 @@ class GameOrchestrator extends Notifier<GameState> {
       updatedPlayers[i] = updatedPlayers[i].copyWith(role: roles[i]);
     }
 
+    // Calculate initial Mafia Count
+    final initialMafiaCount = updatedPlayers.where((p) => p.role.team == Team.mafia).length;
+
+    // Assign Sniper if rule is enabled
+    if (state.rules.abilityRules.sniper) {
+      final citizens = updatedPlayers.where((p) => p.role.team == Team.citizens).toList();
+      if (citizens.isNotEmpty) {
+        citizens.shuffle(Random.secure());
+        final sniperId = citizens.first.id;
+        for (int i = 0; i < updatedPlayers.length; i++) {
+          if (updatedPlayers[i].id == sniperId) {
+            updatedPlayers[i] = updatedPlayers[i].copyWith(hasSniper: true);
+          }
+        }
+      }
+    }
+
     state = state.copyWith(
       players: updatedPlayers,
       phase: Phase.roleReveal,
+      initialMafiaCount: initialMafiaCount,
     );
     return null; // success
   }
@@ -142,7 +188,7 @@ class GameOrchestrator extends Notifier<GameState> {
   }
 
   void resolveNight() {
-    var nextState = NightResolutionEngine.resolve(state, _ruleset);
+    var nextState = NightResolutionEngine.resolve(state, state.rules);
 
     // Find who was assassinated
     final resolutionEvent = nextState.eventHistory
@@ -159,7 +205,16 @@ class GameOrchestrator extends Notifier<GameState> {
         winner = Team.independent;
       else
         winner = Team.citizens;
-      nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
+        
+      String? reason;
+      int aliveCitizensCount = nextState.alivePlayers.where((p) => p.role.team == Team.citizens).length;
+      if (winner == Team.mafia && nextState.rules.victoryRules.initialMafiaParity && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
+      else if (winner == Team.citizens && nextState.rules.victoryRules.correctMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
+      else if (winner == Team.independent) reason = 'إقصاء الجوكر بالتصويت';
+      else if (winner == Team.mafia) reason = 'سيطرة المافيا';
+      else reason = 'القضاء على المافيا';
+      
+      nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner, victoryReason: reason);
     } else if (assassinatedIds.isNotEmpty &&
         CitizenBoyEngine.shouldTriggerAbility(
             nextState, assassinatedIds.first)) {
@@ -267,7 +322,16 @@ class GameOrchestrator extends Notifier<GameState> {
         winner = Team.independent;
       else
         winner = Team.citizens;
-      nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
+        
+      String? reason;
+      int aliveCitizensCount = nextState.alivePlayers.where((p) => p.role.team == Team.citizens).length;
+      if (winner == Team.mafia && nextState.rules.victoryRules.initialMafiaParity && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
+      else if (winner == Team.citizens && nextState.rules.victoryRules.correctMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
+      else if (winner == Team.independent) reason = 'إقصاء الجوكر بالتصويت';
+      else if (winner == Team.mafia) reason = 'سيطرة المافيا';
+      else reason = 'القضاء على المافيا';
+      
+      nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner, victoryReason: reason);
     } else {
       if (nextPhase == Phase.night) {
         nextState =

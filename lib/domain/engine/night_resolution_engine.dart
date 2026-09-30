@@ -42,6 +42,14 @@ class NightResolutionEngine {
     // 4. Resolve Protections
     final protectedTargetIds = protections.map((e) => e.targetId!).toSet();
 
+    // Sniper Kills
+    final sniperKills = nightEvents.where((e) => e.type == EventType.sniperKill).toList();
+    for (var kill in sniperKills) {
+      if (kill.targetId != null) {
+        finalAssassinationTargets.add(kill.targetId!);
+      }
+    }
+
     // 5. Calculate deaths
     final deadPlayerIds = <String>{};
     for (var targetId in finalAssassinationTargets) {

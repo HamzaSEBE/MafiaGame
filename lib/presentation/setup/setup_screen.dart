@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:mafia_nightfall/presentation/setup/role_review_screen.dart';
+import 'package:mafia_nightfall/presentation/setup/rule_settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
@@ -278,6 +279,23 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                           onChanged: (r, c) => setState(() => _roleConfig[r] = c),
                           onAutoDistribute: _autoDistributeRoles,
                         ),
+                  ),
+                ),
+                
+                // Rule Settings Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.settings, color: Colors.orangeAccent),
+                    label: const Text('قوانين وإعدادات اللعبة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 16)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Colors.orangeAccent, width: 2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RuleSettingsScreen()));
+                    },
                   ),
                 ),
                 

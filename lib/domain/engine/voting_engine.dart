@@ -1,7 +1,8 @@
 import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
-import 'package:mafia_nightfall/core/error/game_error.dart';
+import 'package:mafia_nightfall/domain/enums/team.dart';
+import 'package:mafia_nightfall/domain/enums/role.dart';
 
 class VotingResult {
   final String? eliminatedPlayerId;
@@ -27,7 +28,14 @@ class VotingEngine {
     final voteCounts = <String, int>{};
     for (var vote in votes) {
       final targetId = vote.targetId!;
-      voteCounts[targetId] = (voteCounts[targetId] ?? 0) + 1;
+      final actor = state.getPlayerById(vote.actorId ?? '');
+      
+      int voteWeight = 1;
+      if (actor != null && actor.isCitizenSheikhRevealed) {
+        voteWeight = 3;
+      }
+      
+      voteCounts[targetId] = (voteCounts[targetId] ?? 0) + voteWeight;
     }
 
     if (voteCounts.isEmpty) {
@@ -60,6 +68,14 @@ class VotingEngine {
   }
 
   static GameState applyElimination(GameState state, String eliminatedPlayerId) {
+    final eliminatedPlayer = state.getPlayerById(eliminatedPlayerId);
+    final isMafia = eliminatedPlayer?.role.team == Team.mafia;
+
+    int newExecCount = state.correctMafiaExecutionsCount;
+    if (isMafia) {
+      newExecCount++;
+    }
+
     final updatedPlayers = state.players.map((p) {
       if (p.id == eliminatedPlayerId) {
         return p.copyWith(isAlive: false);
@@ -76,10 +92,25 @@ class VotingEngine {
       targetId: eliminatedPlayerId,
       timestamp: DateTime.now(),
     );
+    
+    // Check if we need to emit correct execution event
+    List<GameEvent> newEvents = [eliminationEvent];
+    if (isMafia && state.rules.victoryRules.correctMafiaExecutions) {
+      newEvents.add(GameEvent(
+        id: 'corr_exec_${DateTime.now().millisecondsSinceEpoch}',
+        gameId: state.id,
+        round: state.round,
+        phase: Phase.elimination,
+        type: EventType.vote, // Use metadata to distinguish, or we can use metadata on elimination
+        timestamp: DateTime.now(),
+        metadata: {'correctMafiaExecution': true},
+      ));
+    }
 
     return state.copyWith(
       players: updatedPlayers,
-      eventHistory: [...state.eventHistory, eliminationEvent],
+      eventHistory: [...state.eventHistory, ...newEvents],
+      correctMafiaExecutionsCount: newExecCount,
     );
   }
 }

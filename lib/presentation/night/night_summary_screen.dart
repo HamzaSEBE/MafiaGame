@@ -332,9 +332,15 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                           color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
-                    if (successfulProtections.isNotEmpty)
-                      Container(
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 16),
+                            if (successfulProtections.isNotEmpty)
+                              Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -430,7 +436,11 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                         icon: Icons.volume_off,
                         color: Colors.blueAccent,
                       ),
-                    const Spacer(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     SizedBox(
                       height: 55,
                       child: ElevatedButton(

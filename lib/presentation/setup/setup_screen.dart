@@ -109,6 +109,18 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
       _showError('عدد الأدوار ($_totalRoles) لا يساوي عدد اللاعبين (${players.length})');
       return;
     }
+    
+    final mafiaCount = _roleConfig[Role.mafiaSheikh]! + _roleConfig[Role.mafiaGirl]! + _roleConfig[Role.normalMafia]!;
+    final citizenCount = _roleConfig[Role.citizensSheikh]! + _roleConfig[Role.citizensGirl]! + _roleConfig[Role.citizensBoy]! + _roleConfig[Role.goodCitizen]!;
+    
+    if (mafiaCount == 0) {
+      _showError('يجب إضافة مافيا واحدة على الأقل لبدء اللعبة!');
+      return;
+    }
+    if (citizenCount == 0) {
+      _showError('يجب إضافة مواطن واحد على الأقل لبدء اللعبة!');
+      return;
+    }
 
     // Shuffle the player order for fully random reveal sequence
     ref.read(gameOrchestratorProvider.notifier).shufflePlayers();

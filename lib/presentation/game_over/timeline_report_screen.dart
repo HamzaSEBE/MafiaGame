@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
@@ -42,6 +43,7 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     final gameState = ref.watch(gameOrchestratorProvider);
 
     return Scaffold(

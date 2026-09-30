@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
@@ -83,6 +84,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     final email = ref.watch(authServiceProvider).currentUser?.email ?? '';
 
     return Scaffold(

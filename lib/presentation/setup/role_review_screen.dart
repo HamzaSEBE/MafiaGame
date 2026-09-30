@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
@@ -62,6 +63,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     final state = ref.watch(gameOrchestratorProvider);
     final players = state.players;
 

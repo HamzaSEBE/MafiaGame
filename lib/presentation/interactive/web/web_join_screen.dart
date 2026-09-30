@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -204,6 +205,7 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     if (_sessionEnded) return const WebSessionEndedScreen();
 
     if (_isInitializing) {

@@ -216,7 +216,7 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
 
     if (_myUid == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -232,7 +232,7 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
     final service = ref.read(interactiveServiceProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         title:
             const Text('الانضمام للعبة', style: TextStyle(fontFamily: 'Cairo')),

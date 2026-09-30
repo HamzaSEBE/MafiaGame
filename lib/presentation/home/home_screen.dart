@@ -35,7 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.watch(authServiceProvider).currentUser;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B), // Deep luxurious black
+       // Deep luxurious black
       body: Stack(
         children: [
           // Elegant dark background with subtle glowing gradient

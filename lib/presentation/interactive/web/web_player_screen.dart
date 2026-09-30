@@ -106,7 +106,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
 
     final service = ref.read(interactiveServiceProvider);
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         title:
             const Text('بطاقتك السرية', style: TextStyle(fontFamily: 'Cairo')),

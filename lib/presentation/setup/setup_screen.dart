@@ -171,7 +171,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     final players = ref.watch(gameOrchestratorProvider).players;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       body: Stack(
         children: [
           // Elegant Background

@@ -45,7 +45,7 @@ class _TimelineReportScreenState extends ConsumerState<TimelineReportScreen> {
     final gameState = ref.watch(gameOrchestratorProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       body: Stack(
         children: [
           Positioned.fill(

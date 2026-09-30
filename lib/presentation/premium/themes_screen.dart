@@ -12,7 +12,7 @@ class ThemesScreen extends ConsumerWidget {
     final currentTheme = ref.watch(selectedThemeProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -90,7 +90,7 @@ class ThemesScreen extends ConsumerWidget {
       onTap: () {
         ref.read(selectedThemeProvider.notifier).state = id;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم تفعيل ثيم: $title بنجاح!', style: const TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
+          SnackBar(duration: const Duration(milliseconds: 500), content: Text('تم تفعيل ثيم: $title بنجاح!', style: const TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
         );
       },
       child: Container(

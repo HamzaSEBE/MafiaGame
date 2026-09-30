@@ -8,7 +8,7 @@ class PricingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -145,7 +145,7 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
   Widget build(BuildContext context) {
     if (_isCreating || _sessionId == null) {
       return _guardSystemBack(Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         appBar: AppBar(
           automaticallyImplyLeading: false,
           leading: IconButton(
@@ -178,7 +178,7 @@ class _JudgeLobbyScreenState extends ConsumerState<JudgeLobbyScreen> {
     final gamePhase = ref.watch(gameOrchestratorProvider).phase;
 
     return _guardSystemBack(Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(

@@ -714,7 +714,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
@@ -917,7 +917,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
   }
 
   Widget _remoteError(String message) => Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

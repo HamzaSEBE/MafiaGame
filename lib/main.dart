@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/splash/splash_screen.dart';
 import 'package:mafia_nightfall/presentation/interactive/web/web_join_screen.dart';
+import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -18,7 +19,6 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   } catch (e) {
-    // If Firebase fails to initialize, run an error app immediately
     runApp(
       MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -51,12 +51,14 @@ void main() async {
   runApp(const ProviderScope(child: MafiaNightfallApp()));
 }
 
-class MafiaNightfallApp extends StatelessWidget {
+class MafiaNightfallApp extends ConsumerWidget {
   const MafiaNightfallApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final cairoTextTheme = GoogleFonts.cairoTextTheme(AppTheme.darkTheme.textTheme);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeId = ref.watch(selectedThemeProvider);
+    final themeData = AppTheme.getTheme(themeId);
+    final cairoTextTheme = GoogleFonts.cairoTextTheme(themeData.textTheme);
 
     Widget home = const SplashScreen();
     
@@ -76,9 +78,9 @@ class MafiaNightfallApp extends StatelessWidget {
       if (sessionId != null && sessionId.isNotEmpty) {
         home = WebJoinScreen(sessionId: sessionId);
       } else {
-        home = const Scaffold(
-          backgroundColor: Color(0xFF07070B),
-          body: Center(
+        home = Scaffold(
+          backgroundColor: themeData.scaffoldBackgroundColor,
+          body: const Center(
             child: Text(
               'الرجاء مسح رمز الـ QR من شاشة الحكم للانضمام للعبة.',
               style: TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Cairo'),
@@ -92,7 +94,7 @@ class MafiaNightfallApp extends StatelessWidget {
     return MaterialApp(
       title: 'مافيا عالشوارب',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme.copyWith(textTheme: cairoTextTheme),
+      theme: themeData.copyWith(textTheme: cairoTextTheme),
       home: home,
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,

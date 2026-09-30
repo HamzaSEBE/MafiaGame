@@ -125,7 +125,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        backgroundColor: const Color(0xFF07070B),
+        
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           automaticallyImplyLeading: false,

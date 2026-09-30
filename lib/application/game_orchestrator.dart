@@ -208,11 +208,11 @@ class GameOrchestrator extends Notifier<GameState> {
         
       String? reason;
       int aliveCitizensCount = nextState.alivePlayers.where((p) => p.role.team == Team.citizens).length;
-      if (winner == Team.mafia && nextState.rules.victoryRules.initialMafiaParity && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
-      else if (winner == Team.citizens && nextState.rules.victoryRules.correctMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
+      if (winner == Team.mafia && nextState.rules.victoryRules.mode == VictoryMode.equalCount && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
+      else if (winner == Team.citizens && nextState.rules.victoryRules.mode == VictoryMode.exactMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
       else if (winner == Team.independent) reason = 'إقصاء الجوكر بالتصويت';
-      else if (winner == Team.mafia) reason = 'سيطرة المافيا';
-      else reason = 'القضاء على المافيا';
+      else if (winner == Team.mafia) reason = 'استحالة فوز المواطنين';
+      else reason = 'القضاء التام على المافيا';
       
       nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner, victoryReason: reason);
     } else if (assassinatedIds.isNotEmpty &&
@@ -325,11 +325,11 @@ class GameOrchestrator extends Notifier<GameState> {
         
       String? reason;
       int aliveCitizensCount = nextState.alivePlayers.where((p) => p.role.team == Team.citizens).length;
-      if (winner == Team.mafia && nextState.rules.victoryRules.initialMafiaParity && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
-      else if (winner == Team.citizens && nextState.rules.victoryRules.correctMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
+      if (winner == Team.mafia && nextState.rules.victoryRules.mode == VictoryMode.equalCount && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
+      else if (winner == Team.citizens && nextState.rules.victoryRules.mode == VictoryMode.exactMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
       else if (winner == Team.independent) reason = 'إقصاء الجوكر بالتصويت';
-      else if (winner == Team.mafia) reason = 'سيطرة المافيا';
-      else reason = 'القضاء على المافيا';
+      else if (winner == Team.mafia) reason = 'استحالة فوز المواطنين';
+      else reason = 'القضاء التام على المافيا';
       
       nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner, victoryReason: reason);
     } else {

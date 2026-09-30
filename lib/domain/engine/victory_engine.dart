@@ -2,6 +2,7 @@ import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
+import 'package:mafia_nightfall/domain/rules/game_ruleset.dart';
 
 enum VictoryStatus {
   mafiaWin,
@@ -26,63 +27,71 @@ class VictoryEngine {
     final alivePlayers = state.alivePlayers;
     
     int mafiaCount = 0;
-    int citizensCount = 0;
-    int jokerCount = 0;
-    bool hasAliveCitizenBoy = false;
-    bool hasAliveDoctor = false;
+    int aliveCitizensCount = 0;
 
     for (var player in alivePlayers) {
       if (player.role.team == Team.mafia) {
         mafiaCount++;
       } else if (player.role.team == Team.citizens) {
-        citizensCount++;
-        if (player.role == Role.citizensBoy) hasAliveCitizenBoy = true;
-        if (player.role == Role.citizensGirl) hasAliveDoctor = true;
-      } else {
-        jokerCount++;
+        aliveCitizensCount++;
       }
     }
 
     final vRules = state.rules.victoryRules;
 
-    // RULE: Correct Mafia Executions
-    if (vRules.correctMafiaExecutions && state.correctMafiaExecutionsCount >= vRules.requiredCorrectExecutions) {
+    // RULE: Correct Mafia Executions (Exact Mafia Count Victory)
+    if (vRules.mode == VictoryMode.exactMafiaExecutions && state.correctMafiaExecutionsCount >= vRules.requiredCorrectExecutions) {
       return VictoryStatus.citizensWin;
     }
 
-    // RULE: Initial Mafia Count Parity
-    if (vRules.initialMafiaParity) {
+    // RULE: Initial Mafia Count Parity (Equal Count Victory)
+    if (vRules.mode == VictoryMode.equalCount) {
       if (mafiaCount == 0) {
         return VictoryStatus.citizensWin;
       }
-      if (citizensCount <= state.initialMafiaCount) {
+      if (aliveCitizensCount <= state.initialMafiaCount) {
         return VictoryStatus.mafiaWin;
       }
       return VictoryStatus.continueGame;
     }
 
-    // RULE: Classic Victory (Default)
-    if (vRules.classicVictory) {
-      // 1. If all mafia are dead, citizens win immediately (Joker loses because he survived!).
+    // RULE: Classic Victory
+    if (vRules.mode == VictoryMode.classic) {
+      // If all mafia are dead, citizens win immediately
       if (mafiaCount == 0) {
         return VictoryStatus.citizensWin;
       } 
       
-      // 2. If Mafia strictly outnumbers everyone else, they have an absolute majority.
-      if (mafiaCount > citizensCount + jokerCount) {
-        return VictoryStatus.mafiaWin;
-      } 
+      // Check if Citizens still have a legal path to eliminate Mafia
+      bool citizensCanWin = false;
+      int nonMafiaVotes = 0;
+      int mafiaVotes = 0;
       
-      // 3. If Mafia equals Citizens + Jokers (e.g. 1v1, 2v2)
-      if (mafiaCount == (citizensCount + jokerCount)) {
-        if (hasAliveDoctor || hasAliveCitizenBoy) {
-          return VictoryStatus.continueGame;
+      for (var p in alivePlayers) {
+        int weight = p.isCitizenSheikhRevealed ? 3 : 1;
+        if (p.role.team == Team.mafia) {
+          mafiaVotes += weight;
+        } else {
+          nonMafiaVotes += weight;
+          
+          if (p.role == Role.citizensBoy) {
+            citizensCanWin = true;
+          }
+          if (p.hasSniper) {
+            final hasShot = state.eventHistory.any((e) => e.type == EventType.sniperKill);
+            if (!hasShot) citizensCanWin = true;
+          }
         }
-        return VictoryStatus.mafiaWin;
       }
-
-      // 4. Special case: If 0 citizens left, but Joker is alive. Mafia wins because they won't vote Joker.
-      if (citizensCount == 0 && mafiaCount > 0) {
+      
+      // If Citizens have more voting power than Mafia, they can still legally outvote them.
+      if (nonMafiaVotes > mafiaVotes) {
+        citizensCanWin = true;
+      }
+      
+      // If Citizens have absolutely no remaining legal way to eliminate Mafia, and Mafia is still alive.
+      // The Mafia is guaranteed to win eventually.
+      if (!citizensCanWin) {
         return VictoryStatus.mafiaWin;
       }
     }

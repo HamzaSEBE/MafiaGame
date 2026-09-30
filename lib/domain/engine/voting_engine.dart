@@ -3,6 +3,7 @@ import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
+import 'package:mafia_nightfall/domain/rules/game_ruleset.dart';
 
 class VotingResult {
   final String? eliminatedPlayerId;
@@ -95,7 +96,7 @@ class VotingEngine {
     
     // Check if we need to emit correct execution event
     List<GameEvent> newEvents = [eliminationEvent];
-    if (isMafia && state.rules.victoryRules.correctMafiaExecutions) {
+    if (isMafia && state.rules.victoryRules.mode == VictoryMode.exactMafiaExecutions) {
       newEvents.add(GameEvent(
         id: 'corr_exec_${DateTime.now().millisecondsSinceEpoch}',
         gameId: state.id,

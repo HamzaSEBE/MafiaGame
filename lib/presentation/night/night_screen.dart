@@ -206,14 +206,15 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       if (target.role.team == Team.mafia) return false;
     }
 
-    final limit = state.rules.abilityRules.repeatedTargetLimit;
+    final pLimit = state.rules.abilityRules.protectionTargetLimit;
+    final sLimit = state.rules.abilityRules.silenceTargetLimit;
 
     if (step.eventType == EventType.silence) {
       final pastSilences = state.eventHistory.where((e) =>
           e.type == EventType.silence &&
           e.actorId == step.actor.id &&
           e.targetId == target.id);
-      if (limit != -1 && pastSilences.length >= limit) return false;
+      if (sLimit != -1 && pastSilences.length >= sLimit) return false;
     }
 
     if (step.eventType == EventType.protection) {
@@ -221,7 +222,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
           e.type == EventType.protection &&
           e.actorId == step.actor.id &&
           e.targetId == target.id);
-      if (limit != -1 && pastProtections.length >= limit) return false;
+      if (pLimit != -1 && pastProtections.length >= pLimit) return false;
     }
 
     if (step.eventType == EventType.investigation) {
@@ -314,15 +315,28 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     bool isMafia = target.role.team == Team.mafia;
     bool isJoker = target.role == Role.joker;
     
-    if (target.role == Role.mafiaSheikh && !aRules.mafiaSheikhReveal) {
-      isMafia = false; // Hidden
-    }
-    
-    String resultText = isMafia ? 'من المافيا!' : 'من المواطنين';
-    Color resultColor = isMafia ? Colors.redAccent : Colors.greenAccent;
-    IconData resultIcon = isMafia ? Icons.warning_rounded : Icons.check_circle_outline;
-    
-    if (isJoker && aRules.jokerReveal) {
+    String resultText = 'من المواطنين';
+    Color resultColor = Colors.greenAccent;
+    IconData resultIcon = Icons.check_circle_outline;
+
+    if (isMafia) {
+      if (target.role == Role.mafiaSheikh) {
+        if (aRules.mafiaSheikhReveal) {
+          resultText = 'شيخ المافيا!';
+          resultColor = Colors.redAccent;
+          resultIcon = Icons.warning_rounded;
+        } else {
+          // Hidden as citizen
+          resultText = 'من المواطنين';
+          resultColor = Colors.greenAccent;
+          resultIcon = Icons.check_circle_outline;
+        }
+      } else {
+        resultText = 'من المافيا!';
+        resultColor = Colors.redAccent;
+        resultIcon = Icons.warning_rounded;
+      }
+    } else if (isJoker && aRules.jokerReveal) {
       resultText = 'المهرج (الجوكر)!';
       resultColor = Colors.purpleAccent;
       resultIcon = Icons.theater_comedy;

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 
-class GamePopScope extends StatelessWidget {
+class GamePopScope extends ConsumerWidget {
   final Widget child;
   final Future<void> Function()? onExit;
 
   const GamePopScope({super.key, required this.child, this.onExit});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -47,6 +49,7 @@ class GamePopScope extends StatelessWidget {
           ),
         );
         if (exit == true && context.mounted) {
+          ref.read(gameOrchestratorProvider.notifier).resetGame();
           if (onExit != null) {
             await onExit!();
           } else {

@@ -166,12 +166,20 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  Text(
-                                    AppTheme.roleArabicName(p.role),
-                                    style: TextStyle(
-                                        color: roleColor,
-                                        fontFamily: 'Cairo',
-                                        fontSize: 11),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        AppTheme.roleArabicName(p.role),
+                                        style: TextStyle(
+                                            color: roleColor,
+                                            fontFamily: 'Cairo',
+                                            fontSize: 11),
+                                      ),
+                                      if (p.hasSniper) ...[
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.my_location, color: Colors.amberAccent, size: 12),
+                                      ],
+                                    ],
                                   ),
                                 ],
                               ),

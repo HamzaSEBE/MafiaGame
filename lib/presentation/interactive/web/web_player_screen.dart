@@ -361,6 +361,23 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
                       ),
                     ),
                     if (_isShowingRole && role != null) ...[
+                      const SizedBox(height: 8),
+                      if (secret.isSniper) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.amberAccent),
+                          ),
+                          child: const Text(
+                            'لديك قدرة القنص لمرة واحدة ليلاً!',
+                            style: TextStyle(fontSize: 14, color: Colors.amberAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Text(
                         AppTheme.roleAbilityDescription(role),
@@ -602,6 +619,8 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
         'investigation' => 'اختر لاعبًا للتحقيق معه',
         'silence' => 'اختر من تريد إسكات صوته',
         'retaliation' => 'اختر هدف الانتقام',
+        'sniperKill' => 'اختر هدف القنص (أو اختر نفسك للتخطي)',
+        'sleep' => 'لا يوجد لديك قدرة (اختر اسمك للتأكيد)',
         _ => 'اختر هدف الحركة',
       };
 

@@ -379,6 +379,22 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
             PlayerActionPrompt(type: 'protection', availableTargets: targets));
       }
     }
+
+    final snipers = alive.where((p) => p.hasSniper).toList();
+    for (var sniper in snipers) {
+      final hasShot = state.eventHistory.any((e) => e.type == EventType.sniperKill && e.actorId == sniper.id);
+      if (!hasShot) {
+        final targets = aliveIds.toList(); // Includes himself so he can skip by selecting himself
+        _addPrompt(prompts, sniper.id, PlayerActionPrompt(type: 'sniperKill', availableTargets: targets));
+      }
+    }
+
+    for (var id in aliveIds) {
+      if (!prompts.containsKey(id) || prompts[id]!.isEmpty) {
+        _addPrompt(prompts, id, PlayerActionPrompt(type: 'sleep', availableTargets: [id]));
+      }
+    }
+
     return prompts;
   }
 
@@ -499,9 +515,17 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
             'protection' => EventType.protection,
             'investigation' => EventType.investigation,
             'silence' => EventType.silence,
+            'sniperKill' => EventType.sniperKill,
+            'sleep' => null,
             _ => null,
           };
           if (type == null) continue;
+          
+          if (type == EventType.sniperKill && action.targetId == seat.id) {
+            // Sniper chose himself to skip. Do not record the shot so he can use it later.
+            continue; 
+          }
+          
           orchestrator.submitNightAction(
             actorId: seat.id,
             targetId: action.targetId,

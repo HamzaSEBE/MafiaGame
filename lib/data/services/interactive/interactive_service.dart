@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -236,6 +237,11 @@ class InteractiveService {
             prompts.isEmpty ? null : prompts.first.availableTargets,
         'hasSubmittedAction': false,
         'isSniper': player.hasSniper,
+        if (player.role.team == Team.mafia)
+          'mafiaTeammates': state.players
+              .where((p) => p.role.team == Team.mafia && p.id != player.id)
+              .map((p) => p.name)
+              .toList(),
       };
       if (clearPrivateResults) {
         secretData['privateResult'] = null;

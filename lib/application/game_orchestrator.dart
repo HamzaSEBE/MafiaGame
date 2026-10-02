@@ -245,6 +245,11 @@ class GameOrchestrator extends Notifier<GameState> {
     state = state.copyWith(phase: Phase.night, round: 1);
   }
 
+  void skipIntroductionNight() {
+    if (state.phase != Phase.roleReveal) return;
+    state = state.copyWith(phase: Phase.day, round: 1);
+  }
+
   void submitFinalVotes(Map<String, String> finalVotes) {
     // Clear any existing votes for this round just in case
     final filteredEvents = state.eventHistory

@@ -844,10 +844,10 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                                     fontFamily: 'Cairo'))),
                         TextButton(
                           onPressed: () {
+                            Navigator.pop(ctx);
                             ref
                                 .read(gameOrchestratorProvider.notifier)
                                 .citizenSheikhReveal(sheikh.id);
-                            Navigator.pop(ctx);
                           },
                           child: const Text('تأكيد الكشف',
                               style: TextStyle(

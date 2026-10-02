@@ -227,20 +227,13 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
     }
   }
 
-  Future<void> _beginIntroductionNight() => _runHostAction(() async {
+  Future<void> _skipIntroductionNight() => _runHostAction(() async {
         final service = ref.read(interactiveServiceProvider);
         await service.clearActionRequests(widget.sessionId);
-        ref.read(gameOrchestratorProvider.notifier).beginIntroductionNight();
+        ref.read(gameOrchestratorProvider.notifier).skipIntroductionNight();
         await _syncStateToClients(clearPrivateResults: true);
         if (!mounted) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => NightScreen(
-              interactiveSessionId: widget.sessionId,
-              onInteractiveExit: _confirmEndSession,
-            ),
-          ),
-        );
+        await _openDayDiscussion();
       });
 
   Future<void> _openDayDiscussion() async {
@@ -808,8 +801,8 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
                     const SizedBox(height: 16),
                     if (state.phase == Phase.roleReveal)
                       _phaseButton(
-                        label: 'انتهى كشف الأدوار — ابدأ ليلة التعارف',
-                        onPressed: _beginIntroductionNight,
+                        label: 'انتهى كشف الأدوار — ابدأ النهار الأول',
+                        onPressed: _skipIntroductionNight,
                       ),
                     if (state.phase == Phase.day)
                       _phaseButton(

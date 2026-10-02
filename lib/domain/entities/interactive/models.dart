@@ -136,6 +136,7 @@ class InteractiveSecret {
   final String? privateResult;
   final bool hasSubmittedAction;
   final bool isSniper;
+  final List<String> mafiaTeammates;
 
   InteractiveSecret({
     required this.id,
@@ -144,6 +145,7 @@ class InteractiveSecret {
     this.privateResult,
     this.hasSubmittedAction = false,
     this.isSniper = false,
+    this.mafiaTeammates = const [],
   });
 
   // Legacy accessors keep older clients/data readable during rollout.
@@ -162,6 +164,7 @@ class InteractiveSecret {
         'privateResult': privateResult,
         'hasSubmittedAction': hasSubmittedAction,
         'isSniper': isSniper,
+        'mafiaTeammates': mafiaTeammates,
       };
 
   factory InteractiveSecret.fromJson(Map<String, dynamic> json) {

@@ -213,7 +213,7 @@ class _DayScreenState extends ConsumerState<DayScreen> {
               tooltip: 'أدوات الحكم',
               onPressed: () => JudgeToolsSheet.show(context),
             ),
-            if (state.rules.abilityRules.citizenSheikhReveal)
+            if (state.rules.abilityRules.citizenSheikhReveal && widget.interactiveSessionId == null)
               IconButton(
                 icon: const Icon(Icons.campaign, color: Colors.orangeAccent),
                 tooltip: 'إفصاح شيخ المواطنين',

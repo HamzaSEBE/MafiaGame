@@ -235,6 +235,7 @@ class InteractiveService {
         'availableTargets':
             prompts.isEmpty ? null : prompts.first.availableTargets,
         'hasSubmittedAction': false,
+        'isSniper': player.hasSniper,
       };
       if (clearPrivateResults) {
         secretData['privateResult'] = null;

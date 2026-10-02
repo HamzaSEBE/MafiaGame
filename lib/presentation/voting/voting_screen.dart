@@ -800,11 +800,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
               tooltip: 'أدوات الحكم',
               onPressed: () => JudgeToolsSheet.show(context),
             ),
-            if (ref
-                .read(gameOrchestratorProvider)
-                .rules
-                .abilityRules
-                .citizenSheikhReveal)
+            if (ref.read(gameOrchestratorProvider).rules.abilityRules.citizenSheikhReveal && widget.interactiveSessionId == null)
               IconButton(
                 icon: const Icon(Icons.campaign, color: Colors.orangeAccent),
                 tooltip: 'إفصاح شيخ المواطنين',

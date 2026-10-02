@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/presentation/voting/voting_screen.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
@@ -147,8 +148,16 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('اللاعب ${sheikh.name}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-                    const SizedBox(height: 8),
+                    Text('اللاعب: ${sheikh.name}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 150,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(AppTheme.roleImage(Role.citizensSheikh), fit: BoxFit.cover),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     const Text('كشف عن نفسه كشيخ للمواطنين!', style: TextStyle(color: Colors.white70, fontSize: 18, fontFamily: 'Cairo'), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     Container(

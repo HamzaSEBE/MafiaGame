@@ -236,8 +236,8 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'))),
                         TextButton(
                           onPressed: () {
-                            ref.read(gameOrchestratorProvider.notifier).citizenSheikhReveal(sheikh.id);
                             Navigator.pop(ctx);
+                            ref.read(gameOrchestratorProvider.notifier).citizenSheikhReveal(sheikh.id);
                           },
                           child: const Text('تأكيد الكشف', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo')),
                         ),

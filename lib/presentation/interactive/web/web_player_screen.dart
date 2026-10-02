@@ -32,6 +32,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   bool _sessionEnded = false;
   Phase? _lastPhase;
   int? _lastActionRevision;
+  String? _lastSeenAnnouncement;
   StreamSubscription<InteractiveSession?>? _sessionSubscription;
 
   @override
@@ -40,8 +41,53 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
     final service = ref.read(interactiveServiceProvider);
     _sessionSubscription = service.streamSession(widget.sessionId).listen(
       (session) {
-        if (!mounted || session?.status != SessionStatus.finished) return;
-        setState(() => _sessionEnded = true);
+        if (!mounted) return;
+        if (session?.status == SessionStatus.finished) {
+          setState(() => _sessionEnded = true);
+        }
+        
+        if (session?.globalAnnouncement != null && session?.globalAnnouncement != _lastSeenAnnouncement) {
+          _lastSeenAnnouncement = session?.globalAnnouncement;
+          
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1E1E24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: const BorderSide(color: Colors.orangeAccent, width: 2)),
+              title: const Column(
+                children: [
+                  Icon(Icons.campaign, color: Colors.orangeAccent, size: 60),
+                  SizedBox(height: 16),
+                  Text('إفصاح شيخ المواطنين!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 24)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 150,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(AppTheme.roleImage(Role.citizensSheikh), fit: BoxFit.cover),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(session!.globalAnnouncement!, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'), textAlign: TextAlign.center),
+                ],
+              ),
+              actions: [
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+                    child: const Text('حسناً', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                  ),
+                )
+              ],
+            ),
+          );
+        }
       },
     );
   }

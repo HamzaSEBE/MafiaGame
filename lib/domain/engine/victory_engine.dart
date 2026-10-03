@@ -62,20 +62,14 @@ class VictoryEngine {
         return VictoryStatus.citizensWin;
       } 
       
-      int nonMafiaVotes = 0;
-      int mafiaVotes = 0;
       bool hasUnusedSniper = false;
       bool hasDoctorThatCanProtect = false;
+      int nonMafiaCount = alivePlayers.length - mafiaCount;
       
       final pLimit = state.rules.abilityRules.protectionTargetLimit;
 
       for (var p in alivePlayers) {
-        int weight = p.isCitizenSheikhRevealed ? 3 : 1;
-        if (p.role.team == Team.mafia) {
-          mafiaVotes += weight;
-        } else {
-          nonMafiaVotes += weight;
-          
+        if (p.role.team != Team.mafia) {
           if (p.hasSniper) {
             final hasShot = state.eventHistory.any((e) => e.type == EventType.sniperKill);
             if (!hasShot) hasUnusedSniper = true;
@@ -98,8 +92,8 @@ class VictoryEngine {
         }
       }
       
-      // If Citizens have equal or less voting power than Mafia, Mafia wins...
-      if (nonMafiaVotes <= mafiaVotes) {
+      // If Citizens have equal or less players than Mafia, Mafia wins...
+      if (nonMafiaCount <= mafiaCount) {
         // ...EXCEPT in one single case: Both an unused Sniper and a Doctor who can still protect someone are alive.
         if (hasUnusedSniper && hasDoctorThatCanProtect) {
           // They get one last night to try and turn the tide!

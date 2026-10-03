@@ -189,6 +189,8 @@ class InteractiveSecret {
       requiredActions: prompts,
       privateResult: json['privateResult'] as String?,
       hasSubmittedAction: json['hasSubmittedAction'] as bool? ?? false,
+      isSniper: json['isSniper'] as bool? ?? false,
+      mafiaTeammates: (json['mafiaTeammates'] as List? ?? []).cast<String>(),
     );
   }
 }

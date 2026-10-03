@@ -419,19 +419,13 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                           children: [
                             const SizedBox(height: 16),
                             if (protectedFromMafiaIds.isNotEmpty)
-                              ...protectedFromMafiaIds.map((id) {
-                                final player = state.getPlayerById(id);
-                                return _buildProtectionCard(
-                                    'حمت ${player?.name ?? ''} من اغتيال المافيا!',
-                                    Colors.greenAccent);
-                              }),
+                              _buildProtectionCard(
+                                  'نجحت البنت في حماية أحد اللاعبين من اغتيال المافيا!',
+                                  Colors.greenAccent),
                             if (protectedFromSniperIds.isNotEmpty)
-                              ...protectedFromSniperIds.map((id) {
-                                final player = state.getPlayerById(id);
-                                return _buildProtectionCard(
-                                    'حمت ${player?.name ?? ''} من قنص القناص!',
-                                    Colors.tealAccent);
-                              }),
+                              _buildProtectionCard(
+                                  'نجحت البنت في حماية أحد اللاعبين من قنص القناص!',
+                                  Colors.tealAccent),
                             if (mafiaDeadIds.isNotEmpty)
                               ...mafiaDeadIds.map((id) {
                                 return _buildDeathCard(

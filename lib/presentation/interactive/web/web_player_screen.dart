@@ -34,6 +34,9 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   int? _lastActionRevision;
   String? _lastSeenAnnouncement;
   StreamSubscription<InteractiveSession?>? _sessionSubscription;
+  bool _privateResultVisible = false;
+  String? _lastPrivateResult;
+  Timer? _privateResultTimer;
 
   @override
   void initState() {
@@ -95,6 +98,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   @override
   void dispose() {
     _sessionSubscription?.cancel();
+    _privateResultTimer?.cancel();
     super.dispose();
   }
 
@@ -213,7 +217,8 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
                         _buildPrivateRoleCard(seat, secret),
                         if (seat.isAlive &&
                             secret.role == Role.citizensSheikh &&
-                            !seat.isCitizenSheikhRevealed) ...[
+                            !seat.isCitizenSheikhRevealed &&
+                            (session.phase == Phase.day || session.phase == Phase.voting)) ...[
                           const SizedBox(height: 12),
                           ElevatedButton.icon(
                             onPressed: () {
@@ -646,28 +651,42 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
       };
 
   Widget _buildPrivateResult(String result) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.greenAccent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.visibility, color: Colors.greenAccent),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              result,
-              style: const TextStyle(
-                color: Colors.greenAccent,
-                fontFamily: 'Cairo',
-                fontWeight: FontWeight.bold,
+    // Detect new result and start auto-dismiss timer
+    if (result != _lastPrivateResult) {
+      _lastPrivateResult = result;
+      _privateResultVisible = true;
+      _privateResultTimer?.cancel();
+      _privateResultTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _privateResultVisible = false);
+      });
+    }
+    if (!_privateResultVisible) return const SizedBox.shrink();
+    return AnimatedOpacity(
+      opacity: _privateResultVisible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 500),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.greenAccent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.visibility, color: Colors.greenAccent),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                result,
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontFamily: 'Cairo',
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -10,7 +10,7 @@
 
 <br />
 
-<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.1-arm64.apk">
+<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.2-arm64.apk">
   <img src="https://img.shields.io/badge/تحميل_تطبيق_الحكم-1A1119?style=for-the-badge&logo=android&logoColor=white&labelColor=E11D48" alt="تحميل تطبيق الحكم للأندرويد" />
 </a>
 &nbsp;
@@ -20,9 +20,9 @@
 
 <br /><br />
 
-<img src="https://img.shields.io/badge/الإصدار-1.2.1%20%7C%20Build%208-0F172A?style=flat-square" alt="الإصدار 1.2.1 build 8" />
+<img src="https://img.shields.io/badge/الإصدار-1.2.2%20%7C%20Build%209-0F172A?style=flat-square" alt="الإصدار 1.2.2 build 9" />
 <img src="https://img.shields.io/badge/Flutter-تطبيق_Android-0F172A?style=flat-square&logo=flutter&logoColor=0EA5E9" alt="مبني باستخدام Flutter" />
-<img src="https://img.shields.io/badge/اللاعبون-4%2B-0F172A?style=flat-square" alt="أربعة لاعبين أو أكثر" />
+<img src="https://img.shields.io/badge/اللاعبون-5%2B-0F172A?style=flat-square" alt="خمسة لاعبين أو أكثر" />
 
 </div>
 
@@ -67,6 +67,12 @@
   </tr>
 </table>
 
+## أجواء تختارها لليلتك
+
+الأحمر الدموي المجاني يحافظ على الهوية الأصلية؛ الثيمات المدفوعة تمزج لونين بتدرجات غنية مع بقاء ألوان أدوار الفرق واضحة. يمكن معاينتها من الإعدادات قبل الاشتراك.
+
+<img src="docs/screenshots/theme-palettes-1.2.2.png" alt="معاينة الثيمات الأربع من داخل اللعبة" width="900" />
+
 ## أدوار المدينة
 
 | الفريق | الأدوار |
@@ -75,22 +81,22 @@
 | 🔵 **المواطنون** | شيخ المواطنين، بنت المواطنين، المواطن الشجاع، ومواطن صالح |
 | 🟣 **مستقل** | الجوكر |
 
-## إصدار Android 1.2.1
+## إصدار Android 1.2.2
 
-[**تحميل APK — ARM64، إصدار 1.2.1، Build 8**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.1-arm64.apk)
+[**تحميل APK — ARM64، إصدار 1.2.2، Build 9**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.2-arm64.apk)
 
-نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2008.
+نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2009.
 
-استعادة الأحمر الدموي الغامق، زر Upgrade to Premium وصفحة Pricing، وثيمات مرتبة داخل الإعدادات. إصلاح مؤقت النقاش والانتقال بعد التصويت إلى الليل والاغتيال، وإزالة متابعة اللعبة عند إنهائها يدوياً. المساعد الصوتي يظهر في إعدادات اللعبة كميزة Premium قادمة وغير مفعّلة؛ الثيمات هي الميزة المدفوعة المتاحة حالياً، وربط الدفع لم يكتمل بعد.
+الأحمر الدموي الأصلي على تسجيل الدخول والافتتاحية أيضاً، وثيمات Premium بمزيج لونين: أزرق وبنفسجي، زمردي وأزرق، وذهبي وبنفسجي. الفوز التقليدي يقارن المافيا والمواطنين الأحياء دون الجوكر؛ عند التعادل فقط تُمنح فرصة إذا اجتمع قنص مواطن غير مستخدم مع حماية متاحة لبنت المواطنين. زر Upgrade to Premium يفتح Pricing، والثيمات في الإعدادات. المساعد الصوتي ميزة Premium قادمة وغير مفعّلة؛ الدفع الحقيقي لم يُربط بعد.
 
-**QR:** نُشرت قواعد Firestore والفهارس وصفحة الانضمام المتوافقة، ونجح اختبار إنشاء غرفة والانضمام والتصويت والإنهاء على المشروع الفعلي. نجحت 60 تجربة Flutter و21 اختبار قواعد و7 اختبارات خادم. خادم V2 والخدمات المدفوعة معطلة افتراضياً؛ لم يُجرَ اختبار 100 ألف مستخدم.
+**التحقق:** نجحت 91 تجربة Flutter و21 اختبار قواعد و7 اختبارات خادم، والتحليل الساكن بلا مشاكل. نسخة الويب محدثة، وقواعد QR والفهارس المنشورة في 1.2.1 باقية. خادم V2 والخدمات المدفوعة معطلة افتراضياً؛ لم يُجرَ اختبار 100 ألف مستخدم.
 
-[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.1.json)
+[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.2.json)
 
 ## التحميل واللعب
 
 1. نزّل وثبّت **تطبيق الحكم** على هاتف Android.
-2. ابدأ جلسة جديدة، أضف أربعة لاعبين على الأقل، ووزّع الأدوار.
+2. ابدأ جلسة جديدة، أضف خمسة لاعبين على الأقل، ووزّع الأدوار.
 3. اعرض رمز QR ليختار كل لاعب مقعده من هاتفه.
 4. أدر اللعبة من شاشة الحكم، واترك للاعبين تنفيذ أدوارهم من المتصفح.
 
@@ -104,7 +110,7 @@
 
 <br />
 
-[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.1-arm64.apk)
+[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.2-arm64.apk)
 
 <sub>صُنعت لعشّاق المؤامرات… وللحكم الذي لا يفوته شيء.</sub>
 

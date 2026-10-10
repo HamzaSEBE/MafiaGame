@@ -1,0 +1,24 @@
+{
+  "version": "1.2.1",
+  "sourceVersionCode": 8,
+  "buildMode": "release",
+  "packageId": "com.example.mafia_nightfall",
+  "abi": "arm64-v8a",
+  "file": "mafia-nightfall-1.2.1-arm64.apk",
+  "sizeBytes": 37178991,
+  "sha256": "94d52c38f0f9be9a53326a14807829c616b1cc9e65624dcbc5b3c26327c65807",
+  "signingCertificateSha256": "8cf88a21502fd3314a9469fdaa56333712a81f1e7cd853418ca7e5461355f544",
+  "signing": "Existing test certificate, verified to match the previous APK; private key excluded",
+  "builtAt": "2026-10-10T21:19:09.902286+00:00",
+  "backendDeployment": "Firestore rules/indexes and guest web client deployed to mafiagame-351f8; live QR smoke passed; V2 and avatar Storage remain disabled",
+  "apkVersionCode": 2008,
+  "minSdk": 24,
+  "targetSdk": 36,
+  "validation": {
+    "flutterTests": 60,
+    "firestoreRulesTests": 21,
+    "apiIntegrationTests": 7,
+    "flutterAnalyze": "No issues",
+    "liveQrSmoke": "Passed; all temporary documents and anonymous accounts removed"
+  }
+}

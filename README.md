@@ -10,7 +10,7 @@
 
 <br />
 
-<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.2-arm64.apk">
+<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.3-arm64.apk">
   <img src="https://img.shields.io/badge/تحميل_تطبيق_الحكم-1A1119?style=for-the-badge&logo=android&logoColor=white&labelColor=E11D48" alt="تحميل تطبيق الحكم للأندرويد" />
 </a>
 &nbsp;
@@ -20,7 +20,7 @@
 
 <br /><br />
 
-<img src="https://img.shields.io/badge/الإصدار-1.2.2%20%7C%20Build%209-0F172A?style=flat-square" alt="الإصدار 1.2.2 build 9" />
+<img src="https://img.shields.io/badge/الإصدار-1.2.3%20%7C%20Build%2010-0F172A?style=flat-square" alt="الإصدار 1.2.3 build 10" />
 <img src="https://img.shields.io/badge/Flutter-تطبيق_Android-0F172A?style=flat-square&logo=flutter&logoColor=0EA5E9" alt="مبني باستخدام Flutter" />
 <img src="https://img.shields.io/badge/اللاعبون-5%2B-0F172A?style=flat-square" alt="خمسة لاعبين أو أكثر" />
 
@@ -81,17 +81,17 @@
 | 🔵 **المواطنون** | شيخ المواطنين، بنت المواطنين، المواطن الشجاع، ومواطن صالح |
 | 🟣 **مستقل** | الجوكر |
 
-## إصدار Android 1.2.2
+## إصدار Android 1.2.3
 
-[**تحميل APK — ARM64، إصدار 1.2.2، Build 9**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.2-arm64.apk)
+[**تحميل APK — ARM64، إصدار 1.2.3، Build 10**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.3-arm64.apk)
 
-نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2009.
+نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2010.
 
-الأحمر الدموي الأصلي على تسجيل الدخول والافتتاحية أيضاً، وثيمات Premium بمزيج لونين: أزرق وبنفسجي، زمردي وأزرق، وذهبي وبنفسجي. الفوز التقليدي يقارن المافيا والمواطنين الأحياء دون الجوكر؛ عند التعادل فقط تُمنح فرصة إذا اجتمع قنص مواطن غير مستخدم مع حماية متاحة لبنت المواطنين. زر Upgrade to Premium يفتح Pricing، والثيمات في الإعدادات. المساعد الصوتي ميزة Premium قادمة وغير مفعّلة؛ الدفع الحقيقي لم يُربط بعد.
+إصلاح انتقال ملخص الليل إلى نتيجة المباراة عند الفوز: انتهاء المباراة لا يفتح نقاشاً جديداً أو اغتيالاً آخر. يحسم التعادل 2 مافيا / 2 مواطنين صالحين بفوز المافيا؛ استثناء الحماية والقنص يتطلب القدرتين المتاحتين معاً. مؤقت النقاش يعمل خلال الجولات الفعلية، ومؤقت الدفاع يُلغى عند إغلاق المحاكمة. الهوية والثيمات محفوظة. التفاصيل في [ملاحظات الإصلاح](docs/local-endgame-1.2.3.md).
 
-**التحقق:** نجحت 91 تجربة Flutter و21 اختبار قواعد و7 اختبارات خادم، والتحليل الساكن بلا مشاكل. نسخة الويب محدثة، وقواعد QR والفهارس المنشورة في 1.2.1 باقية. خادم V2 والخدمات المدفوعة معطلة افتراضياً؛ لم يُجرَ اختبار 100 ألف مستخدم.
+**التحقق:** نجحت 99 تجربة Flutter، تشمل ثمانية اختبارات واجهة جديدة لنهاية المباراة وتكرار الجولات؛ التحليل الساكن بلا مشاكل. إصدار 1.2.2 السابق اجتاز 21 اختبار قواعد و7 اختبارات خادم. Firebase ونسخة الويب باقية على إعداداتهما الحالية؛ خادم V2 والخدمات المدفوعة معطلة افتراضياً، ولم يُجرَ اختبار 100 ألف مستخدم.
 
-[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.2.json)
+[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.3.json)
 
 ## التحميل واللعب
 
@@ -110,7 +110,7 @@
 
 <br />
 
-[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.2-arm64.apk)
+[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.3-arm64.apk)
 
 <sub>صُنعت لعشّاق المؤامرات… وللحكم الذي لا يفوته شيء.</sub>
 

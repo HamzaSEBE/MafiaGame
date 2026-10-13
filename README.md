@@ -10,7 +10,7 @@
 
 <br />
 
-<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.4-arm64.apk">
+<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.5-arm64.apk">
   <img src="https://img.shields.io/badge/تحميل_تطبيق_الحكم-1A1119?style=for-the-badge&logo=android&logoColor=white&labelColor=E11D48" alt="تحميل تطبيق الحكم للأندرويد" />
 </a>
 &nbsp;
@@ -20,7 +20,7 @@
 
 <br /><br />
 
-<img src="https://img.shields.io/badge/الإصدار-1.2.4%20%7C%20Build%2011-0F172A?style=flat-square" alt="الإصدار 1.2.4 build 11" />
+<img src="https://img.shields.io/badge/الإصدار-1.2.5%20%7C%20Build%2012-0F172A?style=flat-square" alt="الإصدار 1.2.5 build 12" />
 <img src="https://img.shields.io/badge/Flutter-تطبيق_Android-0F172A?style=flat-square&logo=flutter&logoColor=0EA5E9" alt="مبني باستخدام Flutter" />
 <img src="https://img.shields.io/badge/اللاعبون-5%2B-0F172A?style=flat-square" alt="خمسة لاعبين أو أكثر" />
 
@@ -81,17 +81,17 @@
 | 🔵 **المواطنون** | شيخ المواطنين، بنت المواطنين، المواطن الشجاع، ومواطن صالح |
 | 🟣 **مستقل** | الجوكر |
 
-## إصدار Android 1.2.4
+## إصدار Android 1.2.5
 
-[**تحميل APK — ARM64، إصدار 1.2.4، Build 11**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.4-arm64.apk)
+[**تحميل APK — ARM64، إصدار 1.2.5، Build 12**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.5-arm64.apk)
 
-نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2011.
+نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2012.
 
-القنّاص لا يستطيع اختيار نفسه في اللعب الكلاسيكي. الجريدة تميّز ضحية القنص عن اغتيال المافيا بحسب نتيجة الليل الفعلية، وتراعي الحماية والسجلات القديمة. الرجوع من الخلفية يحتفظ بالشاشة والجلسة والهدف المحدد؛ إعداد Android يعيد استخدام الواجهة الموجودة. التفاصيل في [ملاحظات الإصدار](docs/sniper-news-background-1.2.4.md).
+القنّاص يستطيع تخطي دوره والاحتفاظ بالرصاصة لليلة لاحقة. إعدادات القواعد تتضمن شرحاً مفصلاً لكل خيار، والسجل يعرض ملخصات خفيفة على صفحات ويحمّل التقرير عند فتحه فقط. حذف المباراة يزيل بياناتها وتقريرها مع إبقاء الإحصائيات الإجمالية، وينظف غرفة QR المنتهية المرتبطة بها. التفاصيل في [ملاحظات الإصدار](docs/history-rules-sniper-1.2.5.md).
 
-**التحقق:** نجحت 112 تجربة Flutter، منها 13 حالة جديدة للقنّاص والجريدة والرجوع من الخلفية؛ التحليل الساكن بلا مشاكل. Firebase ونسخة الويب باقية على إعداداتهما الحالية، وخادم V2 والخدمات المدفوعة معطلة افتراضياً. اختبار الرجوع من واتساب على الهاتف الفعلي يتم بعد تنزيل النسخة.
+**التحقق:** نجح 122 اختبار Flutter، و25 اختبار صلاحيات Firestore، و7 اختبارات تكامل للخادم؛ التحليل الساكن بلا مشاكل. نُشرت قواعد الحفظ والحذف، وخادم V2 والخدمات المدفوعة معطلة افتراضياً. اختبار السلاسة النهائي على الهاتف الفعلي بعد تنزيل النسخة.
 
-[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.4.json)
+[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.5.json)
 
 ## التحميل واللعب
 
@@ -110,7 +110,7 @@
 
 <br />
 
-[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.4-arm64.apk)
+[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.5-arm64.apk)
 
 <sub>صُنعت لعشّاق المؤامرات… وللحكم الذي لا يفوته شيء.</sub>
 

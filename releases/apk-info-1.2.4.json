@@ -1,0 +1,29 @@
+{
+  "version": "1.2.4",
+  "sourceVersionCode": 11,
+  "apkVersionCode": 2011,
+  "buildMode": "release",
+  "packageId": "com.example.mafia_nightfall",
+  "abi": "arm64-v8a",
+  "file": "mafia-nightfall-1.2.4-arm64.apk",
+  "sizeBytes": 37244527,
+  "sha256": "2cc11380e52403f1891079aba0ce8c9a02b0e54fa143d799739e5424f2698688",
+  "signingCertificateSha256": "8cf88a21502fd3314a9469fdaa56333712a81f1e7cd853418ca7e5461355f544",
+  "signing": "Existing test certificate, verified to match the previous APK; private key excluded",
+  "builtAt": "2026-10-13T05:09:21.675389+00:00",
+  "minSdk": 24,
+  "targetSdk": 36,
+  "backendDeployment": "Existing Firebase and Hosting configuration retained; paid services disabled",
+  "validation": {
+    "flutterTests": 112,
+    "newSniperNewsLifecycleTests": 13,
+    "flutterAnalyze": "No issues",
+    "apkLaunchMode": "MainActivity singleTask verified, empty taskAffinity retained",
+    "physicalAndroidTesting": "Manual device test after download"
+  },
+  "changes": [
+    "Local sniper cannot select self; QR self-skip contract preserved",
+    "Newspaper and text report use resolved Mafia/sniper death causes",
+    "Stable Navigator and singleTask Activity retain warm game screen"
+  ]
+}

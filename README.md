@@ -10,7 +10,7 @@
 
 <br />
 
-<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.5-arm64.apk">
+<a href="https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.6-arm64.apk">
   <img src="https://img.shields.io/badge/تحميل_تطبيق_الحكم-1A1119?style=for-the-badge&logo=android&logoColor=white&labelColor=E11D48" alt="تحميل تطبيق الحكم للأندرويد" />
 </a>
 &nbsp;
@@ -20,7 +20,7 @@
 
 <br /><br />
 
-<img src="https://img.shields.io/badge/الإصدار-1.2.5%20%7C%20Build%2012-0F172A?style=flat-square" alt="الإصدار 1.2.5 build 12" />
+<img src="https://img.shields.io/badge/الإصدار-1.2.6%20%7C%20Build%2013-0F172A?style=flat-square" alt="الإصدار 1.2.6 build 13" />
 <img src="https://img.shields.io/badge/Flutter-تطبيق_Android-0F172A?style=flat-square&logo=flutter&logoColor=0EA5E9" alt="مبني باستخدام Flutter" />
 <img src="https://img.shields.io/badge/اللاعبون-5%2B-0F172A?style=flat-square" alt="خمسة لاعبين أو أكثر" />
 
@@ -81,17 +81,19 @@
 | 🔵 **المواطنون** | شيخ المواطنين، بنت المواطنين، المواطن الشجاع، ومواطن صالح |
 | 🟣 **مستقل** | الجوكر |
 
-## إصدار Android 1.2.5
+## إصدار Android 1.2.6
 
-[**تحميل APK — ARM64، إصدار 1.2.5، Build 12**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.5-arm64.apk)
+[**تحميل APK — ARM64، إصدار 1.2.6، Build 13**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.6-arm64.apk)
 
-نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2012.
+نسخة release للاختبار على هاتف Android فعلي، بحجم نحو 37 MB، وتتطلب Android 7.0 أو أحدث. تحمل نفس توقيع APK السابق، ورقم إصدار Android هو 2013.
 
-القنّاص يستطيع تخطي دوره والاحتفاظ بالرصاصة لليلة لاحقة. إعدادات القواعد تتضمن شرحاً مفصلاً لكل خيار، والسجل يعرض ملخصات خفيفة على صفحات ويحمّل التقرير عند فتحه فقط. حذف المباراة يزيل بياناتها وتقريرها مع إبقاء الإحصائيات الإجمالية، وينظف غرفة QR المنتهية المرتبطة بها. التفاصيل في [ملاحظات الإصدار](docs/history-rules-sniper-1.2.5.md).
+اكتمل تطبيق الأحمر الدموي على مكوّنات الواجهة والتسجيل ونوافذ التأكيد، مع إزالة الدرجات الوردية القديمة. أُعيد تصميم واجهات لاعبي QR من الانضمام حتى نهاية الجلسة: بطاقة سرية تُخفى فور رفع الإصبع، خيارات أوضح للتصويت والقدرات، وتصميم متناسق على الهاتف والشاشات الأعرض. نُشرت نسخة الويب الجديدة على الرابط نفسه. التفاصيل في [ملاحظات الإصدار](docs/theme-qr-1.2.6.md).
 
-**التحقق:** نجح 122 اختبار Flutter، و25 اختبار صلاحيات Firestore، و7 اختبارات تكامل للخادم؛ التحليل الساكن بلا مشاكل. نُشرت قواعد الحفظ والحذف، وخادم V2 والخدمات المدفوعة معطلة افتراضياً. اختبار السلاسة النهائي على الهاتف الفعلي بعد تنزيل النسخة.
+**التحقق:** نجح 136 اختبار Flutter، وفحوص بدء الويب الأربع، والتحليل الساكن بلا مشاكل. بُنيت نسختا Android وWeb عبر سطر الأوامر، مع مراجعة صور الواجهات من Flutter مباشرة. تجربة المتصفح والهاتف الفعلي تُجرى بعد التنزيل؛ خادم V2 والخدمات المدفوعة معطلة افتراضياً.
 
-[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.5.json)
+<img src="docs/screenshots/qr-player-1.2.6.png" alt="واجهة لاعب QR الجديدة" width="320" />
+
+[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.6.json)
 
 ## التحميل واللعب
 
@@ -110,7 +112,7 @@
 
 <br />
 
-[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.5-arm64.apk)
+[المستودع على GitHub](https://github.com/HamzaSEBE/MafiaGame) · [افتح نسخة الويب](https://mafiagame-351f8.web.app) · [حمّل APK](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.6-arm64.apk)
 
 <sub>صُنعت لعشّاق المؤامرات… وللحكم الذي لا يفوته شيء.</sub>
 

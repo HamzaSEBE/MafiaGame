@@ -1,132 +1,217 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// In the future, this provider will control the actual app theme.
-final selectedThemeProvider = StateProvider<String>((ref) => 'dark_blood');
+import 'package:mafia_nightfall/application/premium_service.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
+import 'package:mafia_nightfall/presentation/premium/pricing_screen.dart';
+import 'package:mafia_nightfall/presentation/premium/premium_widgets.dart';
+import 'package:mafia_nightfall/presentation/premium/theme_experience_preview.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'package:mafia_nightfall/presentation/theme/theme_catalog.dart';
 
 class ThemesScreen extends ConsumerWidget {
   const ThemesScreen({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => ThemeGalleryContent(
+    selectedThemeId: ref.watch(selectedThemeProvider),
+    isPremium: ref.watch(premiumProvider),
+    onApply: (id) => ref.read(selectedThemeProvider.notifier).selectTheme(id),
+  );
+}
+
+class ThemeGalleryContent extends StatelessWidget {
+  const ThemeGalleryContent({
+    super.key,
+    required this.selectedThemeId,
+    required this.isPremium,
+    required this.onApply,
+  });
+  final String selectedThemeId;
+  final bool isPremium;
+  final Future<void> Function(String id) onApply;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final currentTheme = ref.watch(selectedThemeProvider);
-
-    return Scaffold(
-      
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('الثيمات 👑', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          const Text(
-            'اختر الستايل المفضل لك:',
-            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
-          ),
-          const SizedBox(height: 24),
-          
-          _buildThemeCard(
-            context: context,
-            ref: ref,
-            id: 'dark_blood',
-            title: 'Dark Blood (الأساسي)',
-            description: 'الثيم الأحمر الدموي الفخم للمافيا.',
-            color1: const Color(0xFF8B0000),
-            color2: const Color(0xFF4A0000),
-            isSelected: currentTheme == 'dark_blood',
-          ),
-          
-          _buildThemeCard(
-            context: context,
-            ref: ref,
-            id: 'midnight_blue',
-            title: 'Midnight Blue',
-            description: 'ثيم أزرق ليلي هادئ وبارد.',
-            color1: const Color(0xFF0F2027),
-            color2: const Color(0xFF203A43),
-            isSelected: currentTheme == 'midnight_blue',
-          ),
-          
-          _buildThemeCard(
-            context: context,
-            ref: ref,
-            id: 'emerald_shadow',
-            title: 'Emerald Shadow',
-            description: 'أخضر زمردي فاخر يشبه غرف البوكر السرية.',
-            color1: const Color(0xFF004D40),
-            color2: const Color(0xFF00251A),
-            isSelected: currentTheme == 'emerald_shadow',
-          ),
-
-          _buildThemeCard(
-            context: context,
-            ref: ref,
-            id: 'royal_gold',
-            title: 'Royal Gold',
-            description: 'ثيم ذهبي فاخر لكبار الشخصيات.',
-            color1: const Color(0xFFFFD700),
-            color2: const Color(0xFFB8860B),
-            isSelected: currentTheme == 'royal_gold',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeCard({
-    required BuildContext context,
-    required WidgetRef ref,
-    required String id,
-    required String title,
-    required String description,
-    required Color color1,
-    required Color color2,
-    required bool isSelected,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        ref.read(selectedThemeProvider.notifier).state = id;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(duration: const Duration(milliseconds: 500), content: Text('تم تفعيل ثيم: $title بنجاح!', style: const TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.green),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.amber : Colors.white.withValues(alpha: 0.1), width: isSelected ? 2 : 1),
-          gradient: LinearGradient(
-            colors: [color1, color2],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.amber.withValues(alpha: 0.3), blurRadius: 10, spreadRadius: 1)] : [],
-        ),
-        child: Padding(
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('الثيمات')),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: ListView(
           padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-                    const SizedBox(height: 8),
-                    Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14, fontFamily: 'Cairo')),
-                  ],
+          children: [
+            Text(
+              'اختر ثيم التطبيق. يمكنك معاينة الألوان قبل تطبيقه.',
+              style: TextStyle(color: context.visual.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            for (final palette in ThemeCatalog.themes)
+              Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: palette.actionGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(palette.icon, color: palette.textPrimary),
+                  ),
+                  title: Text(palette.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      ThemeSwatches(palette: palette, size: 16),
+                      const SizedBox(height: 8),
+                      Text(
+                        palette.isPremium ? 'Premium' : 'الثيم الأصلي · مجاني',
+                        style: TextStyle(
+                          color: palette.isPremium
+                              ? premiumGold
+                              : context.visual.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Icon(
+                    selectedThemeId == palette.id
+                        ? Icons.check_circle_rounded
+                        : palette.isPremium && !isPremium
+                        ? Icons.lock_outline
+                        : Icons.chevron_left_rounded,
+                    color: selectedThemeId == palette.id
+                        ? AppTheme.success
+                        : context.visual.textSecondary,
+                  ),
+                  onTap: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    builder: (_) => _ThemePreviewSheet(
+                      palette: palette,
+                      canApply: !palette.isPremium || isPremium,
+                      onApply: onApply,
+                    ),
+                  ),
                 ),
               ),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.amber, size: 32)
-              else
-                Icon(Icons.circle_outlined, color: Colors.white.withValues(alpha: 0.5), size: 32),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _ThemePreviewSheet extends StatefulWidget {
+  const _ThemePreviewSheet({
+    required this.palette,
+    required this.canApply,
+    required this.onApply,
+  });
+  final ThemePalette palette;
+  final bool canApply;
+  final Future<void> Function(String id) onApply;
+  @override
+  State<_ThemePreviewSheet> createState() => _ThemePreviewSheetState();
+}
+
+class _ThemePreviewSheetState extends State<_ThemePreviewSheet> {
+  bool _saving = false;
+  String? _error;
+  Future<void> _apply() async {
+    if (_saving || !widget.canApply) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.onApply(widget.palette.id);
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'تعذّر حفظ الثيم. أعد المحاولة.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Theme(
+    data: AppTheme.previewTheme(widget.palette),
+    child: Builder(
+      builder: (context) => Container(
+        color: widget.palette.background,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'معاينة الثيم',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _saving ? null : () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.palette.name,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.palette.description,
+                style: TextStyle(color: context.visual.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              const ThemeExperiencePreview(),
+              const SizedBox(height: 16),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: AppTheme.error),
+                  ),
+                ),
+              if (widget.canApply)
+                FilledButton(
+                  onPressed: _saving ? null : _apply,
+                  child: Text(_saving ? 'جارٍ الحفظ…' : 'تطبيق هذا الثيم'),
+                )
+              else ...[
+                const Text(
+                  'Premium · يلزم اشتراك لتطبيق هذا الثيم',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: premiumGold),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PricingScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Upgrade to Premium'),
+                ),
+              ],
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

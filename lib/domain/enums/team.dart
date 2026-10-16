@@ -1,6 +1,1 @@
-/// Mafia/Citizens team enum
-enum Team {
-  mafia,
-  citizens,
-  independent,
-}
+export 'package:game_core/src/enums/team.dart';

@@ -1,0 +1,7 @@
+analyzer:
+  exclude:
+    - .dart_tool/**
+linter:
+  rules:
+    - curly_braces_in_flow_control_structures
+    - avoid_empty_else

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
@@ -38,9 +38,9 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Color(0xFF13131A),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.visual.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -56,7 +56,7 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
               ),
             ),
           ),
-          
+
           // Tabs
           Row(
             children: [
@@ -66,10 +66,27 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: _tabIndex == 0 ? Colors.orangeAccent : Colors.transparent, width: 2)),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _tabIndex == 0
+                              ? context.visual.accent
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
                     ),
                     child: Center(
-                      child: Text('📖 الأدوار', style: TextStyle(color: _tabIndex == 0 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Text(
+                        '📖 الأدوار',
+                        style: TextStyle(
+                          color: _tabIndex == 0
+                              ? context.visual.accent
+                              : Colors.white54,
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -80,10 +97,27 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: _tabIndex == 1 ? Colors.orangeAccent : Colors.transparent, width: 2)),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _tabIndex == 1
+                              ? context.visual.accent
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
                     ),
                     child: Center(
-                      child: Text('📜 السجل', style: TextStyle(color: _tabIndex == 1 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Text(
+                        '📜 السجل',
+                        style: TextStyle(
+                          color: _tabIndex == 1
+                              ? context.visual.accent
+                              : Colors.white54,
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -94,26 +128,43 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: _tabIndex == 2 ? Colors.orangeAccent : Colors.transparent, width: 2)),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _tabIndex == 2
+                              ? context.visual.accent
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
                     ),
                     child: Center(
-                      child: Text('👥 الهويات', style: TextStyle(color: _tabIndex == 2 ? Colors.orangeAccent : Colors.white54, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Text(
+                        '👥 الهويات',
+                        style: TextStyle(
+                          color: _tabIndex == 2
+                              ? context.visual.accent
+                              : Colors.white54,
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          
+
           const Divider(color: Colors.white10, height: 1, thickness: 1),
-          
+
           // Content
           Expanded(
-            child: _tabIndex == 0 
-                ? _buildRolesGuide(presentRoles) 
-                : _tabIndex == 1 
-                    ? _buildEventLog(events, state)
-                    : _buildIdentities(state.players, state),
+            child: _tabIndex == 0
+                ? _buildRolesGuide(presentRoles)
+                : _tabIndex == 1
+                ? _buildEventLog(events, state)
+                : _buildIdentities(state.players, state),
           ),
         ],
       ),
@@ -122,21 +173,26 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
 
   Widget _buildRolesGuide(List<Role> roles) {
     if (roles.isEmpty) {
-      return const Center(child: Text('لم تبدأ اللعبة بعد', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')));
+      return const Center(
+        child: Text(
+          'لم تبدأ اللعبة بعد',
+          style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'),
+        ),
+      );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: roles.length,
       itemBuilder: (context, index) {
         final role = roles[index];
         final roleColor = AppTheme.roleColor(role);
-        
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A22),
+            color: context.visual.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: roleColor.withValues(alpha: 0.3)),
           ),
@@ -152,9 +208,25 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppTheme.roleArabicName(role), style: TextStyle(color: roleColor, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      context.roleName(role),
+                      style: TextStyle(
+                        color: roleColor,
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(_getRoleDescription(role), style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12, height: 1.4)),
+                    Text(
+                      _getRoleDescription(role),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontFamily: 'Cairo',
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -167,23 +239,32 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
 
   Widget _buildEventLog(List<GameEvent> events, state) {
     if (events.isEmpty) {
-      return const Center(child: Text('لم تحدث أي أحداث بعد', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')));
+      return const Center(
+        child: Text(
+          'لم تحدث أي أحداث بعد',
+          style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'),
+        ),
+      );
     }
-    
+
     final reversedEvents = events.reversed.toList();
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: reversedEvents.length,
       itemBuilder: (context, index) {
         final e = reversedEvents[index];
-        final actor = e.actorId != null ? state.getPlayerById(e.actorId!) : null;
-        final target = e.targetId != null ? state.getPlayerById(e.targetId!) : null;
-        
+        final actor = e.actorId != null
+            ? state.getPlayerById(e.actorId!)
+            : null;
+        final target = e.targetId != null
+            ? state.getPlayerById(e.targetId!)
+            : null;
+
         String desc = 'حدث مجهول';
         IconData icon = Icons.info;
         Color color = Colors.grey;
-        
+
         switch (e.type) {
           case EventType.assassination:
             desc = 'المافيا اغتالت ${target?.name ?? "شخصاً"}';
@@ -208,10 +289,11 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
           case EventType.vote:
             desc = '${actor?.name} صوّت ضد ${target?.name}';
             icon = Icons.how_to_vote;
-            color = Colors.orangeAccent;
+            color = context.visual.accent;
             break;
           case EventType.elimination:
-            desc = 'تم إعدام ${target?.name} (كان ${target != null ? AppTheme.roleArabicName(target.role) : ""})';
+            desc =
+                'تم إعدام ${target?.name} (كان ${target != null ? context.roleName(target.role) : ""})';
             icon = Icons.gavel;
             color = Colors.red;
             break;
@@ -233,7 +315,7 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
           case EventType.citizenSheikhReveal:
             desc = 'أفصح شيخ المواطنين عن نفسه';
             icon = Icons.campaign;
-            color = Colors.orangeAccent;
+            color = context.visual.accent;
             break;
         }
 
@@ -250,9 +332,23 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(desc, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 13)),
+                child: Text(
+                  desc,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Cairo',
+                    fontSize: 13,
+                  ),
+                ),
               ),
-              Text('جولة ${e.round}', style: TextStyle(color: color.withValues(alpha: 0.7), fontFamily: 'Cairo', fontSize: 11)),
+              Text(
+                'جولة ${e.round}',
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.7),
+                  fontFamily: 'Cairo',
+                  fontSize: 11,
+                ),
+              ),
             ],
           ),
         );
@@ -262,32 +358,55 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
 
   String _getRoleDescription(Role role) {
     switch (role) {
-      case Role.mafiaSheikh: return 'زعيم المافيا. يستيقظ ليلاً لاختيار ضحية واغتيالها. إذا تم فحصه، يظهر كمواطن بريء.';
-      case Role.mafiaGirl: return 'بنت المافيا. تستيقظ ليلاً لاختيار شخص وإسكاته، فيُمنع من الكلام في النهار.';
-      case Role.normalMafia: return 'عضو بالمافيا. يستيقظ ليلاً مع المافيا ويتشاور معهم لاختيار الضحية.';
-      case Role.citizensSheikh: return 'شيخ المواطنين (المحقق). يستيقظ ليلاً ليتفحص شخصاً لمعرفة ما إذا كان من المافيا أم لا.';
-      case Role.citizensGirl: return 'بنت المواطنين (الطبيبة). تستيقظ ليلاً لحماية شخص واحد من الاغتيال. يمكنها حماية نفسها.';
-      case Role.citizensBoy: return 'الولد الشجاع. إذا تم إقصاؤه (سواء بالتصويت أو الاغتيال)، فإنه يسحب معه لاعباً آخر من اختياره للموت.';
-      case Role.goodCitizen: return 'مواطن صالح لا يملك قدرات ليلية. سلاحه الوحيد هو صوته وتحليله في النهار لإسقاط المافيا.';
-      case Role.joker: return 'المهرج (الجوكر). دوره مستقل. يفوز باللعبة فوزاً ساحقاً إذا استطاع إقناع الآخرين بالتصويت ضده وإعدامه في النهار!';
+      case Role.mafiaSheikh:
+        return 'زعيم المافيا. يستيقظ ليلاً لاختيار ضحية واغتيالها. إذا تم فحصه، يظهر كمواطن بريء.';
+      case Role.mafiaGirl:
+        return 'بنت المافيا. تستيقظ ليلاً لاختيار شخص وإسكاته، فيُمنع من الكلام في النهار.';
+      case Role.normalMafia:
+        return 'عضو بالمافيا. يستيقظ ليلاً مع المافيا ويتشاور معهم لاختيار الضحية.';
+      case Role.citizensSheikh:
+        return 'شيخ المواطنين (المحقق). يستيقظ ليلاً ليتفحص شخصاً لمعرفة ما إذا كان من المافيا أم لا.';
+      case Role.citizensGirl:
+        return 'بنت المواطنين (الطبيبة). تستيقظ ليلاً لحماية شخص واحد من الاغتيال. يمكنها حماية نفسها.';
+      case Role.citizensBoy:
+        return 'الولد الشجاع. إذا تم إقصاؤه (سواء بالتصويت أو الاغتيال)، فإنه يسحب معه لاعباً آخر من اختياره للموت.';
+      case Role.goodCitizen:
+        return 'مواطن صالح لا يملك قدرات ليلية. سلاحه الوحيد هو صوته وتحليله في النهار لإسقاط المافيا.';
+      case Role.joker:
+        return 'المهرج (الجوكر). دوره مستقل. يفوز باللعبة فوزاً ساحقاً إذا استطاع إقناع الآخرين بالتصويت ضده وإعدامه في النهار!';
     }
   }
 
   Widget _buildIdentities(List<Player> players, GameState state) {
     if (players.isEmpty) {
-      return const Center(child: Text('لا يوجد لاعبين', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')));
+      return const Center(
+        child: Text(
+          'لا يوجد لاعبين',
+          style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'),
+        ),
+      );
     }
-    
+
     final alivePlayers = state.alivePlayers;
-    final deadPlayers = players.where((p) => !alivePlayers.contains(p)).toList();
-    
+    final deadPlayers = players
+        .where((p) => !alivePlayers.contains(p))
+        .toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         if (alivePlayers.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.only(bottom: 8, right: 4),
-            child: Text('الأحياء', style: TextStyle(color: Colors.greenAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+            child: Text(
+              'الأحياء',
+              style: TextStyle(
+                color: Colors.greenAccent,
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ),
           ...alivePlayers.map((p) => _buildPlayerIdentityTile(p, true)),
           const SizedBox(height: 16),
@@ -295,7 +414,15 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
         if (deadPlayers.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.only(bottom: 8, right: 4),
-            child: Text('الأموات', style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 16)),
+            child: Text(
+              'الأموات',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ),
           ...deadPlayers.map((p) => _buildPlayerIdentityTile(p, false)),
         ],
@@ -305,14 +432,20 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
 
   Widget _buildPlayerIdentityTile(Player player, bool isAlive) {
     final roleColor = AppTheme.roleColor(player.role);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isAlive ? const Color(0xFF1A1A22) : Colors.redAccent.withValues(alpha: 0.05),
+        color: isAlive
+            ? context.visual.surface
+            : Colors.redAccent.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isAlive ? roleColor.withValues(alpha: 0.3) : Colors.redAccent.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: isAlive
+              ? roleColor.withValues(alpha: 0.3)
+              : Colors.redAccent.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -324,13 +457,15 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              player.name, 
+              player.name,
               style: TextStyle(
-                color: isAlive ? Colors.white : Colors.white54, 
-                fontFamily: 'Cairo', 
-                fontWeight: FontWeight.bold, 
+                color: isAlive ? Colors.white : Colors.white54,
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.bold,
                 fontSize: 15,
-                decoration: isAlive ? TextDecoration.none : TextDecoration.lineThrough,
+                decoration: isAlive
+                    ? TextDecoration.none
+                    : TextDecoration.lineThrough,
               ),
             ),
           ),
@@ -341,7 +476,15 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: roleColor.withValues(alpha: 0.4)),
             ),
-            child: Text(AppTheme.roleArabicName(player.role), style: TextStyle(color: roleColor, fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold)),
+            child: Text(
+              context.roleName(player.role),
+              style: TextStyle(
+                color: roleColor,
+                fontFamily: 'Cairo',
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

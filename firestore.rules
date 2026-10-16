@@ -1,66 +1,257 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only the judge (host) can create and update sessions.
-    // Anyone can read public session data to sync the game phase.
+    function signedIn() {
+      return request.auth != null;
+    }
+
     match /sessions/{sessionId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.hostUid;
+      function isHost() {
+        return signedIn() && request.auth.uid ==
+          get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
 
-      // Public seats: anyone authenticated can read (to choose a seat). Judge can write.
+      // getAfter also authorizes seats/secrets created in the session's atomic write.
+      function isHostAfter() {
+        return signedIn() && request.auth.uid ==
+          getAfter(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+      }
+
+      // A QR link can resolve one public room before anonymous auth finishes.
+      // Never expose a directory of all rooms.
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn() &&
+        request.resource.data.keys().hasOnly([
+          'id', 'hostUid', 'status', 'phase', 'round', 'actionRevision',
+          'actionsPhase', 'actionsRound', 'winner', 'createdAt', 'globalAnnouncement',
+          'stateVersion', 'actionsOpen', 'expiresAt'
+        ]) &&
+        request.resource.data.id == sessionId &&
+        request.resource.data.hostUid == request.auth.uid &&
+        request.resource.data.status == 'waiting' &&
+        request.resource.data.actionRevision == 0 &&
+        request.resource.data.createdAt == request.time;
+      allow update: if isHost() &&
+        request.resource.data.keys().hasOnly([
+          'id', 'hostUid', 'status', 'phase', 'round', 'actionRevision',
+          'actionsPhase', 'actionsRound', 'winner', 'createdAt', 'globalAnnouncement',
+          'stateVersion', 'actionsOpen', 'expiresAt'
+        ]) &&
+        request.resource.data.round >= resource.data.round &&
+        request.resource.data.status in ['waiting', 'active', 'finished'] &&
+        request.resource.data.hostUid == resource.data.hostUid &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.actionRevision >= resource.data.actionRevision &&
+        (resource.data.status != 'finished' || request.resource.data.status == 'finished');
+      allow delete: if isHost();
+
+      match /hostState/{checkpointId} {
+        allow read: if isHost();
+        allow create: if isHostAfter();
+        allow update, delete: if isHost();
+      }
+
       match /seats/{seatId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
-      }
-
-      // Secret data: only the linked player or judge can read. Judge can write.
-      match /secrets/{seatId} {
-        allow read: if request.auth != null && (
-          request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(seatId)).data.linkedUid ||
-          request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid
-        );
-        allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
-      }
-
-      // Join requests allow players to request a specific seat.
-      match /joinRequests/{uid} {
-        function isHost() {
-          return request.auth != null &&
-            request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
-        }
-
-        function isValidPlayerRequest() {
-          return request.auth != null && request.auth.uid == uid &&
-            get(/databases/$(database)/documents/sessions/$(sessionId)).data.status != 'finished' &&
-            request.resource.data.uid == uid &&
-            request.resource.data.seatId is string &&
-            request.resource.data.displayName is string;
-        }
-
-        // Players can read their own request and create or retry it safely.
-        allow read: if (request.auth != null && request.auth.uid == uid) || isHost();
-        allow create, update: if isValidPlayerRequest();
-        // The judge reviews and removes requests after approval or rejection.
+        allow read: if signedIn() && (isHost() ||
+          get(/databases/$(database)/documents/sessions/$(sessionId)).data.status == 'waiting' ||
+          exists(/databases/$(database)/documents/sessions/$(sessionId)/members/$(request.auth.uid)));
+        allow create: if isHostAfter() &&
+          request.resource.data.id == seatId &&
+          request.resource.data.linkedUid == null;
+        allow update: if isHost() && request.resource.data.id == seatId &&
+          (request.resource.data.linkedUid == resource.data.linkedUid ||
+            (resource.data.linkedUid == null &&
+              request.resource.data.status == 'linked' &&
+              getAfter(/databases/$(database)/documents/sessions/$(sessionId)/members/$(request.resource.data.linkedUid)).data.seatId == seatId));
         allow delete: if isHost();
       }
 
-      // Action requests allow players to submit their votes or night actions.
+      // One UID has one seat in a room. Created atomically with seat approval.
+      match /members/{uid} {
+        allow get: if isHost() || (signedIn() && request.auth.uid == uid);
+        allow list: if isHost();
+        allow create: if isHost() &&
+          request.resource.data.keys().hasOnly(['uid', 'seatId']) &&
+          request.resource.data.uid == uid &&
+          request.resource.data.seatId is string &&
+          getAfter(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(request.resource.data.seatId)).data.linkedUid == uid;
+        allow update: if false;
+        allow delete: if isHost();
+      }
+
+      match /secrets/{seatId} {
+        allow read: if isHost() || (signedIn() && request.auth.uid ==
+          get(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(seatId)).data.linkedUid);
+        allow create: if isHostAfter();
+        allow update, delete: if isHost();
+      }
+
+      match /joinRequests/{uid} {
+        function isValidPlayerRequest() {
+          let data = request.resource.data;
+          let seat = get(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(data.seatId)).data;
+          return signedIn() && request.auth.uid == uid &&
+            get(/databases/$(database)/documents/sessions/$(sessionId)).data.status != 'finished' &&
+            data.keys().hasOnly(['uid', 'seatId', 'displayName', 'timestamp']) &&
+            data.uid == uid && data.seatId is string &&
+            data.displayName is string && data.displayName.size() > 0 &&
+            data.displayName.size() <= 80 && data.timestamp == request.time &&
+            seat.linkedUid == null &&
+            !exists(/databases/$(database)/documents/sessions/$(sessionId)/members/$(uid));
+        }
+        allow read: if (signedIn() && request.auth.uid == uid) || isHost();
+        allow create, update: if isValidPlayerRequest();
+        allow delete: if isHost();
+      }
+
       match /actionRequests/{requestId} {
-        // Player can only create a request for themselves.
-        allow create: if request.auth != null &&
-          request.auth.uid == request.resource.data.uid &&
-          get(/databases/$(database)/documents/sessions/$(sessionId)).data.status == 'active';
-        // Player can read their own.
-        allow read: if request.auth != null && request.auth.uid == resource.data.uid;
-        // Host can read and delete all action requests.
-        allow read, delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/sessions/$(sessionId)).data.hostUid;
+        function ownedActionId() {
+          return signedIn() && requestId in [
+            request.auth.uid + '_vote', request.auth.uid + '_assassination',
+            request.auth.uid + '_silence', request.auth.uid + '_investigation',
+            request.auth.uid + '_protection', request.auth.uid + '_sniperKill',
+            request.auth.uid + '_sleep', request.auth.uid + '_retaliation',
+            request.auth.uid + '_citizenSheikhReveal'
+          ];
+        }
+
+        function validAction() {
+          let data = request.resource.data;
+          let session = get(/databases/$(database)/documents/sessions/$(sessionId)).data;
+          let seat = get(/databases/$(database)/documents/sessions/$(sessionId)/seats/$(data.seatId)).data;
+          let secret = get(/databases/$(database)/documents/sessions/$(sessionId)/secrets/$(data.seatId)).data;
+          return ownedActionId() &&
+            data.keys().hasOnly(['id', 'uid', 'seatId', 'actionType', 'targetId', 'revision', 'timestamp']) &&
+            data.id == requestId && data.uid == request.auth.uid &&
+            requestId == data.uid + '_' + data.actionType &&
+            data.seatId is string && data.targetId is string &&
+            data.targetId.size() > 0 && data.targetId.size() <= 128 &&
+            data.revision is int && data.revision == session.actionRevision &&
+            secret.get('promptRevision', data.revision) == data.revision &&
+            data.timestamp == request.time &&
+            session.status == 'active' && session.get('actionsOpen', true) == true && seat.linkedUid == request.auth.uid &&
+            ((data.actionType == 'citizenSheikhReveal' &&
+                secret.role == 'citizensSheikh' && secret.canReveal == true && seat.isAlive &&
+                !seat.isCitizenSheikhRevealed && data.targetId == data.seatId &&
+                session.phase in ['day', 'voting']) ||
+              (data.actionType != 'citizenSheikhReveal' &&
+                (seat.isAlive || data.actionType == 'retaliation') &&
+                session.actionsPhase == session.phase &&
+                session.actionsRound == session.round &&
+                data.actionType in secret.allowedTargetsByAction &&
+                data.targetId in secret.allowedTargetsByAction[data.actionType]));
+        }
+
+        allow create: if validAction();
+        allow update: if validAction() &&
+          request.resource.data.uid == resource.data.uid &&
+          request.resource.data.seatId == resource.data.seatId &&
+          request.resource.data.actionType == resource.data.actionType &&
+          (request.resource.data.revision > resource.data.revision ||
+            (request.resource.data.actionType == 'vote' &&
+              request.resource.data.revision == resource.data.revision));
+        // A transaction must be able to read its not-yet-created deterministic ID.
+        allow get: if ownedActionId() || isHost() ||
+          (signedIn() && request.auth.uid == resource.data.uid);
+        allow list: if isHost() ||
+          (signedIn() && request.auth.uid == resource.data.uid);
+        allow delete: if isHost();
       }
     }
 
-    // Default users and other collections
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // V2 writes belong exclusively to the verified API (Admin SDK).
+    match /sessionsV2/{sessionId} {
+      function room() { return get(/databases/$(database)/documents/sessionsV2/$(sessionId)).data; }
+      function host() { return signedIn() && room().hostUid == request.auth.uid; }
+      function member() { return signedIn() && exists(/databases/$(database)/documents/sessionsV2/$(sessionId)/members/$(request.auth.uid)); }
+      allow get: if true;
+      allow list, write: if false;
+      match /roster/{seatId} {
+        allow read: if signedIn() && (room().status == 'waiting' || host() || member());
+        allow write: if false;
+      }
+      match /seats/{seatId} { allow read: if host(); allow write: if false; }
+      match /members/{uid} {
+        allow get: if host() || (signedIn() && request.auth.uid == uid);
+        allow list: if host(); allow write: if false;
+      }
+      match /secrets/{seatId} {
+        allow read: if host() || (member() && get(/databases/$(database)/documents/sessionsV2/$(sessionId)/members/$(request.auth.uid)).data.seatId == seatId);
+        allow write: if false;
+      }
+      match /joinRequests/{uid} {
+        allow read: if host() || (signedIn() && request.auth.uid == uid);
+        allow write: if false;
+      }
+      match /actionRequests/{id} {
+        allow read: if host() || (signedIn() && request.auth.uid == resource.data.uid);
+        allow write: if false;
+      }
+      match /hostState/{id} { allow read: if host(); allow write: if false; }
+      match /transitions/{id} { allow read: if host(); allow write: if false; }
+      match /outbox/{id} { allow read, write: if false; }
+      match /receipts/{id} { allow read, write: if false; }
+    }
+
+    match /users/{userId} {
+      function isOwner() {
+        return signedIn() && request.auth.uid == userId;
+      }
+      function profileFields() {
+        return ['displayName', 'username', 'email', 'photoBase64', 'photoPath', 'photoVersion', 'createdAt'];
+      }
+      // Entitlements are server-managed fields. Updating a profile preserves
+      // them; a client cannot create, replace, delete, or remove them.
+      allow read: if isOwner();
+      allow create: if isOwner() &&
+        request.resource.data.keys().hasOnly(profileFields());
+      allow update: if isOwner() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(profileFields());
+      allow delete: if false;
+
+      match /{collection}/{documentId} {
+        allow read, write: if isOwner() &&
+          collection in ['settings', 'savedPlayers', 'stats'];
+      }
+      function receiptPath(gameId) {
+        let digest = hashing.sha256(userId + '/' + gameId).toHexString().lower();
+        return /databases/$(database)/documents/users/$(userId)/resultReceipts/$(digest);
+      }
+      function archiveRemoved(gameId) {
+        return existsAfter(receiptPath(gameId)) &&
+          !existsAfter(/databases/$(database)/documents/users/$(userId)/games/$(gameId)) &&
+          !existsAfter(/databases/$(database)/documents/users/$(userId)/gameDetails/$(gameId));
+      }
+      match /games/{gameId} {
+        allow read, update, delete: if isOwner();
+        // Before-write lookup permits the first atomic save, but rejects an
+        // old client's attempt to recreate an archive after permanent deletion.
+        allow create: if isOwner() && !exists(receiptPath(gameId));
+      }
+      match /gameDetails/{gameId} {
+        allow read, delete: if isOwner();
+        allow create, update: if isOwner() &&
+          existsAfter(/databases/$(database)/documents/users/$(userId)/games/$(gameId));
+      }
+      match /resultReceipts/{receiptId} {
+        allow read: if isOwner();
+        allow create: if isOwner() && receiptId.matches('[0-9a-f]{64}') &&
+          request.resource.data.keys().hasOnly(['processed']) && request.resource.data.processed == true;
+        allow update: if isOwner() && request.resource.data == resource.data;
+        allow delete: if false;
+      }
+      match /gameResultsV2/{gameId} {
+        allow read: if isOwner();
+        allow delete: if isOwner() && archiveRemoved(gameId);
+      }
+      match /gameResults/{gameId} {
+        allow read: if isOwner();
+        allow create: if isOwner() && !exists(receiptPath(gameId));
+        allow update: if false;
+        allow delete: if isOwner() && archiveRemoved(gameId);
+      }
     }
   }
 }

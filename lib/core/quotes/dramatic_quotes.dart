@@ -58,9 +58,14 @@ class DramaticQuotes {
     'مفاجأة غير متوقعة!',
   ];
 
-  static String getRandomNightKill() => nightKill[_random.nextInt(nightKill.length)];
-  static String getRandomDayElimination() => dayElimination[_random.nextInt(dayElimination.length)];
-  static String getRandomMafiaWin() => mafiaWin[_random.nextInt(mafiaWin.length)];
-  static String getRandomCitizensWin() => citizensWin[_random.nextInt(citizensWin.length)];
-  static String getRandomSuspense() => suspense[_random.nextInt(suspense.length)];
+  static String getRandomNightKill() =>
+      nightKill[_random.nextInt(nightKill.length)];
+  static String getRandomDayElimination() =>
+      dayElimination[_random.nextInt(dayElimination.length)];
+  static String getRandomMafiaWin() =>
+      mafiaWin[_random.nextInt(mafiaWin.length)];
+  static String getRandomCitizensWin() =>
+      citizensWin[_random.nextInt(citizensWin.length)];
+  static String getRandomSuspense() =>
+      suspense[_random.nextInt(suspense.length)];
 }

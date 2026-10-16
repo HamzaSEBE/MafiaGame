@@ -1,46 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/presentation/interactive/web/player_components.dart';
 
 class WebSessionEndedScreen extends StatelessWidget {
   const WebSessionEndedScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF07070B),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.flag_rounded, color: Colors.orangeAccent, size: 72),
-                SizedBox(height: 20),
-                Text(
-                  'انتهت اللعبة',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontFamily: 'Cairo',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'أنهى الحكم الجلسة. يمكنك إغلاق هذه الصفحة.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                    fontFamily: 'Cairo',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const PlayerPage(
+    title: 'أُسدل الستار',
+    subtitle: 'لكل مدينة حكاية… ولكل ليلة أسرارها.',
+    status: 'انتهت الجلسة',
+    child: PlayerNotice(
+      title: 'انتهت اللعبة',
+      message:
+          'أنهى الحكم هذه الجلسة. يمكنك إغلاق الصفحة، أو مسح رمز QR جديد للانضمام إلى ليلة أخرى.',
+      icon: Icons.flag_outlined,
+    ),
+  );
 }

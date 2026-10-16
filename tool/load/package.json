@@ -1,0 +1,16 @@
+{
+  "name": "mafia-client-load",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "load": "node clients.mjs",
+    "seed": "node seed.mjs"
+  },
+  "dependencies": {
+    "firebase": "^12.0.0",
+    "firebase-admin": "^14.5.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.13.6"
+  }
+}

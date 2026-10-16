@@ -1,18 +1,15 @@
 import 'dart:async';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
-import 'package:mafia_nightfall/domain/enums/team.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
-import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
-import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 
 import 'package:mafia_nightfall/data/repositories/history_repository.dart';
-import 'package:mafia_nightfall/data/repositories/player_stats_repository.dart';
+import 'package:mafia_nightfall/data/repositories/game_results_repository.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/presentation/game_over/timeline_report_screen.dart';
 import 'package:mafia_nightfall/domain/engine/timeline_generator.dart';
@@ -28,34 +25,45 @@ class GameOverScreen extends ConsumerStatefulWidget {
 }
 
 class _GameOverScreenState extends ConsumerState<GameOverScreen> {
+  bool _savingResult = false;
+  bool _resultSaveFailed = false;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(audioManagerProvider).playClick();
       ref.read(audioManagerProvider).playReveal();
+      _saveGameToHistory();
     });
-    _saveGameToHistory();
     final sessionId = widget.interactiveSessionId;
-    if (sessionId != null) {
-      unawaited(ref
-          .read(interactiveServiceProvider)
-          .endSession(sessionId)
-          .catchError((_) {}));
+    if (sessionId != null &&
+        ref.read(interactiveServiceProvider).protocolFor(sessionId) == 1) {
+      unawaited(
+        ref
+            .read(interactiveServiceProvider)
+            .endSession(sessionId)
+            .catchError((_) {}),
+      );
     }
   }
 
   Future<void> _saveGameToHistory() async {
+    if (_savingResult) return;
+    setState(() {
+      _savingResult = true;
+      _resultSaveFailed = false;
+    });
     final gameState = ref.read(gameOrchestratorProvider);
     final winner = gameState.winner;
 
     final String winnerStr;
-    if (winner == Team.mafia)
+    if (winner == Team.mafia) {
       winnerStr = 'المافيا';
-    else if (winner == Team.independent)
+    } else if (winner == Team.independent) {
       winnerStr = 'المهرج (الجوكر)';
-    else
+    } else {
       winnerStr = 'المواطنون';
+    }
 
     final narrative = TimelineGenerator.generateNarrative(gameState, winnerStr);
 
@@ -64,60 +72,37 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
       date: DateTime.now(),
       winningTeam: winnerStr,
       players: gameState.players
-          .map((p) => PlayerRecord(
-                name: p.name,
-                roleName: AppTheme.roleArabicName(p.role),
-                team: p.role.team == Team.mafia
-                    ? 'المافيا'
-                    : (p.role.team == Team.independent ? 'مستقل' : 'المواطنون'),
-              ))
+          .map(
+            (p) => PlayerRecord(
+              name: p.name,
+              roleName: context.roleName(p.role),
+              team: p.role.team == Team.mafia
+                  ? 'المافيا'
+                  : (p.role.team == Team.independent ? 'مستقل' : 'المواطنون'),
+            ),
+          )
           .toList(),
       newspaperText: narrative,
       gameStateJson: gameState.toJson(),
     );
 
-    final repo = HistoryRepository();
-    await repo.addGame(record);
-
-    // Update Player Stats
-    final statsRepo = ref.read(playerStatsRepoProvider);
-    final actualNightSummaries = gameState.eventHistory
-        .where((event) =>
-            event.round > 1 &&
-            event.phase == Phase.nightResolution &&
-            event.type == EventType.nightResolutionSummary)
-        .toList();
-    final firstActualNightRound = actualNightSummaries.isEmpty
-        ? null
-        : actualNightSummaries
-            .map((event) => event.round)
-            .reduce((left, right) => left < right ? left : right);
-    final firstNightVictims = actualNightSummaries
-        .where((event) => event.round == firstActualNightRound)
-        .expand((event) =>
-            (event.metadata['assassinatedIds'] as List?)?.cast<String>() ??
-            <String>[])
-        .toSet();
-
-    for (final player in gameState.players) {
-      final isMafia = player.role.team == Team.mafia;
-      final isIndependent = player.role.team == Team.independent;
-      final isCitizen = player.role.team == Team.citizens;
-
-      bool won = false;
-      if (winner == Team.mafia && isMafia) won = true;
-      if (winner == Team.independent && isIndependent) won = true;
-      if (winner == Team.citizens && isCitizen) won = true;
-
-      await statsRepo.updateStatsForPlayer(
-        player.name,
-        played: true,
-        wonAsMafia: won && isMafia,
-        wonAsCitizen: won &&
-            (isCitizen ||
-                isIndependent), // Group independent with citizen for legacy stats, or we just leave it for now. Actually stats wonAsCitizen counts any win that is not mafia win
-        diedFirstNight: firstNightVictims.contains(player.id),
-      );
+    try {
+      await ref
+          .read(gameResultsRepositoryProvider)
+          .save(
+            record,
+            gameState,
+            serverOwned:
+                widget.interactiveSessionId != null &&
+                ref
+                        .read(interactiveServiceProvider)
+                        .protocolFor(widget.interactiveSessionId!) ==
+                    2,
+          );
+    } catch (_) {
+      if (mounted) setState(() => _resultSaveFailed = true);
+    } finally {
+      if (mounted) setState(() => _savingResult = false);
     }
   }
 
@@ -137,18 +122,20 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
     final winSubtitle = isMafiaWin
         ? 'أحكمت المافيا قبضتها على المدينة'
         : (isJokerWin
-            ? 'خدع المهرج الجميع وتم إقصاؤه!'
-            : 'تم تطهير المدينة من الخونة');
+              ? 'خدع المهرج الجميع وتم إقصاؤه!'
+              : 'تم تطهير المدينة من الخونة');
     final winIcon = isMafiaWin
         ? Icons.local_fire_department
         : (isJokerWin ? Icons.sentiment_very_dissatisfied : Icons.shield);
 
     // Build final stats
     final allPlayers = gameState.players;
-    final mafiaPlayers =
-        allPlayers.where((p) => p.role.team == Team.mafia).toList();
-    final citiPlayers =
-        allPlayers.where((p) => p.role.team != Team.mafia).toList();
+    final mafiaPlayers = allPlayers
+        .where((p) => p.role.team == Team.mafia)
+        .toList();
+    final citiPlayers = allPlayers
+        .where((p) => p.role.team != Team.mafia)
+        .toList();
     final rounds = gameState.round;
 
     return Scaffold(
@@ -157,17 +144,28 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
+              if (_savingResult) const LinearProgressIndicator(),
+              if (_resultSaveFailed)
+                TextButton.icon(
+                  onPressed: _saveGameToHistory,
+                  icon: const Icon(Icons.cloud_off_outlined),
+                  label: const Text('لم تُحفظ النتيجة · إعادة المحاولة'),
+                ),
               const Spacer(),
               // Big win indicator
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 36,
+                  horizontal: 24,
+                ),
                 decoration: BoxDecoration(
                   color: winColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                      color: winColor.withValues(alpha: 0.4), width: 2),
+                    color: winColor.withValues(alpha: 0.4),
+                    width: 2,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -186,16 +184,19 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                     Text(
                       winSubtitle,
                       style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontFamily: 'Cairo',
-                          fontSize: 15),
+                        color: context.visual.textSecondary,
+                        fontFamily: 'Cairo',
+                        fontSize: 15,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
                     Text(
                       'عدد الجولات: $rounds',
                       style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 13),
+                        color: context.visual.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -209,10 +210,12 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                     children: [
                       TabBar(
                         labelColor: AppTheme.mafiaAccent,
-                        unselectedLabelColor: AppTheme.textSecondary,
+                        unselectedLabelColor: context.visual.textSecondary,
                         indicatorColor: AppTheme.mafiaAccent,
-                        labelStyle: TextStyle(
-                            fontFamily: 'Cairo', fontWeight: FontWeight.w600),
+                        labelStyle: const TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w600,
+                        ),
                         tabs: [
                           Tab(text: 'المافيا: ${mafiaPlayers.length}'),
                           Tab(text: 'المواطنون: ${citiPlayers.length}'),
@@ -222,11 +225,13 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                         child: TabBarView(
                           children: [
                             _PlayerList(
-                                players: mafiaPlayers,
-                                teamColor: AppTheme.mafiaAccent),
+                              players: mafiaPlayers,
+                              teamColor: AppTheme.mafiaAccent,
+                            ),
                             _PlayerList(
-                                players: citiPlayers,
-                                teamColor: AppTheme.citizensAccent),
+                              players: citiPlayers,
+                              teamColor: AppTheme.citizensAccent,
+                            ),
                           ],
                         ),
                       ),
@@ -239,19 +244,22 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        ref.read(gameOrchestratorProvider.notifier).resetGame();
+                      onPressed: () async {
+                        await ref
+                            .read(gameOrchestratorProvider.notifier)
+                            .endGame();
+                        if (!context.mounted) return;
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(builder: (_) => const HomeScreen()),
                           (route) => false,
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.surface,
+                        backgroundColor: context.visual.surface,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      icon: Icon(Icons.home),
-                      label: Text('الرئيسية'),
+                      icon: const Icon(Icons.home),
+                      label: const Text('الرئيسية'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -260,16 +268,19 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                              builder: (_) => const TimelineReportScreen()),
+                            builder: (_) => const TimelineReportScreen(),
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      icon: Icon(Icons.menu_book, color: Colors.black87),
-                      label: Text('جريدة المدينة',
-                          style: TextStyle(color: Colors.black87)),
+                      icon: const Icon(Icons.menu_book, color: Colors.black87),
+                      label: const Text(
+                        'جريدة المدينة',
+                        style: TextStyle(color: Colors.black87),
+                      ),
                     ),
                   ),
                 ],
@@ -292,8 +303,11 @@ class _PlayerList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (players.isEmpty) {
       return Center(
-          child:
-              Text('لا يوجد', style: TextStyle(color: AppTheme.textSecondary)));
+        child: Text(
+          'لا يوجد',
+          style: TextStyle(color: context.visual.textSecondary),
+        ),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -304,7 +318,7 @@ class _PlayerList extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceHigh,
+            color: context.visual.surfaceHigh,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: teamColor.withValues(alpha: 0.2)),
           ),
@@ -326,17 +340,23 @@ class _PlayerList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(p.name,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            fontFamily: 'Cairo',
-                            color: Colors.white)),
-                    Text(AppTheme.roleArabicName(p.role),
-                        style: TextStyle(
-                            color: teamColor,
-                            fontSize: 13,
-                            fontFamily: 'Cairo')),
+                    Text(
+                      p.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontFamily: 'Cairo',
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      context.roleName(p.role),
+                      style: TextStyle(
+                        color: teamColor,
+                        fontSize: 13,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
                   ],
                 ),
               ),

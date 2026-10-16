@@ -1,366 +1,444 @@
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
-import 'package:mafia_nightfall/domain/enums/team.dart';
+import 'package:mafia_nightfall/presentation/theme/theme_catalog.dart';
 
 class AppTheme {
-  // ─── Colors ────────────────────────────────────────────────────────────────
-  static Color background    = Color(0xFF0F172A); // Deep slate
-  static Color surface       = Color(0xFF1E293B);
-  static Color surfaceHigh   = Color(0xFF334155);
-  
-  static Color accent = Color(0xFF8B5CF6); // Rich purple for neutral/GM actions
-  static Color textPrimary = Color(0xFFF8FAFC);
-  static Color textSecondary = Color(0xFF94A3B8);
-
-  // Mafia team colors (Blood Red / Crimson)
-  static Color mafiaPrimary = Color(0xFFE11D48);
-  static Color mafiaAccent = Color(0xFF9F1239);
-  
-  // Citizen team colors (Cyan / Blue)
-  static Color citizensPrimary = Color(0xFF0EA5E9);
-  static Color citizensAccent = Color(0xFF0284C7);
-
-  // Status colors
-  static Color error = Color(0xFFEF4444);
-  static Color success = Color(0xFF22C55E);
-  static Color warning = Color(0xFFF59E0B);
-  static Color death = Color(0xFF64748B); // Slate 500
-
-
-  // Reusable Gradients for absolute masterpiece look
-  static LinearGradient mafiaGradient = LinearGradient(
+  // Gameplay meaning must remain recognizable in every cosmetic theme.
+  static const Color mafiaPrimary = Color(0xFFEF4444);
+  static const Color mafiaAccent = Color(0xFF8B0000);
+  static const Color citizensPrimary = Color(0xFF7DD3FC);
+  static const Color citizensAccent = Color(0xFF0369A1);
+  static const Color error = Color(0xFFF87171);
+  static const Color success = Color(0xFF4ADE80);
+  static const Color warning = Color(0xFFFBBF24);
+  static const Color death = Color(0xFF94A3B8);
+  static const LinearGradient mafiaGradient = LinearGradient(
     colors: [mafiaPrimary, mafiaAccent],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
-  static LinearGradient citizenGradient = LinearGradient(
+  static const LinearGradient citizenGradient = LinearGradient(
     colors: [citizensPrimary, citizensAccent],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static LinearGradient backgroundGradient = LinearGradient(
-    colors: [Color(0xFF0F172A), Color(0xFF020617)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-  );
+  static ThemeData getTheme(
+    String themeId, {
+    Map<Role, String> roleNames = const {},
+  }) => _buildTheme(ThemeCatalog.byId(themeId), roleNames: roleNames);
+  static ThemeData previewTheme(ThemePalette palette) => _buildTheme(palette);
+  static ThemeData get darkTheme => _buildTheme(ThemeCatalog.themes.first);
 
-
-
-
-  // Semantic UI Colors
-  static Color primaryCardStart = const Color(0xFF8B0000);
-  static Color primaryCardEnd = const Color(0xFF4A0000);
-  
-  static Color secondaryCardStart = Colors.purpleAccent;
-  static Color secondaryCardEnd = Colors.deepPurple;
-  
-  static Color glowColor = const Color(0xFF8B0000);
-  static Color borderHighlight = Colors.redAccent;
-  
-  static Color iconColor1 = Colors.redAccent;
-  static Color iconColor2 = Colors.amber;
-  static Color iconColor3 = Colors.blueAccent;
-
-  static void applyTheme(String themeId) {
-    switch (themeId) {
-      case 'midnight_blue':
-        background = const Color(0xFF050B14);
-        surface = const Color(0xFF0F172A);
-        surfaceHigh = const Color(0xFF1E293B);
-        accent = const Color(0xFF0EA5E9);
-        backgroundGradient = LinearGradient(
-          colors: [Color(0xFF050B14), Color(0xFF020408)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+  static ThemeData _buildTheme(
+    ThemePalette palette, {
+    Map<Role, String> roleNames = const {},
+  }) {
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: palette.accent,
+          brightness: Brightness.dark,
+        ).copyWith(
+          primary: palette.accent,
+          primaryContainer: palette.cardEnd,
+          onPrimaryContainer: palette.textPrimary,
+          primaryFixed: palette.cardStart,
+          primaryFixedDim: palette.cardEnd,
+          onPrimaryFixed: palette.textPrimary,
+          onPrimaryFixedVariant: palette.textPrimary,
+          secondaryFixed: palette.surfaceHigh,
+          secondaryFixedDim: palette.surface,
+          onSecondaryFixed: palette.textPrimary,
+          onSecondaryFixedVariant: palette.textPrimary,
+          tertiaryFixed: palette.cardStart,
+          tertiaryFixedDim: palette.cardEnd,
+          onTertiaryFixed: palette.textPrimary,
+          onTertiaryFixedVariant: palette.textPrimary,
+          inversePrimary: palette.companion,
+          onPrimary: palette.accent.computeLuminance() > .3
+              ? palette.backgroundEnd
+              : palette.textPrimary,
+          secondary: palette.companion,
+          onSecondary: palette.backgroundEnd,
+          secondaryContainer: palette.surfaceHigh,
+          onSecondaryContainer: palette.textPrimary,
+          tertiary: palette.companion,
+          onTertiary: palette.backgroundEnd,
+          tertiaryContainer: palette.cardEnd,
+          onTertiaryContainer: palette.textPrimary,
+          surface: palette.surface,
+          surfaceDim: palette.backgroundEnd,
+          surfaceBright: palette.surfaceHigh,
+          surfaceContainerLowest: palette.backgroundEnd,
+          surfaceContainerLow: palette.background,
+          surfaceContainer: palette.surface,
+          surfaceContainerHigh: palette.surface,
+          surfaceContainerHighest: palette.surfaceHigh,
+          surfaceTint: Colors.transparent,
+          onSurface: palette.textPrimary,
+          onSurfaceVariant: palette.textSecondary,
+          error: error,
+          onError: palette.backgroundEnd,
+          errorContainer: const Color(0xFF450A0A),
+          onErrorContainer: palette.textPrimary,
+          outline: palette.textSecondary,
+          outlineVariant: palette.surfaceHigh,
+          inverseSurface: palette.textPrimary,
+          onInverseSurface: palette.backgroundEnd,
         );
-        primaryCardStart = const Color(0xFF0284C7);
-        primaryCardEnd = const Color(0xFF0369A1);
-        secondaryCardStart = const Color(0xFF38BDF8);
-        secondaryCardEnd = const Color(0xFF0284C7);
-        glowColor = const Color(0xFF0EA5E9);
-        borderHighlight = const Color(0xFF38BDF8);
-        iconColor1 = const Color(0xFF38BDF8);
-        iconColor2 = const Color(0xFF7DD3FC);
-        iconColor3 = const Color(0xFFBAE6FD);
-        
-        mafiaPrimary = const Color(0xFF0284C7);
-        mafiaAccent = const Color(0xFF0369A1);
-        citizensPrimary = const Color(0xFF38BDF8);
-        citizensAccent = const Color(0xFF0EA5E9);
-        break;
-      case 'emerald_shadow':
-        background = const Color(0xFF000A05);
-        surface = const Color(0xFF001A0D);
-        surfaceHigh = const Color(0xFF00331A);
-        accent = const Color(0xFF10B981);
-        backgroundGradient = LinearGradient(
-          colors: [Color(0xFF000A05), Color(0xFF000000)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        );
-        primaryCardStart = const Color(0xFF059669);
-        primaryCardEnd = const Color(0xFF047857);
-        secondaryCardStart = const Color(0xFF34D399);
-        secondaryCardEnd = const Color(0xFF059669);
-        glowColor = const Color(0xFF10B981);
-        borderHighlight = const Color(0xFF34D399);
-        iconColor1 = const Color(0xFF34D399);
-        iconColor2 = const Color(0xFF6EE7B7);
-        iconColor3 = const Color(0xFFA7F3D0);
-        
-        mafiaPrimary = const Color(0xFF059669);
-        mafiaAccent = const Color(0xFF047857);
-        citizensPrimary = const Color(0xFF34D399);
-        citizensAccent = const Color(0xFF10B981);
-        break;
-      case 'royal_gold':
-        background = const Color(0xFF0A0800);
-        surface = const Color(0xFF1A1500);
-        surfaceHigh = const Color(0xFF332A00);
-        accent = const Color(0xFFFFD700);
-        backgroundGradient = LinearGradient(
-          colors: [Color(0xFF0A0800), Color(0xFF000000)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        );
-        primaryCardStart = const Color(0xFFB8860B);
-        primaryCardEnd = const Color(0xFF8B6508);
-        secondaryCardStart = const Color(0xFFFFD700);
-        secondaryCardEnd = const Color(0xFFDAA520);
-        glowColor = const Color(0xFFFFD700);
-        borderHighlight = const Color(0xFFFFE066);
-        iconColor1 = const Color(0xFFFFD700);
-        iconColor2 = const Color(0xFFFFE066);
-        iconColor3 = const Color(0xFFFFF0B3);
-        
-        mafiaPrimary = const Color(0xFFB8860B);
-        mafiaAccent = const Color(0xFF8B6508);
-        citizensPrimary = const Color(0xFFFFD700);
-        citizensAccent = const Color(0xFFDAA520);
-        break;
-      case 'dark_blood':
-      default:
-        background = const Color(0xFF0F172A);
-        surface = const Color(0xFF1E293B);
-        surfaceHigh = const Color(0xFF334155);
-        accent = const Color(0xFF8B0000);
-        backgroundGradient = LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF020617)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        );
-        primaryCardStart = const Color(0xFF8B0000);
-        primaryCardEnd = const Color(0xFF4A0000);
-        secondaryCardStart = Colors.purpleAccent;
-        secondaryCardEnd = Colors.deepPurple;
-        glowColor = const Color(0xFF8B0000);
-        borderHighlight = Colors.redAccent;
-        iconColor1 = Colors.redAccent;
-        iconColor2 = Colors.amber;
-        iconColor3 = Colors.blueAccent;
-        
-        mafiaPrimary = const Color(0xFFE11D48);
-        mafiaAccent = const Color(0xFF9F1239);
-        citizensPrimary = const Color(0xFF0EA5E9);
-        citizensAccent = const Color(0xFF0284C7);
-        break;
-    }
-    
-    specialAction = accent;
-    mafiaGradient = LinearGradient(
-      colors: [mafiaPrimary, mafiaAccent],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-    citizenGradient = LinearGradient(
-      colors: [citizensPrimary, citizensAccent],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-  }
-
-  static ThemeData getTheme(String themeId) {
-    applyTheme(themeId); // Ensure variables are updated before returning ThemeData
-
-    Color bg = const Color(0xFF07070B);
-    Color primary = accent;
-
-    switch (themeId) {
-      case 'midnight_blue':
-        bg = const Color(0xFF0A1118);
-        primary = const Color(0xFF0EA5E9);
-        break;
-      case 'emerald_shadow':
-        bg = const Color(0xFF00120B);
-        primary = const Color(0xFF10B981);
-        break;
-      case 'royal_gold':
-        bg = const Color(0xFF1A1500);
-        primary = const Color(0xFFFFD700);
-        break;
-      case 'dark_blood':
-      default:
-        bg = const Color(0xFF07070B);
-        primary = const Color(0xFF8B0000);
-        break;
-    }
-
     return ThemeData(
+      useMaterial3: true,
+      extensions: [
+        GameVisualTokens(palette),
+        RoleLabels(Map.unmodifiable(roleNames)),
+      ],
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: bg,
-      primaryColor: primary,
+      scaffoldBackgroundColor: palette.background,
+      primaryColor: palette.accent,
+      colorScheme: scheme,
       fontFamily: 'Cairo',
-      appBarTheme: AppBarTheme(
-        backgroundColor: bg,
-        elevation: 0,
-        centerTitle: true,
+      dividerColor: palette.surfaceHigh,
+      dialogTheme: DialogThemeData(
+        backgroundColor: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: palette.surfaceHigh),
+        ),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Cairo',
+          fontSize: 21,
+          fontWeight: FontWeight.w800,
+          color: palette.textPrimary,
+        ),
+        contentTextStyle: TextStyle(
+          fontFamily: 'Cairo',
+          fontSize: 15,
+          height: 1.7,
+          color: palette.textSecondary,
+        ),
       ),
-      textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: textPrimary),
-        displayMedium: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: textPrimary),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: textPrimary),
-        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textPrimary),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary),
-        bodyLarge: TextStyle(fontSize: 16, color: textPrimary),
-        bodyMedium: TextStyle(fontSize: 14, color: textSecondary),
-        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 2, color: textPrimary),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: palette.companion,
+          textStyle: const TextStyle(
+            fontFamily: 'Cairo',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
-    );
-  }
-
-  static ThemeData get darkTheme {
-    return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
-      primaryColor: accent,
-      fontFamily: 'Cairo',
-      textTheme: TextTheme(
-        displayLarge:  TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: textPrimary),
-        displayMedium: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: textPrimary),
-        displaySmall:  TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: textPrimary),
-        titleLarge:    TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textPrimary),
-        titleMedium:   TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary),
-        bodyLarge:     TextStyle(fontSize: 16, color: textPrimary),
-        bodyMedium:    TextStyle(fontSize: 14, color: textSecondary),
-        labelLarge:    TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 2, color: textPrimary),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: palette.accent,
+          foregroundColor: palette.textPrimary,
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: palette.surface,
+        floatingLabelStyle: TextStyle(color: palette.companion),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: palette.surfaceHigh),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: palette.companion, width: 1.5),
+        ),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: palette.companion,
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.companion
+              : palette.textSecondary,
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.accent
+              : Colors.transparent,
+        ),
+        checkColor: WidgetStatePropertyAll(palette.textPrimary),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.companion
+              : palette.textSecondary,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? palette.cardEnd
+              : palette.surfaceHigh,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: palette.surfaceHigh,
+        contentTextStyle: TextStyle(
+          color: palette.textPrimary,
+          fontFamily: 'Cairo',
+        ),
+        actionTextColor: palette.companion,
+        behavior: SnackBarBehavior.floating,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: background,
+        backgroundColor: palette.background,
+        foregroundColor: palette.textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontFamily: 'Cairo',
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: palette.textPrimary,
         ),
-        iconTheme: IconThemeData(color: textPrimary),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 48,
+          fontWeight: FontWeight.w900,
+          color: palette.textPrimary,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: palette.textPrimary,
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: palette.textPrimary,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: palette.textPrimary,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: palette.textPrimary,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          height: 1.6,
+          color: palette.textPrimary,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          height: 1.6,
+          color: palette.textSecondary,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: palette.textPrimary,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accent,
-          foregroundColor: textPrimary,
-          elevation: 8,
-          shadowColor: accent.withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+          backgroundColor: palette.accent,
+          foregroundColor: palette.accent.computeLuminance() > .3
+              ? palette.backgroundEnd
+              : palette.textPrimary,
+          elevation: 0,
+          minimumSize: const Size(48, 52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Cairo',
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: textPrimary,
-          side: BorderSide(color: surfaceHigh, width: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+          foregroundColor: palette.textPrimary,
+          side: BorderSide(color: palette.surfaceHigh),
+          minimumSize: const Size(48, 52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
       ),
       cardTheme: CardThemeData(
-        color: surface.withValues(alpha: 0.7),
+        color: palette.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: surfaceHigh, width: 1),
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: palette.surfaceHigh),
         ),
-        margin: const EdgeInsets.symmetric(vertical: 8),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: palette.background,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
       ),
     );
   }
 
   // --- Helper Methods for UI ---
 
-  static Color specialAction = accent;
-
   static Color teamColor(Role role) {
-    if (role.team == Team.mafia) return const Color(0xFF8B0000);
+    if (role.team == Team.mafia) return mafiaPrimary;
     if (role.team == Team.independent) return Colors.purpleAccent;
     return citizensPrimary;
   }
 
   static Color roleColor(Role role) {
-    if (role.team == Team.mafia) return const Color(0xFF8B0000);
+    if (role.team == Team.mafia) return mafiaPrimary;
     if (role.team == Team.independent) return Colors.purpleAccent;
     if (role == Role.goodCitizen) return Colors.white;
     return citizensPrimary;
   }
 
-  static Map<Role, String> customRoleNames = {};
-
   static String roleArabicName(Role role) {
-    if (customRoleNames.containsKey(role) && customRoleNames[role]!.trim().isNotEmpty) {
-      return customRoleNames[role]!;
-    }
     switch (role) {
-      case Role.mafiaSheikh:    return 'شيخ المافيا';
-      case Role.mafiaGirl:      return 'بنت المافيا';
-      case Role.normalMafia:    return 'مافيا عادي';
-      case Role.citizensSheikh: return 'شيخ المواطنين';
-      case Role.citizensGirl:   return 'بنت المواطنين';
-      case Role.citizensBoy:    return 'مواطن شجاع';
-      case Role.goodCitizen:    return 'مواطن صالح';
-      case Role.joker:          return 'المهرج (الجوكر)';
+      case Role.mafiaSheikh:
+        return 'شيخ المافيا';
+      case Role.mafiaGirl:
+        return 'بنت المافيا';
+      case Role.normalMafia:
+        return 'مافيا عادي';
+      case Role.citizensSheikh:
+        return 'شيخ المواطنين';
+      case Role.citizensGirl:
+        return 'بنت المواطنين';
+      case Role.citizensBoy:
+        return 'مواطن شجاع';
+      case Role.goodCitizen:
+        return 'مواطن صالح';
+      case Role.joker:
+        return 'المهرج (الجوكر)';
     }
   }
 
   static String roleAbilityDescription(Role role) {
     switch (role) {
-      case Role.mafiaSheikh:    return 'يختار ضحية الليل';
-      case Role.mafiaGirl:      return 'تصمّت لاعباً لدورة';
-      case Role.normalMafia:    return 'يشارك في قرار المافيا';
-      case Role.citizensSheikh: return 'يكشف هوية لاعب';
-      case Role.citizensGirl:   return 'تحمي لاعباً من القتل';
-      case Role.citizensBoy:    return 'ينتقم عند إقصائه';
-      case Role.goodCitizen:    return 'يصوّت في النهار';
-      case Role.joker:          return 'يفوز إذا تم إقصاؤه بالتصويت';
+      case Role.mafiaSheikh:
+        return 'يختار ضحية الليل';
+      case Role.mafiaGirl:
+        return 'تصمّت لاعباً لدورة';
+      case Role.normalMafia:
+        return 'يشارك في قرار المافيا';
+      case Role.citizensSheikh:
+        return 'يكشف هوية لاعب';
+      case Role.citizensGirl:
+        return 'تحمي لاعباً من القتل';
+      case Role.citizensBoy:
+        return 'ينتقم عند إقصائه';
+      case Role.goodCitizen:
+        return 'يصوّت في النهار';
+      case Role.joker:
+        return 'يفوز إذا تم إقصاؤه بالتصويت';
     }
   }
 
   static IconData roleIcon(Role role) {
     switch (role) {
-      case Role.mafiaSheikh: return Icons.account_circle;
-      case Role.mafiaGirl: return Icons.favorite;
-      case Role.normalMafia: return Icons.local_fire_department;
-      case Role.citizensSheikh: return Icons.search;
-      case Role.citizensGirl: return Icons.health_and_safety;
-      case Role.citizensBoy: return Icons.bolt;
-      case Role.goodCitizen: return Icons.person;
-      case Role.joker: return Icons.theater_comedy;
+      case Role.mafiaSheikh:
+        return Icons.account_circle;
+      case Role.mafiaGirl:
+        return Icons.favorite;
+      case Role.normalMafia:
+        return Icons.local_fire_department;
+      case Role.citizensSheikh:
+        return Icons.search;
+      case Role.citizensGirl:
+        return Icons.health_and_safety;
+      case Role.citizensBoy:
+        return Icons.bolt;
+      case Role.goodCitizen:
+        return Icons.person;
+      case Role.joker:
+        return Icons.theater_comedy;
     }
   }
 
   static String roleImage(Role role) {
     switch (role) {
-      case Role.mafiaSheikh: return 'assets/images/mafia_sheikh.jpg';
-      case Role.mafiaGirl: return 'assets/images/mafia_girl.jpg';
-      case Role.normalMafia: return 'assets/images/normal_mafia.jpg';
-      case Role.citizensSheikh: return 'assets/images/citizens_sheikh.jpg';
-      case Role.citizensGirl: return 'assets/images/citizens_girl.jpg';
-      case Role.citizensBoy: return 'assets/images/citizens_boy.jpg';
-      case Role.goodCitizen: return 'assets/images/good_citizen.jpg';
-      case Role.joker: return 'assets/images/joker.jpg';
+      case Role.mafiaSheikh:
+        return 'assets/images/mafia_sheikh.jpg';
+      case Role.mafiaGirl:
+        return 'assets/images/mafia_girl.jpg';
+      case Role.normalMafia:
+        return 'assets/images/normal_mafia.jpg';
+      case Role.citizensSheikh:
+        return 'assets/images/citizens_sheikh.jpg';
+      case Role.citizensGirl:
+        return 'assets/images/citizens_girl.jpg';
+      case Role.citizensBoy:
+        return 'assets/images/citizens_boy.jpg';
+      case Role.goodCitizen:
+        return 'assets/images/good_citizen.jpg';
+      case Role.joker:
+        return 'assets/images/joker.jpg';
     }
   }
+}
+
+/// Immutable, scoped decoration. Semantic role/team colors remain in AppTheme.
+@immutable
+class GameVisualTokens extends ThemeExtension<GameVisualTokens> {
+  const GameVisualTokens(this.palette);
+  final ThemePalette palette;
+  Color get background => palette.background;
+  Color get surface => palette.surface;
+  Color get surfaceHigh => palette.surfaceHigh;
+  Color get accent => palette.accent;
+  Color get textPrimary => palette.textPrimary;
+  Color get textSecondary => palette.textSecondary;
+  LinearGradient get backgroundGradient => palette.backgroundGradient;
+  Color get primaryCardStart => palette.cardStart;
+  Color get primaryCardEnd => palette.cardEnd;
+  Color get secondaryCardStart => palette.companion;
+  Color get secondaryCardEnd => palette.cardEnd;
+  Color get glowColor => palette.accent;
+  Color get borderHighlight => palette.accent;
+  Color get iconColor1 => palette.accent;
+  Color get iconColor2 => palette.companion;
+  Color get iconColor3 => palette.textSecondary;
+  Color get specialAction => palette.accent;
+  @override
+  GameVisualTokens copyWith({ThemePalette? palette}) =>
+      GameVisualTokens(palette ?? this.palette);
+  @override
+  GameVisualTokens lerp(covariant GameVisualTokens? other, double t) =>
+      t < .5 ? this : other ?? this;
+}
+
+extension GameThemeContext on BuildContext {
+  String roleName(Role role) =>
+      Theme.of(this).extension<RoleLabels>()?.names[role] ??
+      AppTheme.roleArabicName(role);
+  GameVisualTokens get visual =>
+      Theme.of(this).extension<GameVisualTokens>() ??
+      GameVisualTokens(ThemeCatalog.themes.first);
+}
+
+@immutable
+class RoleLabels extends ThemeExtension<RoleLabels> {
+  const RoleLabels(this.names);
+  final Map<Role, String> names;
+  @override
+  RoleLabels copyWith({Map<Role, String>? names}) =>
+      RoleLabels(Map.unmodifiable(names ?? this.names));
+  @override
+  RoleLabels lerp(covariant RoleLabels? other, double t) =>
+      t < .5 ? this : other ?? this;
 }

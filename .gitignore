@@ -48,3 +48,23 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 .local_tools/
+
+**/node_modules/
+**/dist/
+**/.dart_tool/
+**/build/
+android/key.properties
+*.jks
+*.keystore
+.env
+
+tool/load/seeds*.json
+tool/load/load-report-*.json
+
+# JVM diagnostic dumps are local, large, and may contain build credentials.
+*.hprof
+
+# Static site packaging and nested Sites source checkout.
+website/.git/
+website/.site-workflow/
+*.tar.gz

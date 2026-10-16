@@ -1,10 +1,13 @@
+import 'package:mafia_nightfall/application/theme_service.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/rules/game_ruleset.dart';
+import 'package:mafia_nightfall/presentation/premium/premium_widgets.dart';
 
 class RuleSettingsScreen extends ConsumerStatefulWidget {
-  const RuleSettingsScreen({Key? key}) : super(key: key);
+  const RuleSettingsScreen({super.key});
 
   @override
   ConsumerState<RuleSettingsScreen> createState() => _RuleSettingsScreenState();
@@ -26,105 +29,164 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     return Scaffold(
-      backgroundColor: const Color(0xFF07070B),
+      backgroundColor: context.visual.background,
       appBar: AppBar(
-        title: const Text('إعدادات وقوانين اللعبة', style: TextStyle(fontFamily: 'Cairo')),
-        backgroundColor: const Color(0xFF130E0A),
+        title: const Text(
+          'إعدادات وقوانين اللعبة',
+          style: TextStyle(fontFamily: 'Cairo'),
+        ),
+        backgroundColor: context.visual.surface,
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('حفظ', style: TextStyle(color: Colors.orangeAccent, fontSize: 18, fontFamily: 'Cairo')),
-          )
+            child: Text(
+              'حفظ',
+              style: TextStyle(
+                color: context.visual.accent,
+                fontSize: 18,
+                fontFamily: 'Cairo',
+              ),
+            ),
+          ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const AiVoiceAssistantSetting(),
+          const SizedBox(height: 24),
           _buildSectionHeader('شروط الفوز (VICTORY RULES)'),
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E24),
+          Material(
+            color: context.visual.surface,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
+              side: const BorderSide(color: Colors.white12),
             ),
-            child: Column(
-              children: [
-                RadioListTile<VictoryMode>(
-                  title: const Text('الانتصار الكلاسيكي', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-                  subtitle: const Text('تفوز المافيا إذا استحال على المواطنين القضاء عليها قانونياً. يفوز المواطنون بإبادة المافيا.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
-                  value: VictoryMode.classic,
-                  groupValue: rules.victoryRules.mode,
-                  activeColor: Colors.orangeAccent,
-                  onChanged: (val) {
-                    setState(() {
-                      rules = GameRuleset(
-                        abilityRules: rules.abilityRules,
-                        victoryRules: VictoryRules(
-                          mode: val!,
-                          requiredCorrectExecutions: rules.victoryRules.requiredCorrectExecutions,
-                        ),
-                      );
-                    });
-                  },
-                ),
-                const Divider(color: Colors.white12, height: 1),
-                RadioListTile<VictoryMode>(
-                  title: const Text('التعادل مع العدد الأصلي للمافيا', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-                  subtitle: const Text('تفوز المافيا إذا أصبح عدد المواطنين الأحياء مساوياً لعدد المافيا الأصلي (عند بدء اللعبة).', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
-                  value: VictoryMode.equalCount,
-                  groupValue: rules.victoryRules.mode,
-                  activeColor: Colors.orangeAccent,
-                  onChanged: (val) {
-                    setState(() {
-                      rules = GameRuleset(
-                        abilityRules: rules.abilityRules,
-                        victoryRules: VictoryRules(
-                          mode: val!,
-                          requiredCorrectExecutions: rules.victoryRules.requiredCorrectExecutions,
-                        ),
-                      );
-                    });
-                  },
-                ),
-                const Divider(color: Colors.white12, height: 1),
-                RadioListTile<VictoryMode>(
-                  title: const Text('الإعدامات الصحيحة للمافيا', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-                  subtitle: const Text('يفوز المواطنون إذا قاموا بإعدام عدد معين من المافيا نهاراً بشكل صحيح.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
-                  value: VictoryMode.exactMafiaExecutions,
-                  groupValue: rules.victoryRules.mode,
-                  activeColor: Colors.orangeAccent,
-                  onChanged: (val) {
-                    setState(() {
-                      rules = GameRuleset(
-                        abilityRules: rules.abilityRules,
-                        victoryRules: VictoryRules(
-                          mode: val!,
-                          requiredCorrectExecutions: rules.victoryRules.requiredCorrectExecutions,
-                        ),
-                      );
-                    });
-                  },
-                ),
-              ],
+            clipBehavior: Clip.antiAlias,
+            child: RadioGroup<VictoryMode>(
+              groupValue: rules.victoryRules.mode,
+              onChanged: (mode) {
+                if (mode == null) return;
+                setState(() {
+                  rules = GameRuleset(
+                    allowMultipleAssassinationsPerNight:
+                        rules.allowMultipleAssassinationsPerNight,
+                    abilityRules: rules.abilityRules,
+                    victoryRules: VictoryRules(
+                      mode: mode,
+                      requiredCorrectExecutions:
+                          rules.victoryRules.requiredCorrectExecutions,
+                    ),
+                  );
+                });
+              },
+              child: Column(
+                children: [
+                  RadioListTile<VictoryMode>(
+                    title: const Text(
+                      'الانتصار الكلاسيكي',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'تُقارن المافيا الأحياء بالمواطنين الأحياء؛ الجوكر مستقل ولا يُحسب مواطناً. تفوز المافيا عند التعادل أو التفوق العددي، ويفوز المواطنون عند القضاء على جميع المافيا. عند التعادل فقط تُمنح فرصة إذا اجتمع قنّاص مواطن حي لم يستخدم رصاصته وبنت مواطنين حية تستطيع حماية لاعب حي أو نفسها. مثال: 2 مافيا ضد 2 مواطنين صالحين ينتهي بفوز المافيا.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontFamily: 'Cairo',
+                        fontSize: 13,
+                        height: 1.7,
+                      ),
+                    ),
+                    value: VictoryMode.classic,
+                    activeColor: context.visual.accent,
+                  ),
+                  const Divider(color: Colors.white12, height: 1),
+                  RadioListTile<VictoryMode>(
+                    title: const Text(
+                      'التعادل مع العدد الأصلي للمافيا',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'يُثبّت عدد المافيا عند بداية المباراة، ويُقارن به عدد المواطنين الأحياء لاحقاً. تفوز المافيا عندما يصبح عدد المواطنين مساوياً لذلك العدد أو أقل، حتى لو مات بعض المافيا. مثال: إذا بدأت المافيا بثلاثة، يكفي بقاء 3 مواطنين أو أقل. القضاء على جميع المافيا يفوز به المواطنون. استثناء القنص والحماية خاص بالنظام الكلاسيكي.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontFamily: 'Cairo',
+                        fontSize: 13,
+                        height: 1.7,
+                      ),
+                    ),
+                    value: VictoryMode.equalCount,
+                    activeColor: context.visual.accent,
+                  ),
+                  const Divider(color: Colors.white12, height: 1),
+                  RadioListTile<VictoryMode>(
+                    title: const Text(
+                      'الإعدامات الصحيحة للمافيا',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'يفوز المواطنون عند إعدام العدد المطلوب من المافيا بالتصويت النهاري. قتل المافيا بالقنص أو الانتقام لا يُحسب إعداماً صحيحاً. يجب أن يكون الهدف قابلاً للتحقيق بعدد المافيا الموجودين؛ إذا لم يعد قابلاً للتحقيق تفوز المافيا. تظل مقارنة الأعداد والقدرات المتبقية مؤثرة قبل بلوغ الهدف.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontFamily: 'Cairo',
+                        fontSize: 13,
+                        height: 1.7,
+                      ),
+                    ),
+                    value: VictoryMode.exactMafiaExecutions,
+                    activeColor: context.visual.accent,
+                  ),
+                ],
+              ),
             ),
           ),
-          
           if (rules.victoryRules.mode == VictoryMode.exactMafiaExecutions)
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: ListTile(
-                tileColor: const Color(0xFF1E1E24),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.white12)),
-                title: const Text('عدد الإعدامات المطلوبة:', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+                tileColor: context.visual.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Colors.white12),
+                ),
+                subtitle: const Text(
+                  'اختر من 1 إلى 5. تُحسب إعدامات أعضاء المافيا بالتصويت فقط، ولا تُحسب إعدامات المواطنين أو القتل الليلي. لا يمكن بدء المباراة بهدف أكبر من عدد المافيا الموزّعين.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.7,
+                  ),
+                ),
+                title: const Text(
+                  'عدد الإعدامات المطلوبة:',
+                  style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                ),
                 trailing: DropdownButton<int>(
                   value: rules.victoryRules.requiredCorrectExecutions,
-                  dropdownColor: const Color(0xFF1E1E24),
-                  style: const TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontSize: 18),
-                  items: [1, 2, 3, 4, 5].map((i) => DropdownMenuItem(value: i, child: Text('$i'))).toList(),
+                  dropdownColor: context.visual.surface,
+                  style: TextStyle(
+                    color: context.visual.accent,
+                    fontFamily: 'Cairo',
+                    fontSize: 18,
+                  ),
+                  items: [1, 2, 3, 4, 5]
+                      .map((i) => DropdownMenuItem(value: i, child: Text('$i')))
+                      .toList(),
                   onChanged: (val) {
                     setState(() {
                       rules = GameRuleset(
+                        allowMultipleAssassinationsPerNight:
+                            rules.allowMultipleAssassinationsPerNight,
                         abilityRules: rules.abilityRules,
                         victoryRules: VictoryRules(
                           mode: rules.victoryRules.mode,
@@ -136,17 +198,30 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
                 ),
               ),
             ),
-            
           const Divider(color: Colors.white24, height: 40),
           _buildSectionHeader('قواعد القدرات (ABILITY RULES)'),
-          
           ListTile(
-            title: const Text('حد الحماية المتكررة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('أقصى عدد ليالٍ متتالية يمكن فيها حماية/إسكات نفس الشخص.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            title: const Text(
+              'حد الحماية المتكررة',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
+            subtitle: const Text(
+              'عدد مرات حماية اللاعب نفسه بواسطة بنت المواطنين نفسها طوال المباراة، وليس في ليالٍ متتالية فقط. العدد 1 يعني حماية كل هدف مرة واحدة، و2 مرتين. يمكنها حماية نفسها أو لاعب حي آخر. «لا محدود» يتيح تكرار الحماية دون حد، والحماية تمنع قتله في تلك الليلة سواء بالمافيا أو بالقنص.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                height: 1.7,
+              ),
+            ),
             trailing: DropdownButton<int>(
               value: rules.abilityRules.protectionTargetLimit,
-              dropdownColor: const Color(0xFF1E1E24),
-              style: const TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontSize: 18),
+              dropdownColor: context.visual.surface,
+              style: TextStyle(
+                color: context.visual.accent,
+                fontFamily: 'Cairo',
+                fontSize: 18,
+              ),
               items: const [
                 DropdownMenuItem(value: 1, child: Text('1')),
                 DropdownMenuItem(value: 2, child: Text('2')),
@@ -156,13 +231,16 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               onChanged: (val) {
                 setState(() {
                   rules = GameRuleset(
+                    allowMultipleAssassinationsPerNight:
+                        rules.allowMultipleAssassinationsPerNight,
                     victoryRules: rules.victoryRules,
                     abilityRules: AbilityRules(
                       protectionTargetLimit: val ?? 1,
                       silenceTargetLimit: rules.abilityRules.silenceTargetLimit,
                       mafiaSheikhReveal: rules.abilityRules.mafiaSheikhReveal,
                       jokerReveal: rules.abilityRules.jokerReveal,
-                      citizenSheikhReveal: rules.abilityRules.citizenSheikhReveal,
+                      citizenSheikhReveal:
+                          rules.abilityRules.citizenSheikhReveal,
                       sniper: rules.abilityRules.sniper,
                     ),
                   );
@@ -170,14 +248,28 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               },
             ),
           ),
-          
           ListTile(
-            title: const Text('حد الإسكات المتكرر', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('أقصى عدد ليالٍ متتالية يمكن فيها حماية/إسكات نفس الشخص.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            title: const Text(
+              'حد الإسكات المتكرر',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
+            subtitle: const Text(
+              'عدد مرات إسكات اللاعب نفسه بواسطة بنت المافيا نفسها طوال المباراة، وليس في ليالٍ متتالية فقط. العدد 1 يتيح إسكات كل هدف مرة واحدة، و2 مرتين. «لا محدود» يزيل الحد. الإسكات يخص النهار التالي ويمنع الكلام؛ يزول عند دورة الليل التالية ولا يستهلك تصويت اللاعب.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                height: 1.7,
+              ),
+            ),
             trailing: DropdownButton<int>(
               value: rules.abilityRules.silenceTargetLimit,
-              dropdownColor: const Color(0xFF1E1E24),
-              style: const TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontSize: 18),
+              dropdownColor: context.visual.surface,
+              style: TextStyle(
+                color: context.visual.accent,
+                fontFamily: 'Cairo',
+                fontSize: 18,
+              ),
               items: const [
                 DropdownMenuItem(value: 1, child: Text('1')),
                 DropdownMenuItem(value: 2, child: Text('2')),
@@ -187,13 +279,17 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               onChanged: (val) {
                 setState(() {
                   rules = GameRuleset(
+                    allowMultipleAssassinationsPerNight:
+                        rules.allowMultipleAssassinationsPerNight,
                     victoryRules: rules.victoryRules,
                     abilityRules: AbilityRules(
-                      protectionTargetLimit: rules.abilityRules.protectionTargetLimit,
+                      protectionTargetLimit:
+                          rules.abilityRules.protectionTargetLimit,
                       silenceTargetLimit: val ?? 1,
                       mafiaSheikhReveal: rules.abilityRules.mafiaSheikhReveal,
                       jokerReveal: rules.abilityRules.jokerReveal,
-                      citizenSheikhReveal: rules.abilityRules.citizenSheikhReveal,
+                      citizenSheikhReveal:
+                          rules.abilityRules.citizenSheikhReveal,
                       sniper: rules.abilityRules.sniper,
                     ),
                   );
@@ -201,18 +297,31 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               },
             ),
           ),
-          
           SwitchListTile(
-            title: const Text('كشف شيخ المافيا بشكل مستقل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('عند التفعيل يظهر شيخ المافيا للمحقق كمافيا بدلاً من مواطن.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            title: const Text(
+              'كشف شيخ المافيا بشكل مستقل',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
+            subtitle: const Text(
+              'يغيّر نتيجة تحقيق شيخ المواطنين في شيخ المافيا فقط: عند التفعيل يظهر أنه من المافيا، وعند الإيقاف يتموّه كمواطن. بقية أعضاء المافيا يظهرون كمافيا في التحقيق. هذا لا يكشف الهوية للجميع ولا يغيّر الفريق أو شرط الفوز.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                height: 1.7,
+              ),
+            ),
             value: rules.abilityRules.mafiaSheikhReveal,
-            activeColor: Colors.orangeAccent,
+            activeThumbColor: context.visual.accent,
             onChanged: (val) {
               setState(() {
                 rules = GameRuleset(
+                  allowMultipleAssassinationsPerNight:
+                      rules.allowMultipleAssassinationsPerNight,
                   victoryRules: rules.victoryRules,
                   abilityRules: AbilityRules(
-                    protectionTargetLimit: rules.abilityRules.protectionTargetLimit,
+                    protectionTargetLimit:
+                        rules.abilityRules.protectionTargetLimit,
                     silenceTargetLimit: rules.abilityRules.silenceTargetLimit,
                     mafiaSheikhReveal: val,
                     jokerReveal: rules.abilityRules.jokerReveal,
@@ -223,18 +332,31 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               });
             },
           ),
-          
           SwitchListTile(
-            title: const Text('كشف الجوكر بشكل مستقل', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('عند التفعيل يُكشف الجوكر لشيخ المواطنين كجوكر، وعند الإيقاف يبقى مخفياً كمواطن.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            title: const Text(
+              'كشف الجوكر بشكل مستقل',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
+            subtitle: const Text(
+              'عند تحقيق شيخ المواطنين في الجوكر، يُظهر التفعيل هويته كجوكر؛ عند الإيقاف تظهر النتيجة كمواطن. يبقى الجوكر مستقلاً في الحالتين، ويفوز عندما يُقصى بالتصويت النهاري. النتيجة تخص التحقيق ولا تعلن الدور للجميع.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                height: 1.7,
+              ),
+            ),
             value: rules.abilityRules.jokerReveal,
-            activeColor: Colors.orangeAccent,
+            activeThumbColor: context.visual.accent,
             onChanged: (val) {
               setState(() {
                 rules = GameRuleset(
+                  allowMultipleAssassinationsPerNight:
+                      rules.allowMultipleAssassinationsPerNight,
                   victoryRules: rules.victoryRules,
                   abilityRules: AbilityRules(
-                    protectionTargetLimit: rules.abilityRules.protectionTargetLimit,
+                    protectionTargetLimit:
+                        rules.abilityRules.protectionTargetLimit,
                     silenceTargetLimit: rules.abilityRules.silenceTargetLimit,
                     mafiaSheikhReveal: rules.abilityRules.mafiaSheikhReveal,
                     jokerReveal: val,
@@ -245,18 +367,31 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               });
             },
           ),
-          
           SwitchListTile(
-            title: const Text('إفصاح شيخ المواطنين', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('يكشف الشيخ دوره علناً مرة واحدة ويصبح صوته بـ3 أصوات.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            title: const Text(
+              'إفصاح شيخ المواطنين',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
+            subtitle: const Text(
+              'يسمح لشيخ المواطنين الحي بإعلان دوره في النهار أو التصويت. الإعلان متاح مرة واحدة طوال المباراة، وبعده يظل صوته محسوباً بثلاثة أصوات في التصويتات التالية. يمكنه الاحتفاظ بالإفصاح لوقت لاحق؛ التحقيق الليلي قدرة منفصلة.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                height: 1.7,
+              ),
+            ),
             value: rules.abilityRules.citizenSheikhReveal,
-            activeColor: Colors.orangeAccent,
+            activeThumbColor: context.visual.accent,
             onChanged: (val) {
               setState(() {
                 rules = GameRuleset(
+                  allowMultipleAssassinationsPerNight:
+                      rules.allowMultipleAssassinationsPerNight,
                   victoryRules: rules.victoryRules,
                   abilityRules: AbilityRules(
-                    protectionTargetLimit: rules.abilityRules.protectionTargetLimit,
+                    protectionTargetLimit:
+                        rules.abilityRules.protectionTargetLimit,
                     silenceTargetLimit: rules.abilityRules.silenceTargetLimit,
                     mafiaSheikhReveal: rules.abilityRules.mafiaSheikhReveal,
                     jokerReveal: rules.abilityRules.jokerReveal,
@@ -267,18 +402,31 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
               });
             },
           ),
-          
           SwitchListTile(
-            title: const Text('القناص', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-            subtitle: const Text('يملك القناص رصاصة واحدة يقتل بها لاعباً في الليل.', style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 12)),
+            title: const Text(
+              'القناص',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
+            subtitle: const Text(
+              'قدرة إضافية تُوزّع عشوائياً على مواطن واحد، وقد يحملها المواطن الصالح أو أحد أدوار المواطنين الأخرى. يملك رصاصة واحدة طوال المباراة، ويمكنه إطلاقها ليلاً على لاعب حي غير نفسه، أو تخطي دوره والاحتفاظ بها لليلة لاحقة. الرصاصة تُستهلك عند إطلاقها حتى إذا أنقذت الحماية الهدف. الإيقاف يلغي توزيع القدرة.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                height: 1.7,
+              ),
+            ),
             value: rules.abilityRules.sniper,
-            activeColor: Colors.orangeAccent,
+            activeThumbColor: context.visual.accent,
             onChanged: (val) {
               setState(() {
                 rules = GameRuleset(
+                  allowMultipleAssassinationsPerNight:
+                      rules.allowMultipleAssassinationsPerNight,
                   victoryRules: rules.victoryRules,
                   abilityRules: AbilityRules(
-                    protectionTargetLimit: rules.abilityRules.protectionTargetLimit,
+                    protectionTargetLimit:
+                        rules.abilityRules.protectionTargetLimit,
                     silenceTargetLimit: rules.abilityRules.silenceTargetLimit,
                     mafiaSheikhReveal: rules.abilityRules.mafiaSheikhReveal,
                     jokerReveal: rules.abilityRules.jokerReveal,
@@ -299,7 +447,12 @@ class _RuleSettingsScreenState extends ConsumerState<RuleSettingsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4),
       child: Text(
         title,
-        style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+        style: TextStyle(
+          color: context.visual.accent,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Cairo',
+        ),
       ),
     );
   }

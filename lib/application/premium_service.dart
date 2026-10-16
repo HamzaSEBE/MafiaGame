@@ -1,56 +1,21 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mafia_nightfall/data/services/auth_service.dart';
+import 'package:mafia_nightfall/application/account_providers.dart';
+import 'package:mafia_nightfall/domain/premium/entitlements.dart';
 
-class PremiumNotifier extends StateNotifier<bool> {
-  final Ref ref;
-  StreamSubscription? _subscription;
-
-  PremiumNotifier(this.ref) : super(false) {
-    _init();
+/// Loading and read failures stay visible to the UI and never grant access.
+final premiumAccessProvider = Provider<AsyncValue<PremiumEntitlements>>((ref) {
+  final access = ref
+      .watch(accountProfileProvider)
+      .whenData(PremiumEntitlements.fromProfile);
+  final expiry = access.asData?.value.expiresAt;
+  if (expiry != null && expiry.isAfter(DateTime.now())) {
+    final timer = Timer(expiry.difference(DateTime.now()), ref.invalidateSelf);
+    ref.onDispose(timer.cancel);
   }
-
-  void _init() {
-    ref.listen(authServiceProvider, (previous, next) {
-      final user = next.currentUser;
-      
-      _subscription?.cancel();
-      
-      if (user != null) {
-        _subscription = FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .snapshots()
-            .listen((snapshot) {
-          if (snapshot.exists && snapshot.data() != null) {
-            final isPremium = snapshot.data()!['isPremium'] ?? false;
-            if (mounted) state = isPremium;
-          }
-        });
-      } else {
-        if (mounted) state = false;
-      }
-    }, fireImmediately: true);
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
-
-  Future<void> unlockPremium() async {
-    final user = ref.read(authServiceProvider).currentUser;
-    if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'isPremium': true,
-      }, SetOptions(merge: true));
-    }
-    if (mounted) state = true;
-  }
-}
-
-final premiumProvider = StateNotifierProvider<PremiumNotifier, bool>((ref) {
-  return PremiumNotifier(ref);
+  return access;
 });
+final premiumProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(premiumAccessProvider).asData?.value.allows('themes') ?? false,
+);

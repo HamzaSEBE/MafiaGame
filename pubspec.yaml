@@ -1,12 +1,14 @@
 name: mafia_nightfall
 description: "Moderator / Game Master Assistant for Mafia Nightfall"
 publish_to: 'none'
-version: 1.0.4+5
+version: 1.2.7+14
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.10.0 <4.0.0'
 
 dependencies:
+  game_core:
+    path: packages/game_core
   flutter:
     sdk: flutter
 
@@ -21,10 +23,10 @@ dependencies:
 
   # Utils
   image_picker: ^1.1.2
-  google_fonts: ^6.2.1
   qr_flutter: ^4.1.0
   uuid: ^4.3.3
   equatable: ^2.1.0
+  crypto: ^3.0.7
   path_provider: ^2.1.6
   audioplayers: ^6.8.1
   screenshot: ^3.0.0
@@ -32,6 +34,9 @@ dependencies:
   google_sign_in: 6.2.1
   flutter_animate: ^4.5.2
   flutter_tts: ^4.2.5
+  shared_preferences: ^2.5.6
+  firebase_app_check: ^0.3.2+10
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +45,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  licenses:
+    - assets/fonts/OFL.txt
   assets:
     - assets/images/
     - assets/audio/
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo.ttf

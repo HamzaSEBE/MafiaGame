@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'dart:math' as math;
+import 'package:mafia_nightfall/data/services/interactive/interactive_service.dart';
+import 'package:mafia_nightfall/presentation/widgets/game_round_header.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
@@ -12,6 +15,7 @@ import 'package:mafia_nightfall/presentation/widgets/judge_tools_sheet.dart';
 import 'package:mafia_nightfall/domain/enums/phase.dart';
 import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/presentation/game_over/game_over_screen.dart';
+import 'package:mafia_nightfall/presentation/widgets/completed_game_redirect.dart';
 
 class DayScreen extends ConsumerStatefulWidget {
   final String? interactiveSessionId;
@@ -33,10 +37,27 @@ class _DayScreenState extends ConsumerState<DayScreen> {
   int _timeLeft = 300; // 5 minutes
   Timer? _timer;
   bool _isPaused = false;
+  bool _clockBusy = false;
 
   @override
   void initState() {
     super.initState();
+    final saved = ref.read(gameOrchestratorProvider);
+    if (saved.phase != Phase.day) return;
+    _isPaused = saved.discussionPaused;
+    _timeLeft = saved.discussionDeadlineAt == null
+        ? saved.discussionRemainingSeconds
+        : math.max(
+            0,
+            saved.discussionDeadlineAt!
+                .difference(ref.read(gameClockProvider)())
+                .inSeconds,
+          );
+    if (saved.discussionDeadlineAt == null && !saved.discussionPaused) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applyClock(_timeLeft, false);
+      });
+    }
     _startTimer();
   }
 
@@ -47,30 +68,64 @@ class _DayScreenState extends ConsumerState<DayScreen> {
   }
 
   void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted && _timeLeft > 0) {
-        if (!_isPaused) {
-          setState(() => _timeLeft--);
-        }
-      } else if (_timeLeft <= 0) {
+      if (!mounted) {
         timer.cancel();
+        return;
       }
+      final saved = ref.read(gameOrchestratorProvider);
+      if (saved.phase != Phase.day) return;
+      setState(() {
+        _isPaused = saved.discussionPaused;
+        _timeLeft = saved.discussionDeadlineAt == null
+            ? saved.discussionRemainingSeconds
+            : math.max(
+                0,
+                saved.discussionDeadlineAt!
+                    .difference(ref.read(gameClockProvider)())
+                    .inSeconds,
+              );
+      });
     });
   }
 
-  void _togglePause() {
-    setState(() => _isPaused = !_isPaused);
+  Future<void> _applyClock(int seconds, bool paused) async {
+    if (_clockBusy) return;
+    final before = ref.read(gameOrchestratorProvider);
+    if (before.phase != Phase.day) return;
+    setState(() => _clockBusy = true);
+    try {
+      ref
+          .read(gameOrchestratorProvider.notifier)
+          .updateDiscussionClock(seconds, paused: paused);
+      final id = widget.interactiveSessionId;
+      if (id != null) {
+        await ref
+            .read(interactiveServiceProvider)
+            .setDiscussionClock(id, seconds, paused: paused);
+      }
+      if (mounted) {
+        setState(() {
+          _timeLeft = seconds;
+          _isPaused = paused;
+        });
+      }
+    } catch (_) {
+      ref.read(gameOrchestratorProvider.notifier).restoreCheckpoint(before);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر حفظ مؤقت النقاش. أعد المحاولة.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _clockBusy = false);
+    }
   }
 
-  void _adjustTime(int seconds) {
-    setState(() {
-      _timeLeft += seconds;
-      if (_timeLeft < 0) _timeLeft = 0;
-      if (_timeLeft > 0 && !(_timer?.isActive ?? false)) {
-        _startTimer();
-      }
-    });
-  }
+  void _togglePause() => _applyClock(_timeLeft, !_isPaused);
+  void _adjustTime(int seconds) =>
+      _applyClock((_timeLeft + seconds).clamp(0, 7200), _isPaused);
 
   String get _formattedTime {
     final m = (_timeLeft / 60).floor().toString().padLeft(2, '0');
@@ -87,31 +142,39 @@ class _DayScreenState extends ConsumerState<DayScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E24),
+        backgroundColor: context.visual.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('إنهاء اللعبة؟',
-            style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo')),
+        title: const Text(
+          'إنهاء اللعبة؟',
+          style: TextStyle(color: Colors.redAccent, fontFamily: 'Cairo'),
+        ),
         content: const Text(
-            'هل أنت متأكد أنك تريد إنهاء اللعبة والعودة للرئيسية؟',
-            style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
+          'هل أنت متأكد أنك تريد إنهاء اللعبة والعودة للرئيسية؟',
+          style: TextStyle(fontFamily: 'Cairo', color: Colors.white),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء',
-                style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            child: const Text(
+              'إلغاء',
+              style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'),
+            ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ref.read(gameOrchestratorProvider.notifier).resetGame();
+              await ref.read(gameOrchestratorProvider.notifier).endGame();
+              if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const HomeScreen()),
                 (route) => false,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('نعم، إنهاء',
-                style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
+            child: const Text(
+              'نعم، إنهاء',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
           ),
         ],
       ),
@@ -122,7 +185,13 @@ class _DayScreenState extends ConsumerState<DayScreen> {
   Widget build(BuildContext context) {
     ref.watch(selectedThemeProvider);
     final state = ref.watch(gameOrchestratorProvider);
-    
+    if (state.phase == Phase.winCheck) {
+      _timer?.cancel();
+      return CompletedGameRedirect(
+        interactiveSessionId: widget.interactiveSessionId,
+      );
+    }
+
     // Listen for Citizen Sheikh reveal event to show it to all clients/moderator
     ref.listen(gameOrchestratorProvider, (previous, next) {
       if (previous == null) return;
@@ -136,45 +205,99 @@ class _DayScreenState extends ConsumerState<DayScreen> {
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF1E1E24),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: const BorderSide(color: Colors.orangeAccent, width: 2)),
-                title: const Column(
+                backgroundColor: context.visual.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(color: context.visual.accent, width: 2),
+                ),
+                title: Column(
                   children: [
-                    Icon(Icons.campaign, color: Colors.orangeAccent, size: 60),
-                    SizedBox(height: 16),
-                    Text('إفصاح شيخ المواطنين!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 24)),
+                    Icon(
+                      Icons.campaign,
+                      color: context.visual.accent,
+                      size: 60,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'إفصاح شيخ المواطنين!',
+                      style: TextStyle(
+                        color: context.visual.accent,
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
+                    ),
                   ],
                 ),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('اللاعب: ${sheikh.name}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                    Text(
+                      'اللاعب: ${sheikh.name}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     SizedBox(
                       height: 150,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(AppTheme.roleImage(Role.citizensSheikh), fit: BoxFit.cover),
+                        child: Image.asset(
+                          AppTheme.roleImage(Role.citizensSheikh),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('كشف عن نفسه كشيخ للمواطنين!', style: TextStyle(color: Colors.white70, fontSize: 18, fontFamily: 'Cairo'), textAlign: TextAlign.center),
+                    const Text(
+                      'كشف عن نفسه كشيخ للمواطنين!',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 18,
+                        fontFamily: 'Cairo',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.orangeAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                      child: const Text('أصبح صوته الآن يعادل 3 أصوات!', style: TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo'), textAlign: TextAlign.center),
-                    )
+                      decoration: BoxDecoration(
+                        color: context.visual.accent.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'أصبح صوته الآن يعادل 3 أصوات!',
+                        style: TextStyle(
+                          color: context.visual.accent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Cairo',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                 ),
                 actions: [
                   Center(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
-                      child: const Text('حسناً', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.visual.accent,
+                      ),
+                      child: const Text(
+                        'حسناً',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             );
@@ -189,57 +312,86 @@ class _DayScreenState extends ConsumerState<DayScreen> {
     return GamePopScope(
       onExit: widget.onInteractiveExit,
       child: Scaffold(
-        
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.wb_sunny, color: Colors.orangeAccent),
-              const SizedBox(width: 8),
-              Text('النهار $round',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontFamily: 'Cairo')),
-            ],
-          ),
+          title: GameRoundHeader(round: round),
           actions: [
             IconButton(
               icon: const Icon(Icons.handyman, color: Colors.blueAccent),
               tooltip: 'أدوات الحكم',
               onPressed: () => JudgeToolsSheet.show(context),
             ),
-            if (state.rules.abilityRules.citizenSheikhReveal && widget.interactiveSessionId == null)
+            if (state.rules.abilityRules.citizenSheikhReveal &&
+                widget.interactiveSessionId == null)
               IconButton(
-                icon: const Icon(Icons.campaign, color: Colors.orangeAccent),
+                icon: Icon(Icons.campaign, color: context.visual.accent),
                 tooltip: 'إفصاح شيخ المواطنين',
                 onPressed: () {
-                  final sheikh = state.alivePlayers.where((p) => p.role == Role.citizensSheikh && !p.isCitizenSheikhRevealed).firstOrNull;
+                  final sheikh = state.alivePlayers
+                      .where(
+                        (p) =>
+                            p.role == Role.citizensSheikh &&
+                            !p.isCitizenSheikhRevealed,
+                      )
+                      .firstOrNull;
                   if (sheikh == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('لا يمكن الكشف: شيخ المواطنين ميت أو كشف عن نفسه مسبقاً', style: TextStyle(fontFamily: 'Cairo')),
-                      backgroundColor: Colors.redAccent,
-                    ));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'لا يمكن الكشف: شيخ المواطنين ميت أو كشف عن نفسه مسبقاً',
+                          style: TextStyle(fontFamily: 'Cairo'),
+                        ),
+                        backgroundColor: context.visual.accent,
+                      ),
+                    );
                     return;
                   }
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF1E1E24),
-                      title: const Text('إفصاح شيخ المواطنين', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-                      content: Text('هل أنت متأكد من أن ${sheikh.name} يريد الكشف عن هويته؟ سيصبح صوته بـ 3 أصوات لآخر اللعبة.', style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+                      backgroundColor: context.visual.surface,
+                      title: const Text(
+                        'إفصاح شيخ المواطنين',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                      content: Text(
+                        'هل أنت متأكد من أن ${sheikh.name} يريد الكشف عن هويته؟ سيصبح صوته بـ 3 أصوات لآخر اللعبة.',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'))),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text(
+                            'إلغاء',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ),
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            ref.read(gameOrchestratorProvider.notifier).citizenSheikhReveal(sheikh.id);
+                            ref
+                                .read(gameOrchestratorProvider.notifier)
+                                .citizenSheikhReveal(sheikh.id);
                           },
-                          child: const Text('تأكيد الكشف', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo')),
+                          child: Text(
+                            'تأكيد الكشف',
+                            style: TextStyle(
+                              color: context.visual.accent,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -256,16 +408,12 @@ class _DayScreenState extends ConsumerState<DayScreen> {
         body: Stack(
           children: [
             Positioned.fill(
-                child: Container(
-                    decoration: const BoxDecoration(
-                        gradient: RadialGradient(
-                            center: Alignment.topCenter,
-                            radius: 1.5,
-                            colors: [
-                  Color(0xFF261D15),
-                  Color(0xFF130E0A),
-                  Color(0xFF07070B)
-                ])))),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: context.visual.backgroundGradient,
+                ),
+              ),
+            ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -274,99 +422,121 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                     // Timer Card
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 20, horizontal: 16),
+                        vertical: 20,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                            color: Colors.orangeAccent.withValues(alpha: 0.3),
-                            width: 2),
+                          color: context.visual.accent.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                              color: Colors.orangeAccent.withValues(alpha: 0.1),
-                              blurRadius: 20)
+                            color: context.visual.accent.withValues(alpha: 0.1),
+                            blurRadius: 20,
+                          ),
                         ],
                       ),
                       child: Column(
                         children: [
-                          const Text('وقت النقاش المتبقي',
-                              style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 16,
-                                  fontFamily: 'Cairo')),
+                          const Text(
+                            'وقت النقاش المتبقي',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             _formattedTime,
                             style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'Courier',
-                                color: _timeLeft < 60
-                                    ? Colors.redAccent
-                                    : Colors.orangeAccent),
+                              fontSize: 48,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Courier',
+                              color: _timeLeft < 60
+                                  ? Colors.redAccent
+                                  : context.visual.accent,
+                            ),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove_circle_outline,
-                                    color: Colors.white54),
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.white54,
+                                ),
                                 onPressed: () => _adjustTime(-30),
                                 tooltip: 'إنقاص 30 ثانية',
                               ),
                               IconButton(
                                 icon: Icon(
-                                    _isPaused
-                                        ? Icons.play_circle_fill
-                                        : Icons.pause_circle_filled,
-                                    color: Colors.orangeAccent,
-                                    size: 40),
+                                  _isPaused
+                                      ? Icons.play_circle_fill
+                                      : Icons.pause_circle_filled,
+                                  color: context.visual.accent,
+                                  size: 40,
+                                ),
                                 onPressed: _togglePause,
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add_circle_outline,
-                                    color: Colors.white54),
+                                icon: const Icon(
+                                  Icons.add_circle_outline,
+                                  color: Colors.white54,
+                                ),
                                 onPressed: () => _adjustTime(30),
                                 tooltip: 'زيادة 30 ثانية',
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          const Text('تحدثوا وتشاوروا لمعرفة القاتل!',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.bold)),
+                          const Text(
+                            'تحدثوا وتشاوروا لمعرفة القاتل!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
                     const Align(
                       alignment: Alignment.centerRight,
-                      child: Text('الأحياء (يحق لهم النقاش):',
-                          style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Cairo')),
+                      child: Text(
+                        'الأحياء (يحق لهم النقاش):',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Expanded(
                       child: GridView.builder(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 1.8),
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1.8,
+                            ),
                         itemCount: alive.length,
                         itemBuilder: (context, index) {
                           final player = alive[index];
-                          final isSilenced = state.eventHistory.any((e) =>
-                              e.type == EventType.silence &&
-                              e.targetId == player.id &&
-                              e.round == round);
+                          final isSilenced = state.eventHistory.any(
+                            (e) =>
+                                e.type == EventType.silence &&
+                                e.targetId == player.id &&
+                                e.round == round,
+                          );
                           return Container(
                             decoration: BoxDecoration(
                               color: isSilenced
@@ -374,31 +544,38 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                                   : Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: isSilenced
-                                      ? Colors.redAccent.withValues(alpha: 0.5)
-                                      : Colors.white.withValues(alpha: 0.15)),
+                                color: isSilenced
+                                    ? Colors.redAccent.withValues(alpha: 0.5)
+                                    : Colors.white.withValues(alpha: 0.15),
+                              ),
                             ),
                             alignment: Alignment.center,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(player.name,
-                                    style: TextStyle(
-                                        color: isSilenced
-                                            ? Colors.redAccent
-                                            : Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        fontFamily: 'Cairo')),
+                                Text(
+                                  player.name,
+                                  style: TextStyle(
+                                    color: isSilenced
+                                        ? Colors.redAccent
+                                        : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
                                 // Role badge is hidden during the day. Only shown in Judge Tools.
                                 if (isSilenced)
                                   const Padding(
                                     padding: EdgeInsets.only(top: 2),
-                                    child: Text('🔇 تم إسكاته',
-                                        style: TextStyle(
-                                            color: Colors.redAccent,
-                                            fontSize: 10,
-                                            fontFamily: 'Cairo')),
+                                    child: Text(
+                                      '🔇 تم إسكاته',
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 10,
+                                        fontFamily: 'Cairo',
+                                      ),
+                                    ),
                                   ),
                               ],
                             ),
@@ -409,12 +586,15 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                     if (dead.isNotEmpty) ...[
                       const Align(
                         alignment: Alignment.centerRight,
-                        child: Text('الأموات (لا يحق لهم الكلام):',
-                            style: TextStyle(
-                                color: Colors.redAccent,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Cairo')),
+                        child: Text(
+                          'الأموات (لا يحق لهم الكلام):',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -425,21 +605,27 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                           itemBuilder: (context, index) {
                             return Container(
                               margin: const EdgeInsets.only(left: 8),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: Colors.black45,
                                 borderRadius: BorderRadius.circular(25),
                                 border: Border.all(
-                                    color: Colors.redAccent
-                                        .withValues(alpha: 0.3)),
+                                  color: Colors.redAccent.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
                               ),
-                              child: Text(dead[index].name,
-                                  style: const TextStyle(
-                                      color: Colors.redAccent,
-                                      decoration: TextDecoration.lineThrough,
-                                      fontFamily: 'Cairo')),
+                              child: Text(
+                                dead[index].name,
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  decoration: TextDecoration.lineThrough,
+                                  fontFamily: 'Cairo',
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -454,46 +640,59 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                           showDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              backgroundColor: const Color(0xFF1E1E24),
+                              backgroundColor: context.visual.surface,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              title: const Text('إنهاء النقاش؟',
-                                  style: TextStyle(
-                                      color: Colors.orangeAccent,
-                                      fontFamily: 'Cairo',
-                                      fontWeight: FontWeight.bold)),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              title: Text(
+                                'إنهاء النقاش؟',
+                                style: TextStyle(
+                                  color: context.visual.accent,
+                                  fontFamily: 'Cairo',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               content: const Text(
-                                  'هل أنت متأكد من إنهاء وقت النقاش والانتقال لمرحلة التصويت؟',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Cairo')),
+                                'هل أنت متأكد من إنهاء وقت النقاش والانتقال لمرحلة التصويت؟',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Cairo',
+                                ),
+                              ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('إلغاء',
-                                      style: TextStyle(
-                                          color: Colors.white54,
-                                          fontFamily: 'Cairo')),
+                                  child: const Text(
+                                    'إلغاء',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontFamily: 'Cairo',
+                                    ),
+                                  ),
                                 ),
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.orangeAccent),
+                                    backgroundColor: context.visual.accent,
+                                  ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
                                     if (widget.onInteractiveStartVoting !=
                                         null) {
-                                      widget.onInteractiveStartVoting!()
-                                          .then((_) {
+                                      widget.onInteractiveStartVoting!().then((
+                                        _,
+                                      ) {
                                         if (context.mounted) {
                                           if (widget.interactiveSessionId !=
                                                   null &&
                                               ref
                                                       .read(
-                                                          gameOrchestratorProvider)
+                                                        gameOrchestratorProvider,
+                                                      )
                                                       .phase ==
                                                   Phase.winCheck) {
-                                            Navigator.of(context)
-                                                .pushReplacement(
+                                            Navigator.of(
+                                              context,
+                                            ).pushReplacement(
                                               MaterialPageRoute(
                                                 builder: (_) => GameOverScreen(
                                                   interactiveSessionId: widget
@@ -507,6 +706,11 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                                         }
                                       });
                                     } else {
+                                      ref
+                                          .read(
+                                            gameOrchestratorProvider.notifier,
+                                          )
+                                          .startVoting();
                                       Navigator.of(context).pushReplacement(
                                         MaterialPageRoute(
                                           builder: (_) => const VotingScreen(),
@@ -514,30 +718,36 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                                       );
                                     }
                                   },
-                                  child: const Text('نعم، انتقال',
-                                      style: TextStyle(
-                                          color: Colors.black,
-                                          fontFamily: 'Cairo',
-                                          fontWeight: FontWeight.bold)),
+                                  child: const Text(
+                                    'نعم، انتقال',
+                                    style: TextStyle(
+                                      fontFamily: 'Cairo',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orangeAccent,
+                          backgroundColor: context.visual.accent,
                           elevation: 10,
-                          shadowColor:
-                              Colors.orangeAccent.withValues(alpha: 0.5),
+                          shadowColor: context.visual.accent.withValues(
+                            alpha: 0.5,
+                          ),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
-                        child: const Text('الانتقال للتصويت',
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                                fontFamily: 'Cairo')),
+                        child: const Text(
+                          'الانتقال للتصويت',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
                       ),
                     ),
                   ],

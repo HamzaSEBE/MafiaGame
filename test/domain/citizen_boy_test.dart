@@ -16,9 +16,25 @@ void main() {
         phase: Phase.triggeredAbility,
         round: 1,
         players: [
-          Player(id: 'CB', name: 'Citizen Boy', role: Role.citizensBoy, isAlive: false, createdAt: DateTime.now()),
-          Player(id: 'A', name: 'Player A', role: Role.goodCitizen, createdAt: DateTime.now()),
-          Player(id: 'B', name: 'Mafia', role: Role.normalMafia, createdAt: DateTime.now()),
+          Player(
+            id: 'CB',
+            name: 'Citizen Boy',
+            role: Role.citizensBoy,
+            isAlive: false,
+            createdAt: DateTime.now(),
+          ),
+          Player(
+            id: 'A',
+            name: 'Player A',
+            role: Role.goodCitizen,
+            createdAt: DateTime.now(),
+          ),
+          Player(
+            id: 'B',
+            name: 'Mafia',
+            role: Role.normalMafia,
+            createdAt: DateTime.now(),
+          ),
         ],
         eventHistory: [],
       );
@@ -31,11 +47,13 @@ void main() {
 
     test('Boy chooses any alive player => target eliminated', () {
       final newState = CitizenBoyEngine.applyRetaliation(state, 'CB', 'B');
-      
+
       final playerB = newState.getPlayerById('B');
       expect(playerB!.isAlive, isFalse);
-      
-      final retaliationEvent = newState.eventHistory.firstWhere((e) => e.type == EventType.citizenBoyRetaliation);
+
+      final retaliationEvent = newState.eventHistory.firstWhere(
+        (e) => e.type == EventType.citizenBoyRetaliation,
+      );
       expect(retaliationEvent.actorId, equals('CB'));
       expect(retaliationEvent.targetId, equals('B'));
     });

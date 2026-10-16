@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
@@ -8,6 +8,7 @@ import 'package:mafia_nightfall/domain/enums/role.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
 import 'package:mafia_nightfall/domain/entities/game_state.dart';
+import 'package:mafia_nightfall/domain/engine/citizen_boy_engine.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:mafia_nightfall/presentation/day/day_screen.dart';
@@ -38,7 +39,8 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           .where((e) => e.type == EventType.nightResolutionSummary)
           .lastOrNull;
       if (summaryEvent != null) {
-        final deadIds = (summaryEvent.metadata['assassinatedIds'] as List?)
+        final deadIds =
+            (summaryEvent.metadata['assassinatedIds'] as List?)
                 ?.cast<String>() ??
             [];
         if (deadIds.isNotEmpty) {
@@ -62,12 +64,15 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           Icon(Icons.shield_moon, color: color, size: 40),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(text,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo')),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo',
+              ),
+            ),
           ),
         ],
       ),
@@ -75,7 +80,11 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
   }
 
   Widget _buildDeathCard(
-      GameState state, String id, String title, Color color) {
+    GameState state,
+    String id,
+    String title,
+    Color color,
+  ) {
     final player = state.getPlayerById(id);
     if (player == null) return const SizedBox.shrink();
     return Container(
@@ -85,24 +94,30 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppTheme.roleColor(player.role).withValues(alpha: 0.5),
-            width: 2),
+          color: AppTheme.roleColor(player.role).withValues(alpha: 0.5),
+          width: 2,
+        ),
       ),
       child: Column(
         children: [
-          Text(title,
-              style: TextStyle(
-                  color: color,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo')),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Cairo',
+            ),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border:
-                  Border.all(color: AppTheme.roleColor(player.role), width: 3),
+              border: Border.all(
+                color: AppTheme.roleColor(player.role),
+                width: 3,
+              ),
             ),
             child: ClipOval(
               child: Image.asset(
@@ -117,18 +132,20 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           Text(
             player.name,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo'),
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Cairo',
+            ),
           ),
           Text(
-            AppTheme.roleArabicName(player.role),
+            context.roleName(player.role),
             style: TextStyle(
-                color: AppTheme.roleColor(player.role),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Cairo'),
+              color: AppTheme.roleColor(player.role),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Cairo',
+            ),
           ),
         ],
       ),
@@ -140,8 +157,16 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       Navigator.of(context).pop();
       return;
     }
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (_) => const DayScreen()));
+    if (ref.read(gameOrchestratorProvider).phase == Phase.winCheck) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const GameOverScreen()),
+        (route) => false,
+      );
+      return;
+    }
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const DayScreen()));
   }
 
   void _showCitizenBoyDialog(String actorId) {
@@ -154,36 +179,55 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E24),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          backgroundColor: context.visual.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
             children: [
-              Icon(Icons.bolt, color: Colors.orangeAccent),
-              SizedBox(width: 8),
-              Text('رد فعل المواطن الشجاع!',
-                  style: TextStyle(
-                      color: Colors.orangeAccent,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold)),
+              Icon(Icons.bolt, color: context.visual.accent),
+              const SizedBox(width: 8),
+              Text(
+                'رد فعل المواطن الشجاع!',
+                style: TextStyle(
+                  color: context.visual.accent,
+                  fontFamily: 'Cairo',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('بما أنك قُتلت، يمكنك أخذ لاعب معك:',
-                  style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
+              const Text(
+                'بما أنك قُتلت، يمكنك أخذ لاعب معك:',
+                style: TextStyle(fontFamily: 'Cairo', color: Colors.white),
+              ),
               const SizedBox(height: 12),
-              ...alive.map((p) => RadioListTile<String>(
-                    title: Text(p.name,
-                        style: const TextStyle(
-                            fontFamily: 'Cairo', color: Colors.white)),
-                    value: p.id,
-                    groupValue: selectedId,
-                    activeColor: Colors.orangeAccent,
-                    onChanged: (v) => setDialogState(() => selectedId = v),
-                  )),
+              RadioGroup<String>(
+                groupValue: selectedId,
+                onChanged: (v) => setDialogState(() => selectedId = v),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: alive
+                      .map(
+                        (p) => RadioListTile<String>(
+                          title: Text(
+                            p.name,
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              color: Colors.white,
+                            ),
+                          ),
+                          value: p.id,
+                          activeColor: context.visual.accent,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -199,8 +243,10 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                 }
                 _goToDay();
               },
-              child:
-                  const Text('تخطّي', style: TextStyle(color: Colors.white54)),
+              child: const Text(
+                'تخطّي',
+                style: TextStyle(color: Colors.white54),
+              ),
             ),
             ElevatedButton(
               onPressed: selectedId != null
@@ -224,12 +270,16 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orangeAccent),
-              child: const Text('تأكيد واغتيال',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold)),
+                backgroundColor: context.visual.accent,
+              ),
+              child: const Text(
+                'تأكيد واغتيال',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Cairo',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -245,7 +295,8 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
     }
     if (newState.phase == Phase.winCheck) {
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const GameOverScreen()));
+        MaterialPageRoute(builder: (_) => const GameOverScreen()),
+      );
     } else {
       _goToDay();
     }
@@ -256,16 +307,20 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E24),
+        backgroundColor: context.visual.surface,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Colors.redAccent, width: 2)),
-        title: const Text('ضحية المواطن الشجاع!',
-            style: TextStyle(
-                color: Colors.redAccent,
-                fontFamily: 'Cairo',
-                fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.redAccent, width: 2),
+        ),
+        title: const Text(
+          'ضحية المواطن الشجاع!',
+          style: TextStyle(
+            color: Colors.redAccent,
+            fontFamily: 'Cairo',
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -274,7 +329,9 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: AppTheme.roleColor(target.role), width: 3),
+                  color: AppTheme.roleColor(target.role),
+                  width: 3,
+                ),
               ),
               child: ClipOval(
                 child: Image.asset(
@@ -286,19 +343,25 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(target.name,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo')),
+            Text(
+              target.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo',
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('كان: ${AppTheme.roleArabicName(target.role)}',
-                style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Cairo')),
+            Text(
+              'كان: ${context.roleName(target.role)}',
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo',
+              ),
+            ),
           ],
         ),
         actions: [
@@ -312,17 +375,21 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: context.visual.accent,
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('متابعة',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: 'Cairo')),
+            child: const Text(
+              'متابعة',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Cairo',
+              ),
+            ),
           ),
         ],
       ),
@@ -342,18 +409,18 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
         (summaryEvent?.metadata['mafiaDeadIds'] as List?)?.cast<String>() ?? [];
     final sniperDeadIds =
         (summaryEvent?.metadata['sniperDeadIds'] as List?)?.cast<String>() ??
-            [];
+        [];
     final silencedIds =
         (summaryEvent?.metadata['silencedIds'] as List?)?.cast<String>() ?? [];
 
     final protectedFromMafiaIds =
         (summaryEvent?.metadata['protectedFromMafiaIds'] as List?)
-                ?.cast<String>() ??
-            [];
+            ?.cast<String>() ??
+        [];
     final protectedFromSniperIds =
         (summaryEvent?.metadata['protectedFromSniperIds'] as List?)
-                ?.cast<String>() ??
-            [];
+            ?.cast<String>() ??
+        [];
 
     final assassinatedIds = [...mafiaDeadIds, ...sniperDeadIds];
 
@@ -368,11 +435,14 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
       onExit: widget.onInteractiveExit,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('ملخص الليل (للحكم فقط)',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold)),
+          title: const Text(
+            'ملخص الليل (للحكم فقط)',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Cairo',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
@@ -387,28 +457,32 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
         body: Stack(
           children: [
             Positioned.fill(
-                child: Container(
-                    decoration: const BoxDecoration(
-                        gradient: RadialGradient(
-                            center: Alignment.center,
-                            radius: 1.5,
-                            colors: [Color(0xFF151826), Color(0xFF07070B)])))),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: context.visual.backgroundGradient,
+                ),
+              ),
+            ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.wb_twilight,
-                        size: 80, color: Colors.orangeAccent),
+                    Icon(
+                      Icons.wb_twilight,
+                      size: 80,
+                      color: context.visual.accent,
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'انتهى الليل، وإليك ما حدث في العتمة:',
                       style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Cairo',
-                          color: Colors.white),
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
+                        color: Colors.white,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -420,27 +494,31 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                             const SizedBox(height: 16),
                             if (protectedFromMafiaIds.isNotEmpty)
                               _buildProtectionCard(
-                                  'نجحت البنت في حماية أحد اللاعبين من اغتيال المافيا!',
-                                  Colors.greenAccent),
+                                'نجحت البنت في حماية أحد اللاعبين من اغتيال المافيا!',
+                                Colors.greenAccent,
+                              ),
                             if (protectedFromSniperIds.isNotEmpty)
                               _buildProtectionCard(
-                                  'نجحت البنت في حماية أحد اللاعبين من قنص القناص!',
-                                  Colors.tealAccent),
+                                'نجحت البنت في حماية أحد اللاعبين من قنص القناص!',
+                                Colors.tealAccent,
+                              ),
                             if (mafiaDeadIds.isNotEmpty)
                               ...mafiaDeadIds.map((id) {
                                 return _buildDeathCard(
-                                    state,
-                                    id,
-                                    'ضحية الليل (تم اغتياله):',
-                                    Colors.redAccent);
+                                  state,
+                                  id,
+                                  'ضحية الليل (تم اغتياله):',
+                                  Colors.redAccent,
+                                );
                               }),
                             if (sniperDeadIds.isNotEmpty)
                               ...sniperDeadIds.map((id) {
                                 return _buildDeathCard(
-                                    state,
-                                    id,
-                                    'ضحية الليل (تم قنصه):',
-                                    Colors.orangeAccent);
+                                  state,
+                                  id,
+                                  'ضحية الليل (تم قنصه):',
+                                  context.visual.accent,
+                                );
                               }),
                             if (silencedIds.isNotEmpty)
                               _SummaryCard(
@@ -454,8 +532,8 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      height: 55,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 55),
                       child: ElevatedButton(
                         onPressed: () {
                           if (widget.interactiveSessionId != null &&
@@ -463,35 +541,45 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
                             Navigator.of(context).pop();
                           } else if (state.phase == Phase.triggeredAbility &&
                               assassinatedIds.isNotEmpty) {
-                            _showCitizenBoyDialog(assassinatedIds.first);
+                            final actor = CitizenBoyEngine.pendingActor(state);
+                            if (actor != null) _showCitizenBoyDialog(actor.id);
                           } else {
                             _goToDay();
                           }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: state.phase == Phase.triggeredAbility
-                              ? Colors.orangeAccent
+                              ? context.visual.accent
                               : Colors.redAccent,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           elevation: 10,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              state.phase == Phase.triggeredAbility
-                                  ? 'رد فعل المواطن الشجاع!'
-                                  : 'متابعة',
-                              style: const TextStyle(
+                            Flexible(
+                              child: Text(
+                                state.phase == Phase.triggeredAbility
+                                    ? 'رد فعل المواطن الشجاع!'
+                                    : state.phase == Phase.winCheck
+                                    ? 'عرض نتيجة المباراة'
+                                    : 'متابعة',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  fontFamily: 'Cairo'),
+                                  fontFamily: 'Cairo',
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(Icons.arrow_forward,
-                                color: Colors.white),
+                            const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                            ),
                           ],
                         ),
                       ),
@@ -537,19 +625,25 @@ class _SummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo')),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(names,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Cairo')),
+                Text(
+                  names,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
               ],
             ),
           ),

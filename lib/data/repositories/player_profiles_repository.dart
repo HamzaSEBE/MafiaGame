@@ -26,12 +26,17 @@ class PlayerProfilesRepository {
       }
       return [];
     } catch (e) {
-      print('Error loading saved players: $e');
-      return [];
+      rethrow;
     }
   }
 
   Future<void> savePlayers(List<String> players) async {
+    if (players.length > 1000 ||
+        players.any((n) => n.trim().isEmpty || n.length > 80)) {
+      throw ArgumentError(
+        'حد الأسماء المحفوظة 1000 اسم، والاسم لا يتجاوز 80 حرفاً.',
+      );
+    }
     try {
       final uid = _uid;
       if (uid == null) return;
@@ -43,11 +48,13 @@ class PlayerProfilesRepository {
           .doc('list')
           .set({'names': players});
     } catch (e) {
-      print('Error saving players: $e');
+      rethrow;
     }
   }
 }
 
-final playerProfilesRepositoryProvider = Provider<PlayerProfilesRepository>((ref) {
+final playerProfilesRepositoryProvider = Provider<PlayerProfilesRepository>((
+  ref,
+) {
   return PlayerProfilesRepository();
 });

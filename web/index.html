@@ -1,46 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="مافيا عالشوارب — بطاقتك السرية، تصويتك، وحركاتك في جلسة الحكم عبر QR.">
+  <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mafia_nightfall">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="مافيا عالشوارب">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>mafia_nightfall</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="manifest" href="manifest.json">
+  <title>مافيا عالشوارب · المدينة تنتظرك</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#0f172a;color:#f8f6f2}
+    #launch{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,#0f172a,#020617);font-family:system-ui,sans-serif;padding:28px;text-align:center}
+    .seal{width:64px;height:64px;display:grid;place-items:center;margin:auto;border:1px solid #ff5252;border-radius:20px;background:linear-gradient(135deg,#8b0000,#4a0000);font-size:30px}
+    h1{font-size:28px;margin:24px 0 10px}p{color:#b8c4d6;line-height:1.8;max-width:340px}
+    #retry{display:none;margin:24px auto 0;padding:12px 24px;border:1px solid #ff5252;border-radius:12px;background:#8b0000;color:white;font:inherit;cursor:pointer}
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <div id="launch" role="status" aria-live="polite"><main>
+    <div class="seal" aria-hidden="true">م</div>
+    <h1>مافيا عالشوارب</h1><p id="launch-message">المدينة تستعد لليلة أخرى…<br>جارٍ فتح طاولتك السرية.</p>
+    <button id="retry" onclick="location.reload()">إعادة المحاولة</button>
+    <noscript><p>فعّل JavaScript للانضمام إلى اللعبة.</p></noscript>
+  </main></div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

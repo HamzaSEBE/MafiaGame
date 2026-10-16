@@ -20,7 +20,10 @@ class AudioManager {
   Future<void> startAmbience() async {
     try {
       if (_ambiencePlayer.state != PlayerState.playing) {
-        await _ambiencePlayer.play(AssetSource('audio/ambience.wav'), volume: 0.6);
+        await _ambiencePlayer.play(
+          AssetSource('audio/ambience.wav'),
+          volume: 0.6,
+        );
       }
     } catch (_) {}
   }

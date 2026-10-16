@@ -1,0 +1,124 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "outbox",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "transitions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "sessions",
+      "fieldPath": "createdAt",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "secrets",
+      "fieldPath": "requiredActions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "secrets",
+      "fieldPath": "allowedTargetsByAction",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "secrets",
+      "fieldPath": "availableTargets",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "secrets",
+      "fieldPath": "mafiaTeammates",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "secrets",
+      "fieldPath": "privateResult",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "gameStateJson",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "players",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "games",
+      "fieldPath": "newspaperText",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "users",
+      "fieldPath": "photoBase64",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actionRequests",
+      "fieldPath": "timestamp",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "joinRequests",
+      "fieldPath": "timestamp",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "hostState",
+      "fieldPath": "state",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "transitions",
+      "fieldPath": "state",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "transitions",
+      "fieldPath": "result",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "outbox",
+      "fieldPath": "state",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "receipts",
+      "fieldPath": "fingerprint",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "sessionsV2",
+      "fieldPath": "createdAt",
+      "indexes": []
+    }
+  ]
+}

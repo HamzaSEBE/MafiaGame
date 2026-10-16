@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
@@ -14,6 +15,7 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Timer? _timer;
+  Timer? _cooldownTimer;
   bool _canResend = false;
   int _cooldown = 60;
 
@@ -25,7 +27,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   }
 
   void _startCheckTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _checkEmailVerified());
+    _timer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _checkEmailVerified(),
+    );
   }
 
   void _startCooldown() {
@@ -33,7 +38,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       _canResend = false;
       _cooldown = 60;
     });
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -54,7 +60,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     await auth.reloadUser();
     if (auth.isEmailVerified && mounted) {
       _timer?.cancel();
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
     }
   }
 
@@ -63,15 +72,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       await ref.read(authServiceProvider).resendVerificationEmail();
       _startCooldown();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إرسال الرابط بنجاح')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم إرسال الرابط بنجاح')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ: ${e.toString()}')));
       }
     }
   }
@@ -79,6 +88,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _cooldownTimer?.cancel();
     super.dispose();
   }
 
@@ -88,7 +98,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     final email = ref.watch(authServiceProvider).currentUser?.email ?? '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: context.visual.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -100,43 +110,74 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.email_outlined, size: 80, color: Color(0xFFE11D48)),
-              const SizedBox(height: 24),
-              const Text(
-                'تم إرسال رابط التحقق إلى بريدك الإلكتروني',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFFF5F5F7), fontSize: 22, fontWeight: FontWeight.bold),
+      body: DecoratedBox(
+        decoration: BoxDecoration(gradient: context.visual.backgroundGradient),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.email_outlined,
+                    size: 80,
+                    color: context.visual.iconColor2,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'تم إرسال رابط التحقق إلى بريدك الإلكتروني',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFF5F5F7),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    email,
+                    style: TextStyle(
+                      color: context.visual.iconColor2,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.visual.accent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: _checkEmailVerified,
+                    child: const Text(
+                      'لقد تحققت',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: _canResend ? _resendEmail : null,
+                    child: Text(
+                      _canResend
+                          ? 'إعادة إرسال'
+                          : 'إعادة إرسال بعد $_cooldown ثانية',
+                      style: TextStyle(
+                        color: _canResend
+                            ? context.visual.iconColor2
+                            : context.visual.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                email,
-                style: const TextStyle(color: Color(0xFF10B981), fontSize: 16),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A2E),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: _checkEmailVerified,
-                child: const Text('لقد تحققت', style: TextStyle(color: Colors.white, fontSize: 16)),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _canResend ? _resendEmail : null,
-                child: Text(
-                  _canResend ? 'إعادة إرسال' : 'إعادة إرسال بعد $_cooldown ثانية',
-                  style: TextStyle(color: _canResend ? const Color(0xFF10B981) : const Color(0xFF8E8E93)),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

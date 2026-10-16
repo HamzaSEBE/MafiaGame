@@ -1,373 +1,85 @@
-import 'dart:math';
+import 'package:mafia_nightfall/application/account_providers.dart';
+import 'package:mafia_nightfall/application/game_recovery.dart';
+import 'package:mafia_nightfall/data/repositories/checkpoints/local_checkpoint_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mafia_nightfall/domain/entities/game_state.dart';
-import 'package:mafia_nightfall/domain/entities/player.dart';
-import 'package:mafia_nightfall/domain/rules/game_ruleset.dart';
-import 'package:mafia_nightfall/domain/engine/night_resolution_engine.dart';
-import 'package:mafia_nightfall/domain/engine/voting_engine.dart';
-import 'package:mafia_nightfall/domain/engine/victory_engine.dart';
-import 'package:mafia_nightfall/domain/engine/citizen_boy_engine.dart';
-import 'package:mafia_nightfall/domain/events/game_event.dart';
-import 'package:mafia_nightfall/domain/enums/phase.dart';
-import 'package:mafia_nightfall/domain/enums/role.dart';
+import 'package:game_core/game_core.dart';
 import 'package:uuid/uuid.dart';
 
-// ─── Manual Riverpod Provider (no code generation needed) ────────────────────
+final gameClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
-final gameOrchestratorProvider =
-    NotifierProvider<GameOrchestrator, GameState>(GameOrchestrator.new);
+final gameOrchestratorProvider = NotifierProvider<GameOrchestrator, GameState>(
+  GameOrchestrator.new,
+);
 
+/// Riverpod adapter only. All game decisions belong to the shared Dart core.
 class GameOrchestrator extends Notifier<GameState> {
-  
-
   @override
-  GameState build() {
-    return GameState(id: const Uuid().v4());
+  GameState build() => GameState(id: const Uuid().v4());
+  T _change<T>(T Function(GameMachine) operation) {
+    final machine = GameMachine(state, clock: ref.read(gameClockProvider));
+    final result = operation(machine);
+    state = machine.state;
+    return result;
   }
 
-  // ────────────────────────────────────────────
-  // SETUP
-  // ────────────────────────────────────────────
-
-  void addPlayer(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return;
-    final player = Player(
-      id: const Uuid().v4(),
-      name: trimmed,
-      role: Role.goodCitizen, // placeholder until assigned
-      createdAt: DateTime.now(),
-    );
-    state = state.copyWith(players: [...state.players, player]);
-  }
-
-  void removePlayer(String playerId) {
-    state = state.copyWith(
-      players: state.players.where((p) => p.id != playerId).toList(),
-    );
-  }
-
-  void updatePlayer(Player updatedPlayer) {
-    state = state.copyWith(
-      players: state.players
-          .map((p) => p.id == updatedPlayer.id ? updatedPlayer : p)
-          .toList(),
-    );
-  }
-
-  /// Randomly shuffle the player order so role reveal order
-  /// is completely independent of the order names were added.
-  void shufflePlayers() {
-    final shuffled = List<Player>.from(state.players)..shuffle(Random.secure());
-    state = state.copyWith(players: shuffled);
-  }
-
-  /// Redistributes the roles already assigned to this player set without
-  /// changing the configured role counts or starting the game.
-  void shuffleAssignedRoles() {
-    final players = List<Player>.from(state.players)..shuffle(Random.secure());
-    final roles = players.map((player) => player.role).toList()
-      ..shuffle(Random.secure());
-    final reassigned = [
-      for (var index = 0; index < players.length; index++)
-        players[index].copyWith(role: roles[index]),
-    ];
-    state = state.copyWith(players: reassigned);
-  }
-
-  void updateRules(GameRuleset rules) {
-    state = state.copyWith(rules: rules);
-  }
-
-  void citizenSheikhReveal(String playerId) {
-    final players = state.players.map((p) {
-      if (p.id == playerId && p.role == Role.citizensSheikh) {
-        return p.copyWith(isCitizenSheikhRevealed: true);
-      }
-      return p;
-    }).toList();
-    
-    final event = GameEvent(
-      id: const Uuid().v4(),
-      gameId: state.id,
-      round: state.round,
-      phase: state.phase,
-      type: EventType.citizenSheikhReveal,
-      actorId: playerId,
-      timestamp: DateTime.now(),
-    );
-    
-    state = state.copyWith(
-      players: players,
-      eventHistory: [...state.eventHistory, event]
-    );
-  }
-
-  /// Shuffle and assign roles based on [roleConfig] (Map<Role, count>).
-  /// Returns an error string if the total doesn't match player count, else null.
-  String? assignRoles(Map<Role, int> roleConfig) {
-    final totalRoles = roleConfig.values.fold(0, (a, b) => a + b);
-    if (totalRoles != state.players.length) {
-      return 'عدد الأدوار ($totalRoles) لا يساوي عدد اللاعبين (${state.players.length})';
-    }
-
-    // Build the roles list
-    final List<Role> roles = [];
-    for (final entry in roleConfig.entries) {
-      for (int i = 0; i < entry.value; i++) {
-        roles.add(entry.key);
-      }
-    }
-
-    // Shuffle
-    roles.shuffle(Random.secure());
-
-    // Assign to players
-    final updatedPlayers = List<Player>.from(state.players);
-    for (int i = 0; i < updatedPlayers.length; i++) {
-      updatedPlayers[i] = updatedPlayers[i].copyWith(role: roles[i]);
-    }
-
-    // Calculate initial Mafia Count
-    final initialMafiaCount = updatedPlayers.where((p) => p.role.team == Team.mafia).length;
-
-    // Assign Sniper if rule is enabled
-    if (state.rules.abilityRules.sniper) {
-      final citizens = updatedPlayers.where((p) => p.role.team == Team.citizens).toList();
-      if (citizens.isNotEmpty) {
-        citizens.shuffle(Random.secure());
-        final sniperId = citizens.first.id;
-        for (int i = 0; i < updatedPlayers.length; i++) {
-          if (updatedPlayers[i].id == sniperId) {
-            updatedPlayers[i] = updatedPlayers[i].copyWith(hasSniper: true);
-          }
-        }
-      }
-    }
-
-    state = state.copyWith(
-      players: updatedPlayers,
-      phase: Phase.roleReveal,
-      initialMafiaCount: initialMafiaCount,
-    );
-    return null; // success
-  }
-
-  // ────────────────────────────────────────────
-  // NIGHT ACTIONS
-  // ────────────────────────────────────────────
-
+  void restoreCheckpoint(GameState state) =>
+      _change((g) => g.restoreCheckpoint(state));
+  void addPlayer(String name) => _change((g) => g.addPlayer(name));
+  void removePlayer(String id) => _change((g) => g.removePlayer(id));
+  void updatePlayer(Player player) => _change((g) => g.updatePlayer(player));
+  void swapPlayerRoles(String first, String second) =>
+      _change((g) => g.swapPlayerRoles(first, second));
+  void shufflePlayers() => _change((g) => g.shufflePlayers());
+  void shuffleAssignedRoles() => _change((g) => g.shuffleAssignedRoles());
+  void updateRules(GameRuleset rules) => _change((g) => g.updateRules(rules));
+  void citizenSheikhReveal(String id) =>
+      _change((g) => g.citizenSheikhReveal(id));
+  String? assignRoles(Map<Role, int> config) =>
+      _change((g) => g.assignRoles(config));
   void submitNightAction({
     required String actorId,
     required String targetId,
     required EventType type,
-  }) {
-    final event = GameEvent(
-      id: const Uuid().v4(),
-      gameId: state.id,
-      round: state.round,
-      phase: Phase.night,
-      type: type,
+  }) => _change(
+    (g) =>
+        g.submitNightAction(actorId: actorId, targetId: targetId, type: type),
+  );
+  void undoLastNightAction() => _change((g) => g.undoLastNightAction());
+  void resolveNight() => _change((g) => g.resolveNight());
+  void startVoting() => _change((g) => g.startVoting());
+  void beginDay() => _change((g) => g.beginDay());
+  void beginIntroductionNight() => _change((g) => g.beginIntroductionNight());
+  void skipIntroductionNight() => _change((g) => g.skipIntroductionNight());
+  void submitFinalVotes(Map<String, String> votes) =>
+      _change((g) => g.submitFinalVotes(votes));
+  Map<String, dynamic> resolveVote() => _change((g) => g.resolveVote());
+  void skipElimination() => _change((g) => g.skipElimination());
+  void revote() => _change((g) => g.revote());
+  void citizenBoyRetaliation({
+    required String actorId,
+    required String targetId,
+    required Phase nextPhase,
+  }) => _change(
+    (g) => g.citizenBoyRetaliation(
       actorId: actorId,
       targetId: targetId,
-      timestamp: DateTime.now(),
-    );
-    state = state.copyWith(eventHistory: [...state.eventHistory, event]);
-  }
+      nextPhase: nextPhase,
+    ),
+  );
+  void skipTriggeredAbility(Phase phase) =>
+      _change((g) => g.skipTriggeredAbility(phase));
+  void advanceToNight() => _change((g) => g.advanceToNight());
+  void updateDiscussionClock(int seconds, {required bool paused}) =>
+      _change((g) => g.updateDiscussionClock(seconds, paused: paused));
+  void resetGame() => _change((g) => g.resetGame());
 
-  void undoLastNightAction() {
-    if (state.eventHistory.isEmpty) return;
-
-    // Remove the most recent event if it belongs to the current night round
-    final lastEvent = state.eventHistory.last;
-    if (lastEvent.phase == Phase.night && lastEvent.round == state.round) {
-      final updatedHistory = List<GameEvent>.from(state.eventHistory)
-        ..removeLast();
-      state = state.copyWith(eventHistory: updatedHistory);
+  Future<void> endGame() async {
+    final gameId = state.id;
+    final uid = ref.read(accountIdProvider);
+    if (uid != null) {
+      await ref.read(localCheckpointRepositoryProvider).clear(uid, gameId);
     }
-  }
-
-  void resolveNight() {
-    var nextState = NightResolutionEngine.resolve(state, state.rules);
-
-    // Find who was assassinated
-    final resolutionEvent = nextState.eventHistory
-        .lastWhere((e) => e.type == EventType.nightResolutionSummary);
-    final assassinatedIds =
-        List<String>.from(resolutionEvent.metadata['assassinatedIds'] ?? []);
-
-    final victoryStatus = VictoryEngine.evaluate(nextState);
-    if (victoryStatus != VictoryStatus.continueGame) {
-      final Team winner;
-      if (victoryStatus == VictoryStatus.mafiaWin)
-        winner = Team.mafia;
-      else if (victoryStatus == VictoryStatus.jokerWin)
-        winner = Team.independent;
-      else
-        winner = Team.citizens;
-        
-      String? reason;
-      int aliveCitizensCount = nextState.alivePlayers.where((p) => p.role.team == Team.citizens).length;
-      if (winner == Team.mafia && nextState.rules.victoryRules.mode == VictoryMode.equalCount && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
-      else if (winner == Team.citizens && nextState.rules.victoryRules.mode == VictoryMode.exactMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
-      else if (winner == Team.independent) reason = 'إقصاء الجوكر بالتصويت';
-      else if (winner == Team.mafia) reason = 'استحالة فوز المواطنين';
-      else reason = 'القضاء التام على المافيا';
-      
-      nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner, victoryReason: reason);
-    } else if (assassinatedIds.isNotEmpty &&
-        CitizenBoyEngine.shouldTriggerAbility(
-            nextState, assassinatedIds.first)) {
-      nextState = nextState.copyWith(phase: Phase.triggeredAbility);
-    } else {
-      nextState = nextState.copyWith(phase: Phase.day);
-    }
-    state = nextState;
-  }
-
-  // ────────────────────────────────────────────
-  // VOTING
-  // ────────────────────────────────────────────
-
-  void startVoting() {
-    state = state.copyWith(phase: Phase.voting);
-  }
-
-  /// Starts the public day after every player has seen their private role.
-  void beginDay() {
-    if (state.phase != Phase.roleReveal) return;
-    state = state.copyWith(phase: Phase.day);
-  }
-
-  /// Starts the original first-night introduction after everyone has seen a role.
-  void beginIntroductionNight() {
-    if (state.phase != Phase.roleReveal) return;
-    state = state.copyWith(phase: Phase.night, round: 1);
-  }
-
-  void skipIntroductionNight() {
-    if (state.phase != Phase.roleReveal) return;
-    state = state.copyWith(phase: Phase.day, round: 1);
-  }
-
-  void submitFinalVotes(Map<String, String> finalVotes) {
-    // Clear any existing votes for this round just in case
-    final filteredEvents = state.eventHistory
-        .where((e) => !(e.round == state.round && e.type == EventType.vote))
-        .toList();
-
-    final newEvents = finalVotes.entries
-        .map((e) => GameEvent(
-              id: const Uuid().v4(),
-              gameId: state.id,
-              round: state.round,
-              phase: Phase.voting,
-              type: EventType.vote,
-              actorId: e.key,
-              targetId: e.value,
-              timestamp: DateTime.now(),
-            ))
-        .toList();
-
-    state = state.copyWith(eventHistory: [...filteredEvents, ...newEvents]);
-  }
-
-  Map<String, dynamic> resolveVote() {
-    final result = VotingEngine.calculateVotes(state);
-    if (result.isTie) {
-      return {'isTie': true, 'tiedPlayers': result.voteCounts.keys.toList()};
-    }
-    if (result.eliminatedPlayerId != null) {
-      var nextState =
-          VotingEngine.applyElimination(state, result.eliminatedPlayerId!);
-      final victoryStatus = VictoryEngine.evaluate(nextState);
-      if (victoryStatus != VictoryStatus.continueGame) {
-        final Team winner;
-        if (victoryStatus == VictoryStatus.mafiaWin)
-          winner = Team.mafia;
-        else if (victoryStatus == VictoryStatus.jokerWin)
-          winner = Team.independent;
-        else
-          winner = Team.citizens;
-        nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner);
-      } else if (CitizenBoyEngine.shouldTriggerAbility(
-          nextState, result.eliminatedPlayerId!)) {
-        nextState = nextState.copyWith(phase: Phase.triggeredAbility);
-      } else {
-        nextState = nextState.copyWith(phase: Phase.elimination);
-      }
-      state = nextState;
-      return {'isTie': false, 'eliminatedId': result.eliminatedPlayerId};
-    }
-    return {'isTie': false, 'eliminatedId': null};
-  }
-
-  void skipElimination() {
-    state = state.copyWith(phase: Phase.night, round: state.round + 1);
-  }
-
-  void revote() {
-    final filteredEvents = state.eventHistory
-        .where((e) => !(e.round == state.round && e.type == EventType.vote))
-        .toList();
-    state = state.copyWith(eventHistory: filteredEvents, phase: Phase.voting);
-  }
-
-  void citizenBoyRetaliation(
-      {required String actorId,
-      required String targetId,
-      required Phase nextPhase}) {
-    var nextState = CitizenBoyEngine.applyRetaliation(state, actorId, targetId);
-    final victoryStatus = VictoryEngine.evaluate(nextState);
-    if (victoryStatus != VictoryStatus.continueGame) {
-      final Team winner;
-      if (victoryStatus == VictoryStatus.mafiaWin)
-        winner = Team.mafia;
-      else if (victoryStatus == VictoryStatus.jokerWin)
-        winner = Team.independent;
-      else
-        winner = Team.citizens;
-        
-      String? reason;
-      int aliveCitizensCount = nextState.alivePlayers.where((p) => p.role.team == Team.citizens).length;
-      if (winner == Team.mafia && nextState.rules.victoryRules.mode == VictoryMode.equalCount && aliveCitizensCount <= nextState.initialMafiaCount) reason = 'التعادل مع العدد الأصلي للمافيا';
-      else if (winner == Team.citizens && nextState.rules.victoryRules.mode == VictoryMode.exactMafiaExecutions && nextState.correctMafiaExecutionsCount >= nextState.rules.victoryRules.requiredCorrectExecutions) reason = 'إعدامات صحيحة للمافيا';
-      else if (winner == Team.independent) reason = 'إقصاء الجوكر بالتصويت';
-      else if (winner == Team.mafia) reason = 'استحالة فوز المواطنين';
-      else reason = 'القضاء التام على المافيا';
-      
-      nextState = nextState.copyWith(phase: Phase.winCheck, winner: winner, victoryReason: reason);
-    } else {
-      if (nextPhase == Phase.night) {
-        nextState =
-            nextState.copyWith(phase: Phase.night, round: state.round + 1);
-      } else {
-        nextState = nextState.copyWith(phase: nextPhase);
-      }
-    }
-    state = nextState;
-  }
-
-  void skipTriggeredAbility(Phase nextPhase) {
-    if (state.phase != Phase.triggeredAbility) return;
-    state = state.copyWith(
-      phase: nextPhase,
-      round: nextPhase == Phase.night ? state.round + 1 : state.round,
-    );
-  }
-
-  void advanceToNight() {
-    state = state.copyWith(phase: Phase.night, round: state.round + 1);
-  }
-
-  void resetGame() {
-    final cleanPlayers = state.players.map((p) => p.copyWith(
-      role: Role.goodCitizen,
-      isAlive: true,
-      isSilenced: false,
-      hasSniper: false,
-      isCitizenSheikhRevealed: false,
-    )).toList();
-    state = GameState(id: const Uuid().v4(), players: cleanPlayers, rules: state.rules);
+    resetGame();
+    ref.invalidate(gameRecoveryProvider);
   }
 }

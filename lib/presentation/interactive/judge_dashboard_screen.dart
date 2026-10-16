@@ -1,5 +1,7 @@
+import 'package:mafia_nightfall/application/interactive_prompts.dart';
+import 'package:mafia_nightfall/domain/engine/citizen_boy_engine.dart';
 import 'dart:async';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +18,6 @@ import 'package:mafia_nightfall/presentation/game_over/game_over_screen.dart';
 import 'package:mafia_nightfall/presentation/home/home_screen.dart';
 import 'package:mafia_nightfall/presentation/interactive/session_exit_confirmation.dart';
 import 'package:mafia_nightfall/presentation/night/cinematic_reveal_screen.dart';
-import 'package:mafia_nightfall/presentation/night/night_screen.dart';
 import 'package:mafia_nightfall/presentation/voting/voting_screen.dart';
 
 class JudgeDashboardScreen extends ConsumerStatefulWidget {
@@ -44,6 +45,9 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
   final Set<String> _pendingInvestigationResults = {};
   final Set<String> _publishedInvestigationResults = {};
 
+  late final Stream<List<InteractiveSeat>> _seatsStream;
+  late final Stream<List<ActionRequest>> _actionsStream;
+
   @override
   void initState() {
     super.initState();
@@ -61,51 +65,72 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
 
   void _watchForInvestigations() {
     final service = ref.read(interactiveServiceProvider);
-    _sessionSubscription = service.streamSession(widget.sessionId).listen(
-      (session) {
-        _liveSession = session;
-        _publishAvailableInvestigationResults();
-      },
-      onError: (_) {},
-    );
-    _seatsSubscription = service.streamSeats(widget.sessionId).listen(
-      (seats) {
-        _liveSeats = seats;
-        _publishAvailableInvestigationResults();
-      },
-      onError: (_) {},
-    );
-    _actionsSubscription =
-        service.streamActionRequests(widget.sessionId).listen(
-      (actions) {
-        _liveActions = actions;
-        _processInstantActions(actions);
-        _publishAvailableInvestigationResults();
-      },
-      onError: (_) {},
-    );
+    _seatsStream = service.streamSeats(widget.sessionId);
+    _actionsStream = service.streamActionRequests(widget.sessionId);
+    _sessionSubscription = service.streamSession(widget.sessionId).listen((
+      session,
+    ) {
+      if (mounted) setState(() => _liveSession = session);
+      _processInstantActions(_liveActions);
+      _publishAvailableInvestigationResults();
+    }, onError: (_) {});
+    _seatsSubscription = _seatsStream.listen((seats) {
+      _liveSeats = seats;
+      _processInstantActions(_liveActions);
+      _publishAvailableInvestigationResults();
+    }, onError: (_) {});
+    _actionsSubscription = _actionsStream.listen((actions) {
+      _liveActions = actions;
+      _processInstantActions(actions);
+      _publishAvailableInvestigationResults();
+    }, onError: (_) {});
   }
 
-  void _processInstantActions(List<ActionRequest> actions) {
-    if (!mounted || _liveSession == null) return;
-    final state = ref.read(gameOrchestratorProvider);
-    final service = ref.read(interactiveServiceProvider);
+  final Set<String> _pendingReveals = {};
 
+  Future<void> _processInstantActions(List<ActionRequest> actions) async {
+    final session = _liveSession;
+    if (!mounted || session == null || _isExiting) return;
+    final service = ref.read(interactiveServiceProvider);
     for (final action in actions) {
-      if (action.actionType == 'citizenSheikhReveal') {
+      final key = '${action.id}:${action.revision}';
+      if (action.actionType != 'citizenSheikhReveal' ||
+          action.revision != session.actionRevision ||
+          !_pendingReveals.add(key)) {
+        continue;
+      }
+      try {
+        final state = ref.read(gameOrchestratorProvider);
         final seat = _seatForUid(_liveSeats, action.uid);
-        if (seat != null) {
-          final player = state.getPlayerById(seat.id);
-          if (player != null &&
-              player.role == Role.citizensSheikh &&
-              !player.isCitizenSheikhRevealed) {
-            ref
-                .read(gameOrchestratorProvider.notifier)
-                .citizenSheikhReveal(seat.id);
-            _syncStateToClients();
-            service.clearActionRequest(widget.sessionId, action.id);
-          }
+        final player = seat == null ? null : state.getPlayerById(seat.id);
+        if (player == null ||
+            !player.isAlive ||
+            player.role != Role.citizensSheikh ||
+            !state.rules.abilityRules.citizenSheikhReveal ||
+            (state.phase != Phase.day && state.phase != Phase.voting) ||
+            action.targetId != player.id) {
+          continue;
         }
+        ref
+            .read(gameOrchestratorProvider.notifier)
+            .citizenSheikhReveal(player.id);
+        final published = await service.publishCitizenSheikhReveal(
+          sessionId: widget.sessionId,
+          seatId: player.id,
+          expectedRevision: action.revision,
+          playerName: player.name,
+        );
+        if (published) {}
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تعذر نشر الإفصاح. حاول تحديث الاتصال.'),
+            ),
+          );
+        }
+      } finally {
+        _pendingReveals.remove(key);
       }
     }
   }
@@ -127,10 +152,11 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
     final prompts = _nightPrompts(state);
     final service = ref.read(interactiveServiceProvider);
     for (final action in _liveActions) {
+      final actionKey = '${action.id}:${action.revision}';
       if (action.actionType != 'investigation' ||
           action.revision != session.actionRevision ||
-          _publishedInvestigationResults.contains(action.id) ||
-          !_pendingInvestigationResults.add(action.id)) {
+          _publishedInvestigationResults.contains(actionKey) ||
+          !_pendingInvestigationResults.add(actionKey)) {
         continue;
       }
 
@@ -140,8 +166,8 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
       final prompt = seat == null
           ? null
           : prompts[seat.id]
-              ?.where((item) => item.type == 'investigation')
-              .firstOrNull;
+                ?.where((item) => item.type == 'investigation')
+                .firstOrNull;
       if (actor == null ||
           actor.role != Role.citizensSheikh ||
           !actor.isAlive ||
@@ -150,7 +176,7 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           target.id == actor.id ||
           prompt == null ||
           !prompt.availableTargets.contains(target.id)) {
-        _pendingInvestigationResults.remove(action.id);
+        _pendingInvestigationResults.remove(actionKey);
         continue;
       }
 
@@ -164,7 +190,7 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           expectedRound: state.round,
           result: result,
         );
-        if (published) _publishedInvestigationResults.add(action.id);
+        if (published) _publishedInvestigationResults.add(actionKey);
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -172,16 +198,19 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           );
         }
       } finally {
-        _pendingInvestigationResults.remove(action.id);
+        _pendingInvestigationResults.remove(actionKey);
       }
     }
   }
 
   Future<void> _restorePublishedActionState() async {
     try {
-      final session = await ref
-          .read(interactiveServiceProvider)
-          .getSession(widget.sessionId);
+      final service = ref.read(interactiveServiceProvider);
+      final restored = await service.restoreCheckpoint(widget.sessionId);
+      if (restored != null) {
+        ref.read(gameOrchestratorProvider.notifier).restoreCheckpoint(restored);
+      }
+      final session = await service.getSession(widget.sessionId);
       final state = ref.read(gameOrchestratorProvider);
       if (mounted &&
           session?.actionsPhase == Phase.night &&
@@ -200,7 +229,9 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
     Map<String, String>? privateResults,
     bool clearPrivateResults = false,
   }) {
-    return ref.read(interactiveServiceProvider).syncGameState(
+    return ref
+        .read(interactiveServiceProvider)
+        .syncGameState(
           widget.sessionId,
           ref.read(gameOrchestratorProvider),
           null,
@@ -214,27 +245,43 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
   Future<void> _runHostAction(Future<void> Function() action) async {
     if (_isProcessing || _isExiting) return;
     setState(() => _isProcessing = true);
+    final before = ref.read(gameOrchestratorProvider);
     try {
       await action();
     } catch (error) {
+      ref.read(gameOrchestratorProvider.notifier).restoreCheckpoint(before);
+      try {
+        final restored = await ref
+            .read(interactiveServiceProvider)
+            .reconcileHostState(widget.sessionId);
+        if (restored != null) {
+          ref
+              .read(gameOrchestratorProvider.notifier)
+              .restoreCheckpoint(restored);
+        }
+        if (mounted && restored?.phase == Phase.winCheck) _openGameOver();
+      } catch (_) {
+        /* Keep the last local checkpoint while disconnected. */
+      }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تحديث اللعبة: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('تعذر تحديث اللعبة: $error')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  Future<void> _skipIntroductionNight() => _runHostAction(() async {
-        final service = ref.read(interactiveServiceProvider);
-        await service.clearActionRequests(widget.sessionId);
-        ref.read(gameOrchestratorProvider.notifier).skipIntroductionNight();
-        await _syncStateToClients(clearPrivateResults: true);
-        if (!mounted) return;
-        await _openDayDiscussion();
-      });
+  Future<void> _skipIntroductionNight() async {
+    await _runHostAction(() async {
+      ref.read(gameOrchestratorProvider.notifier).skipIntroductionNight();
+      await _syncStateToClients(clearPrivateResults: true);
+    });
+    if (mounted && ref.read(gameOrchestratorProvider).phase == Phase.day) {
+      await _openDayDiscussion();
+    }
+  }
 
   Future<void> _openDayDiscussion() async {
     if (_isProcessing || _isExiting) return;
@@ -251,31 +298,17 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
 
   Future<void> _startVoting() async {
     if (_isProcessing || _isExiting) return;
-    setState(() => _isProcessing = true);
-    try {
-      final service = ref.read(interactiveServiceProvider);
-      await service.clearActionRequests(widget.sessionId);
+    await _runHostAction(() async {
       ref.read(gameOrchestratorProvider.notifier).startVoting();
-      final state = ref.read(gameOrchestratorProvider);
-      await _syncStateToClients(actionPrompts: _votingPrompts(state));
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VotingScreen(
-            interactiveSessionId: widget.sessionId,
-            onInteractiveExit: _confirmEndSession,
-          ),
-        ),
+      await _syncStateToClients(
+        actionPrompts: _votingPrompts(ref.read(gameOrchestratorProvider)),
       );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر بدء التصويت: $error')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
+    });
+    if (!mounted || ref.read(gameOrchestratorProvider).phase != Phase.voting) {
+      return;
     }
+    // The write guard covers publication, not the lifetime of the court route.
+    await _resumeVotingCourt();
   }
 
   Future<void> _resumeVotingCourt() async {
@@ -290,153 +323,16 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
     );
   }
 
-  Map<String, List<PlayerActionPrompt>> _votingPrompts(GameState state) {
-    final prompts = <String, List<PlayerActionPrompt>>{};
-    final aliveIds = state.alivePlayers.map((player) => player.id).toList();
-    for (final player in state.alivePlayers) {
-      final targets = aliveIds.where((id) => id != player.id).toList();
-      if (targets.isNotEmpty) {
-        prompts[player.id] = [
-          PlayerActionPrompt(type: 'vote', availableTargets: targets),
-        ];
-      }
-    }
-    return prompts;
-  }
-
-  Map<String, List<PlayerActionPrompt>> _nightPrompts(GameState state) {
-    final prompts = <String, List<PlayerActionPrompt>>{};
-    final alive = state.alivePlayers;
-    final aliveIds = alive.map((player) => player.id).toList();
-
-    final sheikh = alive.where((p) => p.role == Role.mafiaSheikh).firstOrNull;
-    final girl = alive.where((p) => p.role == Role.mafiaGirl).firstOrNull;
-    final normal = alive.where((p) => p.role == Role.normalMafia).firstOrNull;
-    final killer = sheikh ?? girl ?? normal;
-    if (killer != null) {
-      final targets = alive
-          .where((player) => player.role.team != Team.mafia)
-          .map((player) => player.id)
-          .toList();
-      if (targets.isNotEmpty) {
-        _addPrompt(
-            prompts,
-            killer.id,
-            PlayerActionPrompt(
-                type: 'assassination', availableTargets: targets));
-      }
-    }
-
-    if (girl != null) {
-      final previouslySilenced = state.eventHistory
-          .where((event) =>
-              event.type == EventType.silence && event.actorId == girl.id)
-          .map((event) => event.targetId)
-          .whereType<String>()
-          .toSet();
-      final targets =
-          aliveIds.where((id) => !previouslySilenced.contains(id)).toList();
-      if (targets.isNotEmpty) {
-        _addPrompt(prompts, girl.id,
-            PlayerActionPrompt(type: 'silence', availableTargets: targets));
-      }
-    }
-
-    final citizenSheikh =
-        alive.where((p) => p.role == Role.citizensSheikh).firstOrNull;
-    if (citizenSheikh != null) {
-      final targets = aliveIds.where((id) => id != citizenSheikh.id).toList();
-      if (targets.isNotEmpty) {
-        _addPrompt(
-          prompts,
-          citizenSheikh.id,
-          PlayerActionPrompt(type: 'investigation', availableTargets: targets),
-        );
-      }
-    }
-
-    final citizenGirl =
-        alive.where((p) => p.role == Role.citizensGirl).firstOrNull;
-    if (citizenGirl != null) {
-      final previouslyProtected = state.eventHistory
-          .where((event) =>
-              event.type == EventType.protection &&
-              event.actorId == citizenGirl.id)
-          .map((event) => event.targetId)
-          .whereType<String>()
-          .toSet();
-      final targets =
-          aliveIds.where((id) => !previouslyProtected.contains(id)).toList();
-      if (targets.isNotEmpty) {
-        _addPrompt(prompts, citizenGirl.id,
-            PlayerActionPrompt(type: 'protection', availableTargets: targets));
-      }
-    }
-
-    final snipers = alive.where((p) => p.hasSniper).toList();
-    for (var sniper in snipers) {
-      final hasShot = state.eventHistory.any((e) => e.type == EventType.sniperKill && e.actorId == sniper.id);
-      if (!hasShot) {
-        final targets = aliveIds.toList(); // Includes himself so he can skip by selecting himself
-        _addPrompt(prompts, sniper.id, PlayerActionPrompt(type: 'sniperKill', availableTargets: targets));
-      }
-    }
-
-    for (var id in aliveIds) {
-      if (!prompts.containsKey(id) || prompts[id]!.isEmpty) {
-        _addPrompt(prompts, id, PlayerActionPrompt(type: 'sleep', availableTargets: [id]));
-      }
-    }
-
-    return prompts;
-  }
-
-  void _addPrompt(
-    Map<String, List<PlayerActionPrompt>> prompts,
-    String playerId,
-    PlayerActionPrompt prompt,
-  ) {
-    (prompts[playerId] ??= <PlayerActionPrompt>[]).add(prompt);
-  }
-
-  Map<String, List<PlayerActionPrompt>> _retaliationPrompts(GameState state) {
-    final actor = _citizenBoyActor(state);
-    if (actor == null || state.alivePlayers.isEmpty) return {};
-    return {
-      actor.id: [
-        PlayerActionPrompt(
-          type: 'retaliation',
-          availableTargets:
-              state.alivePlayers.map((player) => player.id).toList(),
-        ),
-      ],
-    };
-  }
-
-  Player? _citizenBoyActor(GameState state) {
-    if (state.phase != Phase.triggeredAbility) return null;
-    final lastSummary = state.eventHistory
-        .where((event) => event.type == EventType.nightResolutionSummary)
-        .lastOrNull;
-    final lastElimination = state.eventHistory
-        .where((event) => event.type == EventType.elimination)
-        .lastOrNull;
-    if (lastSummary != null &&
-        (lastElimination == null ||
-            lastSummary.timestamp.isAfter(lastElimination.timestamp))) {
-      final deadIds =
-          (lastSummary.metadata['assassinatedIds'] as List? ?? const [])
-              .cast<String>()
-              .toSet();
-      return state.players
-          .where((player) =>
-              deadIds.contains(player.id) && player.role == Role.citizensBoy)
-          .firstOrNull;
-    }
-    if (lastElimination == null) return null;
-    final player = state.getPlayerById(lastElimination.targetId ?? '');
-    return player?.role == Role.citizensBoy ? player : null;
-  }
+  Map<String, List<PlayerActionPrompt>> _votingPrompts(GameState state) =>
+      InteractivePrompts.voting(state);
+  Map<String, List<PlayerActionPrompt>> _nightPrompts(GameState state) =>
+      InteractivePrompts.night(state);
+  Map<String, List<PlayerActionPrompt>> _retaliationPrompts(GameState state) =>
+      InteractivePrompts.retaliation(state);
+  Player? _citizenBoyActor(GameState state) =>
+      state.phase == Phase.triggeredAbility
+      ? CitizenBoyEngine.pendingActor(state)
+      : null;
 
   Phase _nextPhaseAfterRetaliation(GameState state) {
     final latestResolution = state.eventHistory
@@ -454,161 +350,171 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
   }
 
   Future<void> _startNightActions() => _runHostAction(() async {
-        final service = ref.read(interactiveServiceProvider);
-        final orchestrator = ref.read(gameOrchestratorProvider.notifier);
-        final before = ref.read(gameOrchestratorProvider);
-        if (before.phase == Phase.elimination) {
-          await service.clearActionRequests(widget.sessionId);
-          orchestrator.advanceToNight();
-        } else if (before.phase != Phase.night) {
-          return;
-        } else {
-          final session = await service.getSession(widget.sessionId);
-          if (session?.actionsPhase == Phase.night &&
-              session?.actionsRound == before.round) {
-            _nightActionRounds.add(before.round);
-            return;
-          }
-          await service.clearActionRequests(widget.sessionId);
-        }
-        final state = ref.read(gameOrchestratorProvider);
-        _nightActionRounds.add(state.round);
-        await _syncStateToClients(
-          actionPrompts: _nightPrompts(state),
-          clearPrivateResults: true,
-        );
-      });
+    final service = ref.read(interactiveServiceProvider);
+    final orchestrator = ref.read(gameOrchestratorProvider.notifier);
+    final before = ref.read(gameOrchestratorProvider);
+    if (before.phase == Phase.elimination) {
+      orchestrator.advanceToNight();
+    } else if (before.phase != Phase.night) {
+      return;
+    } else {
+      final session = await service.getSession(widget.sessionId);
+      if (session?.actionsPhase == Phase.night &&
+          session?.actionsRound == before.round) {
+        _nightActionRounds.add(before.round);
+        return;
+      }
+    }
+    final state = ref.read(gameOrchestratorProvider);
+    _nightActionRounds.add(state.round);
+    await _syncStateToClients(
+      actionPrompts: _nightPrompts(state),
+      clearPrivateResults: true,
+    );
+  });
 
   Future<void> _resolveNight(
     List<InteractiveSeat> seats,
     List<ActionRequest> actions,
-  ) =>
-      _runHostAction(() async {
-        final service = ref.read(interactiveServiceProvider);
-        final orchestrator = ref.read(gameOrchestratorProvider.notifier);
-        final stateBefore = ref.read(gameOrchestratorProvider);
-        final expected = _nightPrompts(stateBefore);
-        final used = <String>{};
-        final privateResults = <String, String>{};
+  ) => _runHostAction(() async {
+    final service = ref.read(interactiveServiceProvider);
+    final orchestrator = ref.read(gameOrchestratorProvider.notifier);
+    final stateBefore = ref.read(gameOrchestratorProvider);
+    final expected = _nightPrompts(stateBefore);
+    final used = <String>{};
+    final privateResults = <String, String>{};
 
-        for (final action in actions) {
-          final seat = _seatForUid(seats, action.uid);
-          if (seat == null || !seat.isAlive) continue;
-          final prompt = expected[seat.id]
-              ?.where((item) => item.type == action.actionType)
-              .firstOrNull;
-          if (prompt == null ||
-              !prompt.availableTargets.contains(action.targetId) ||
-              !used.add('${seat.id}:${action.actionType}')) {
-            continue;
-          }
+    final revision = _liveSession?.actionRevision;
+    if (revision == null) throw StateError('تعذر تحديد نافذة الحركات.');
+    final frozen = await service.freezeActions(widget.sessionId, revision);
+    for (final action in frozen) {
+      final seat = _seatForUid(seats, action.uid);
+      if (seat == null || !seat.isAlive) continue;
+      final prompt = expected[seat.id]
+          ?.where((item) => item.type == action.actionType)
+          .firstOrNull;
+      if (prompt == null ||
+          !prompt.availableTargets.contains(action.targetId) ||
+          !used.add('${seat.id}:${action.actionType}')) {
+        continue;
+      }
 
-          final type = switch (action.actionType) {
-            'assassination' => EventType.assassination,
-            'protection' => EventType.protection,
-            'investigation' => EventType.investigation,
-            'silence' => EventType.silence,
-            'sniperKill' => EventType.sniperKill,
-            'sleep' => null,
-            _ => null,
-          };
-          if (type == null) continue;
-          
-          if (type == EventType.sniperKill && action.targetId == seat.id) {
-            // Sniper chose himself to skip. Do not record the shot so he can use it later.
-            continue; 
-          }
-          
-          orchestrator.submitNightAction(
-            actorId: seat.id,
-            targetId: action.targetId,
-            type: type,
-          );
-          if (action.actionType == 'investigation') {
-            final target = stateBefore.getPlayerById(action.targetId);
-            if (target != null) {
-              privateResults[seat.id] =
-                  'اللاعب ${target.name} ${target.role.team == Team.mafia ? 'من المافيا!' : 'من المواطنين'}';
-            }
-          }
+      final type = switch (action.actionType) {
+        'assassination' => EventType.assassination,
+        'protection' => EventType.protection,
+        'investigation' => EventType.investigation,
+        'silence' => EventType.silence,
+        'sniperKill' => EventType.sniperKill,
+        'sleep' => null,
+        _ => null,
+      };
+      if (type == null) continue;
+
+      if (type == EventType.sniperKill && action.targetId == seat.id) {
+        // Sniper chose himself to skip. Do not record the shot so he can use it later.
+        continue;
+      }
+
+      orchestrator.submitNightAction(
+        actorId: seat.id,
+        targetId: action.targetId,
+        type: type,
+      );
+      if (action.actionType == 'investigation') {
+        final target = stateBefore.getPlayerById(action.targetId);
+        if (target != null) {
+          privateResults[seat.id] =
+              'اللاعب ${target.name} ${target.role.team == Team.mafia ? 'من المافيا!' : 'من المواطنين'}';
         }
+      }
+    }
 
-        await service.clearActionRequests(widget.sessionId);
-        orchestrator.resolveNight();
-        final state = ref.read(gameOrchestratorProvider);
-        final prompts = state.phase == Phase.triggeredAbility
-            ? _retaliationPrompts(state)
-            : null;
-        await _syncStateToClients(
-          actionPrompts: prompts,
-          privateResults: privateResults,
-        );
-        if (!mounted) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CinematicRevealScreen(
-              interactiveSessionId: widget.sessionId,
-              onInteractiveExit: _confirmEndSession,
-            ),
-          ),
-        );
-        if (mounted &&
-            ref.read(gameOrchestratorProvider).phase == Phase.winCheck) {
-          _openGameOver();
-        }
-      });
+    orchestrator.resolveNight();
+    final state = ref.read(gameOrchestratorProvider);
+    final prompts = state.phase == Phase.triggeredAbility
+        ? _retaliationPrompts(state)
+        : null;
+    await _syncStateToClients(
+      actionPrompts: prompts,
+      privateResults: privateResults,
+    );
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CinematicRevealScreen(
+          interactiveSessionId: widget.sessionId,
+          onInteractiveExit: _confirmEndSession,
+        ),
+      ),
+    );
+    if (mounted && ref.read(gameOrchestratorProvider).phase == Phase.winCheck) {
+      _openGameOver();
+    }
+  });
 
   Future<void> _resolveRetaliation(
     List<InteractiveSeat> seats,
     List<ActionRequest> actions,
-  ) =>
-      _runHostAction(() async {
-        final state = ref.read(gameOrchestratorProvider);
-        final actor = _citizenBoyActor(state);
-        final nextPhase = _nextPhaseAfterRetaliation(state);
-        if (actor == null) return;
+  ) => _runHostAction(() async {
+    final state = ref.read(gameOrchestratorProvider);
+    final actor = _citizenBoyActor(state);
+    final nextPhase = _nextPhaseAfterRetaliation(state);
+    if (actor == null) return;
 
-        final valid = actions.where((action) {
-          final seat = _seatForUid(seats, action.uid);
-          return action.actionType == 'retaliation' &&
-              seat?.id == actor.id &&
-              state.alivePlayers.any((p) => p.id == action.targetId);
-        }).firstOrNull;
-        if (valid == null) return;
-        final victim = state.getPlayerById(valid.targetId);
-        if (victim == null) return;
+    final service = ref.read(interactiveServiceProvider);
+    final revision = _liveSession?.actionRevision;
+    if (revision == null) return;
+    if (!actions.any(
+      (a) =>
+          a.revision == revision &&
+          a.actionType == 'retaliation' &&
+          a.seatId == actor.id,
+    )) {
+      return;
+    }
+    final frozen = await service.freezeActions(widget.sessionId, revision);
+    final valid = frozen.where((action) {
+      final seat = _seatForUid(seats, action.uid);
+      return action.revision == _liveSession?.actionRevision &&
+          action.actionType == 'retaliation' &&
+          seat?.id == actor.id &&
+          state.alivePlayers.any((p) => p.id == action.targetId);
+    }).firstOrNull;
+    if (valid == null) return;
+    final victim = state.getPlayerById(valid.targetId);
+    if (victim == null) return;
 
-        final service = ref.read(interactiveServiceProvider);
-        await service.clearActionRequests(widget.sessionId);
-        ref.read(gameOrchestratorProvider.notifier).citizenBoyRetaliation(
-              actorId: actor.id,
-              targetId: valid.targetId,
-              nextPhase: nextPhase,
-            );
-        final after = ref.read(gameOrchestratorProvider);
-        if (after.phase == Phase.night) {
-          _nightActionRounds.add(after.round);
-          await _syncStateToClients(
-            actionPrompts: _nightPrompts(after),
-            clearPrivateResults: true,
-          );
-        } else {
-          await _syncStateToClients();
-        }
+    ref
+        .read(gameOrchestratorProvider.notifier)
+        .citizenBoyRetaliation(
+          actorId: actor.id,
+          targetId: valid.targetId,
+          nextPhase: nextPhase,
+        );
+    final after = ref.read(gameOrchestratorProvider);
+    if (after.phase == Phase.night) {
+      _nightActionRounds.add(after.round);
+      await _syncStateToClients(
+        actionPrompts: _nightPrompts(after),
+        clearPrivateResults: true,
+      );
+    } else {
+      await _syncStateToClients();
+    }
 
-        if (mounted) {
-          await showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogContext) => DramaticRevealDialog(
-              quote: 'انتقام المواطن الشجاع كشف ضحيته... والحقيقة ستظهر الآن.',
-              eliminated: victim,
-              onContinue: () => Navigator.of(dialogContext).pop(),
-            ),
-          );
-        }
-        if (mounted && after.phase == Phase.winCheck) _openGameOver();
-      });
+    if (mounted) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => DramaticRevealDialog(
+          quote: 'انتقام المواطن الشجاع كشف ضحيته... والحقيقة ستظهر الآن.',
+          eliminated: victim,
+          onContinue: () => Navigator.of(dialogContext).pop(),
+        ),
+      );
+    }
+    if (mounted && after.phase == Phase.winCheck) _openGameOver();
+  });
 
   Future<void> _confirmEndSession() async {
     if (_isExiting || _isProcessing) return;
@@ -622,7 +528,8 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           .endSession(widget.sessionId)
           .timeout(const Duration(seconds: 15));
       if (!mounted) return;
-      ref.read(gameOrchestratorProvider.notifier).resetGame();
+      await ref.read(gameOrchestratorProvider.notifier).endGame();
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
         (_) => false,
@@ -654,28 +561,28 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
   }
 
   String _phaseLabel(Phase phase) => switch (phase) {
-        Phase.roleReveal => 'كشف الأدوار',
-        Phase.day => 'النهار',
-        Phase.voting => 'التصويت',
-        Phase.elimination => 'الإقصاء',
-        Phase.night => 'الليل',
-        Phase.triggeredAbility => 'قدرة الانتقام',
-        Phase.winCheck => 'انتهت اللعبة',
-        _ => phase.name,
-      };
+    Phase.roleReveal => 'كشف الأدوار',
+    Phase.day => 'النهار',
+    Phase.voting => 'التصويت',
+    Phase.elimination => 'الإقصاء',
+    Phase.night => 'الليل',
+    Phase.triggeredAbility => 'قدرة الانتقام',
+    Phase.winCheck => 'انتهت اللعبة',
+    _ => phase.name,
+  };
 
   Widget _exitButton() => IconButton(
-        tooltip: 'إنهاء اللعبة وإخراج اللاعبين',
-        onPressed: _isExiting || _isProcessing ? null : _confirmEndSession,
-        icon: const Icon(Icons.exit_to_app, color: Colors.redAccent),
-      );
+    tooltip: 'إنهاء اللعبة وإخراج اللاعبين',
+    onPressed: _isExiting || _isProcessing ? null : _confirmEndSession,
+    icon: const Icon(Icons.exit_to_app, color: Colors.redAccent),
+  );
 
   @override
   Widget build(BuildContext context) {
     ref.watch(selectedThemeProvider);
     final state = ref.watch(gameOrchestratorProvider);
-    final service = ref.watch(interactiveServiceProvider);
-    final needNightPrompts = state.phase == Phase.night &&
+    final needNightPrompts =
+        state.phase == Phase.night &&
         state.round > 1 &&
         !_nightActionRounds.contains(state.round);
 
@@ -694,7 +601,7 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
         backgroundColor: Colors.transparent,
       ),
       body: StreamBuilder<List<InteractiveSeat>>(
-        stream: service.streamSeats(widget.sessionId),
+        stream: _seatsStream,
         builder: (context, seatsSnap) {
           if (seatsSnap.hasError) {
             return _error('تعذر تحميل المقاعد: ${seatsSnap.error}');
@@ -707,29 +614,39 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           final seats = seatsSnap.data!;
 
           return StreamBuilder<List<ActionRequest>>(
-            stream: service.streamActionRequests(widget.sessionId),
+            stream: _actionsStream,
             builder: (context, actionsSnap) {
               if (actionsSnap.hasError) {
                 return _error(
-                    'تعذر تحميل حركات اللاعبين: ${actionsSnap.error}');
+                  'تعذر تحميل حركات اللاعبين: ${actionsSnap.error}',
+                );
               }
-              final actions = actionsSnap.data ?? const <ActionRequest>[];
+              final actions = InteractivePrompts.currentActions(
+                actionsSnap.data ?? const <ActionRequest>[],
+                _liveSession?.actionRevision,
+              );
               final submitted = <String>{};
               for (final action in actions) {
                 final seat = _seatForUid(seats, action.uid);
-                if (seat != null)
+                if (seat != null) {
                   submitted.add('${seat.id}:${action.actionType}');
+                }
               }
               final retaliationActor = _citizenBoyActor(state);
-              final hasRetaliation = retaliationActor != null &&
+              final hasRetaliation =
+                  retaliationActor != null &&
                   submitted.contains('${retaliationActor.id}:retaliation');
               final nightPrompts = _nightPrompts(state);
               final expectedNightActions = nightPrompts.entries
-                  .expand((entry) => entry.value
-                      .map((prompt) => '${entry.key}:${prompt.type}'))
+                  .expand(
+                    (entry) => entry.value.map(
+                      (prompt) => '${entry.key}:${prompt.type}',
+                    ),
+                  )
                   .toList();
-              final nightReady = expectedNightActions
-                  .every((actionKey) => submitted.contains(actionKey));
+              final nightReady = expectedNightActions.every(
+                (actionKey) => submitted.contains(actionKey),
+              );
 
               return Padding(
                 padding: const EdgeInsets.all(16),
@@ -753,17 +670,21 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
                           final assigned = state.phase == Phase.night
                               ? nightPrompts[player.id] ?? const []
                               : state.phase == Phase.triggeredAbility &&
-                                      player.id == retaliationActor?.id
-                                  ? const [
-                                      PlayerActionPrompt(
-                                        type: 'retaliation',
-                                        availableTargets: [],
-                                      ),
-                                    ]
-                                  : const <PlayerActionPrompt>[];
-                          final allSubmitted = assigned.isNotEmpty &&
-                              assigned.every((prompt) => submitted
-                                  .contains('${player.id}:${prompt.type}'));
+                                    player.id == retaliationActor?.id
+                              ? const [
+                                  PlayerActionPrompt(
+                                    type: 'retaliation',
+                                    availableTargets: [],
+                                  ),
+                                ]
+                              : const <PlayerActionPrompt>[];
+                          final allSubmitted =
+                              assigned.isNotEmpty &&
+                              assigned.every(
+                                (prompt) => submitted.contains(
+                                  '${player.id}:${prompt.type}',
+                                ),
+                              );
                           return ListTile(
                             title: Text(
                               player.name,
@@ -784,8 +705,10 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
                               ),
                             ),
                             trailing: assigned.isEmpty
-                                ? const Icon(Icons.nightlight_round,
-                                    color: Colors.blueGrey)
+                                ? const Icon(
+                                    Icons.nightlight_round,
+                                    color: Colors.blueGrey,
+                                  )
                                 : Icon(
                                     allSubmitted
                                         ? Icons.check_circle
@@ -871,14 +794,14 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black,
+                  color: Colors.white,
                 ),
               )
             : Text(
                 label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 17,
                   fontFamily: 'Cairo',
                   fontWeight: FontWeight.bold,
@@ -889,14 +812,13 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
   }
 
   Widget _error(String message) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style:
-                const TextStyle(color: Colors.redAccent, fontFamily: 'Cairo'),
-          ),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.redAccent, fontFamily: 'Cairo'),
+      ),
+    ),
+  );
 }

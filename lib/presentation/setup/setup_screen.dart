@@ -1,5 +1,6 @@
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+
 import 'package:mafia_nightfall/presentation/setup/role_review_screen.dart';
 import 'package:mafia_nightfall/presentation/setup/rule_settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,22 +18,23 @@ class SetupScreen extends ConsumerStatefulWidget {
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProviderStateMixin {
+class _SetupScreenState extends ConsumerState<SetupScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _nameController = TextEditingController();
   int _currentTab = 0; // 0 = players, 1 = roles
-  
+
   List<String> _savedPlayers = [];
   final PlayerProfilesRepository _profilesRepo = PlayerProfilesRepository();
 
   final Map<Role, int> _roleConfig = {
-    Role.mafiaSheikh:    0,
-    Role.mafiaGirl:      0,
-    Role.normalMafia:    0,
+    Role.mafiaSheikh: 0,
+    Role.mafiaGirl: 0,
+    Role.normalMafia: 0,
     Role.citizensSheikh: 0,
-    Role.citizensGirl:   0,
-    Role.citizensBoy:    0,
-    Role.goodCitizen:    0,
-    Role.joker:          0,
+    Role.citizensGirl: 0,
+    Role.citizensBoy: 0,
+    Role.goodCitizen: 0,
+    Role.joker: 0,
   };
 
   int get _totalRoles => _roleConfig.values.fold(0, (a, b) => a + b);
@@ -42,14 +44,27 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     super.initState();
     _loadProfiles();
   }
-  
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadProfiles() async {
-    final profiles = await _profilesRepo.loadSavedPlayers();
+    List<String> profiles;
+    try {
+      profiles = await _profilesRepo.loadSavedPlayers();
+    } catch (_) {
+      if (mounted) _showError('تعذر تحميل الأسماء المحفوظة.');
+      return;
+    }
+    if (!mounted) return;
     setState(() {
       _savedPlayers = profiles;
     });
   }
-  
+
   void _addPlayer(String name) {
     final players = ref.read(gameOrchestratorProvider).players;
     if (players.any((p) => p.name == name.trim())) {
@@ -64,7 +79,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     // Save to persistent storage immediately
     if (!_savedPlayers.contains(name.trim())) {
       setState(() => _savedPlayers.add(name.trim()));
-      _profilesRepo.savePlayers(_savedPlayers);
+      _profilesRepo.savePlayers(List.of(_savedPlayers)).catchError((Object _) {
+        if (mounted) _showError('تعذر حفظ الأسماء. أعد المحاولة.');
+      });
     }
   }
 
@@ -72,23 +89,39 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.visual.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('حذف اللاعب المحفوظ؟', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
-        content: Text('هل تريد حذف "$name" من القائمة المحفوظة؟', style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo')),
+        title: const Text(
+          'حذف اللاعب المحفوظ؟',
+          style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+        ),
+        content: Text(
+          'هل تريد حذف "$name" من القائمة المحفوظة؟',
+          style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء', style: TextStyle(color: Colors.white54, fontFamily: 'Cairo')),
+            child: const Text(
+              'إلغاء',
+              style: TextStyle(color: Colors.white54, fontFamily: 'Cairo'),
+            ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
             onPressed: () {
               Navigator.pop(ctx);
               setState(() => _savedPlayers.remove(name));
-              _profilesRepo.savePlayers(_savedPlayers);
+              _profilesRepo.savePlayers(List.of(_savedPlayers)).catchError((
+                Object _,
+              ) {
+                if (mounted) _showError('تعذر حفظ الأسماء. أعد المحاولة.');
+              });
             },
-            child: const Text('حذف', style: TextStyle(color: Colors.white, fontFamily: 'Cairo')),
+            child: const Text(
+              'حذف',
+              style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+            ),
           ),
         ],
       ),
@@ -107,13 +140,22 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
       return;
     }
     if (_totalRoles != players.length) {
-      _showError('عدد الأدوار ($_totalRoles) لا يساوي عدد اللاعبين (${players.length})');
+      _showError(
+        'عدد الأدوار ($_totalRoles) لا يساوي عدد اللاعبين (${players.length})',
+      );
       return;
     }
-    
-    final mafiaCount = _roleConfig[Role.mafiaSheikh]! + _roleConfig[Role.mafiaGirl]! + _roleConfig[Role.normalMafia]!;
-    final citizenCount = _roleConfig[Role.citizensSheikh]! + _roleConfig[Role.citizensGirl]! + _roleConfig[Role.citizensBoy]! + _roleConfig[Role.goodCitizen]!;
-    
+
+    final mafiaCount =
+        _roleConfig[Role.mafiaSheikh]! +
+        _roleConfig[Role.mafiaGirl]! +
+        _roleConfig[Role.normalMafia]!;
+    final citizenCount =
+        _roleConfig[Role.citizensSheikh]! +
+        _roleConfig[Role.citizensGirl]! +
+        _roleConfig[Role.citizensBoy]! +
+        _roleConfig[Role.goodCitizen]!;
+
     if (mafiaCount == 0) {
       _showError('يجب إضافة مافيا واحدة على الأقل لبدء اللعبة!');
       return;
@@ -126,14 +168,18 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     // Shuffle the player order for fully random reveal sequence
     ref.read(gameOrchestratorProvider.notifier).shufflePlayers();
 
-    final error = ref.read(gameOrchestratorProvider.notifier).assignRoles(_roleConfig);
+    final error = ref
+        .read(gameOrchestratorProvider.notifier)
+        .assignRoles(_roleConfig);
     if (error != null) {
       _showError(error);
       return;
     }
-    
+
     if (isInteractive) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JudgeLobbyScreen()));
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const JudgeLobbyScreen()));
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const RoleReviewScreen()),
@@ -150,9 +196,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
       _roleConfig[r] = 0;
     }
 
-    int mafiaTotal = (total / 3).floor(); 
+    int mafiaTotal = (total / 3).floor();
     if (mafiaTotal < 1 && total > 0) mafiaTotal = 1;
-    
+
     int citizensTotal = total - mafiaTotal;
 
     if (mafiaTotal >= 1) _roleConfig[Role.mafiaSheikh] = 1;
@@ -162,7 +208,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     if (citizensTotal >= 1) _roleConfig[Role.citizensSheikh] = 1;
     if (citizensTotal >= 2) _roleConfig[Role.citizensGirl] = 1;
     if (citizensTotal >= 3) _roleConfig[Role.citizensBoy] = 1;
-    
+
     if (citizensTotal > 3) {
       _roleConfig[Role.goodCitizen] = citizensTotal - 3;
     }
@@ -174,7 +220,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg, style: const TextStyle(fontFamily: 'Cairo')),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: context.visual.accent,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -182,10 +228,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(selectedThemeProvider);
     final players = ref.watch(gameOrchestratorProvider).players;
 
     return Scaffold(
-      
       body: Stack(
         children: [
           // Elegant Background
@@ -193,27 +239,37 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
             child: Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  center: Alignment(0, -0.8),
+                  center: const Alignment(0, -0.8),
                   radius: 1.5,
-                  colors: [AppTheme.surfaceHigh, AppTheme.surface, AppTheme.background],
+                  colors: [
+                    context.visual.surfaceHigh,
+                    context.visual.surface,
+                    context.visual.background,
+                  ],
                 ),
               ),
             ),
           ),
-          
+
           SafeArea(
             child: Column(
               children: [
                 // Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 12.0,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.orangeAccent),
+                        icon: Icon(
+                          Icons.arrow_back_ios_new,
+                          color: context.visual.accent,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'تجهيز المعركة',
                           style: TextStyle(
@@ -221,7 +277,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
                             fontFamily: 'Cairo',
-                            shadows: [Shadow(color: Colors.orangeAccent, blurRadius: 10)],
+                            shadows: [
+                              Shadow(
+                                color: context.visual.accent,
+                                blurRadius: 10,
+                              ),
+                            ],
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -230,15 +291,20 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                     ],
                   ),
                 ),
-                
+
                 // Tabs
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -258,47 +324,65 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                     ),
                   ),
                 ),
-                
+
                 // Content
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    child: _currentTab == 0 
-                      ? _PlayersTab(
-                          players: players,
-                          savedPlayers: _savedPlayers,
-                          nameController: _nameController,
-                          onAdd: _addPlayer,
-                          onRemove: _removePlayer,
-                          onDeleteSaved: _confirmDeleteSavedPlayer,
-                        )
-                      : _RolesTab(
-                          roleConfig: _roleConfig,
-                          playerCount: players.length,
-                          totalRoles: _totalRoles,
-                          onChanged: (r, c) => setState(() => _roleConfig[r] = c),
-                          onAutoDistribute: _autoDistributeRoles,
-                        ),
+                    child: _currentTab == 0
+                        ? _PlayersTab(
+                            players: players,
+                            savedPlayers: _savedPlayers,
+                            nameController: _nameController,
+                            onAdd: _addPlayer,
+                            onRemove: _removePlayer,
+                            onDeleteSaved: _confirmDeleteSavedPlayer,
+                          )
+                        : _RolesTab(
+                            roleConfig: _roleConfig,
+                            playerCount: players.length,
+                            totalRoles: _totalRoles,
+                            onChanged: (r, c) =>
+                                setState(() => _roleConfig[r] = c),
+                            onAutoDistribute: _autoDistributeRoles,
+                          ),
                   ),
                 ),
-                
+
                 // Rule Settings Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   child: OutlinedButton.icon(
-                    icon: const Icon(Icons.settings, color: Colors.orangeAccent),
-                    label: const Text('قوانين وإعدادات اللعبة', style: TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 16)),
+                    icon: Icon(Icons.settings, color: context.visual.accent),
+                    label: const Text(
+                      'قوانين وإعدادات اللعبة',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                        fontSize: 16,
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.orangeAccent, width: 2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      side: BorderSide(color: context.visual.accent, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RuleSettingsScreen()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RuleSettingsScreen(),
+                        ),
+                      );
                     },
                   ),
                 ),
-                
+
                 // Start Button
                 Padding(
                   padding: const EdgeInsets.all(24),
@@ -308,28 +392,62 @@ class _SetupScreenState extends ConsumerState<SetupScreen> with SingleTickerProv
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: (players.length >= 4 && _totalRoles == players.length)
-                            ? (widget.isInteractive ? [AppTheme.primaryCardStart, AppTheme.primaryCardEnd] : [AppTheme.secondaryCardStart, AppTheme.secondaryCardEnd])
+                        colors:
+                            (players.length >= 4 &&
+                                _totalRoles == players.length)
+                            ? (widget.isInteractive
+                                  ? [
+                                      context.visual.primaryCardStart,
+                                      context.visual.primaryCardEnd,
+                                    ]
+                                  : [
+                                      context.visual.secondaryCardStart,
+                                      context.visual.secondaryCardEnd,
+                                    ])
                             : [Colors.grey.shade800, Colors.grey.shade900],
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: (players.length >= 4 && _totalRoles == players.length)
-                          ? [BoxShadow(color: widget.isInteractive ? AppTheme.glowColor : AppTheme.secondaryCardStart, blurRadius: 10, spreadRadius: 1)]
+                      boxShadow:
+                          (players.length >= 4 && _totalRoles == players.length)
+                          ? [
+                              BoxShadow(
+                                color: widget.isInteractive
+                                    ? context.visual.glowColor
+                                    : context.visual.secondaryCardStart,
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ]
                           : [],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        onTap: (players.length >= 4 && _totalRoles == players.length) 
-                            ? () => _startGame(widget.isInteractive) 
+                        onTap:
+                            (players.length >= 4 &&
+                                _totalRoles == players.length)
+                            ? () => _startGame(widget.isInteractive)
                             : () {
-                               if (players.length < 4) _showError('يجب إضافة 4 لاعبين على الأقل');
-                               else _showError('عدد الأدوار لا يطابق عدد اللاعبين');
-                            },
+                                if (players.length < 4) {
+                                  _showError('يجب إضافة 4 لاعبين على الأقل');
+                                } else {
+                                  _showError(
+                                    'عدد الأدوار لا يطابق عدد اللاعبين',
+                                  );
+                                }
+                              },
                         child: Center(
-                          child: Text(widget.isInteractive ? 'بدء اللعب التفاعلي (QR)' : 'بدء اللعب',
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                          child: Text(
+                            widget.isInteractive
+                                ? 'بدء اللعب التفاعلي (QR)'
+                                : 'بدء اللعب',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Cairo',
+                            ),
                           ),
                         ),
                       ),
@@ -350,39 +468,54 @@ class _TabButton extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-  const _TabButton({required this.label, required this.icon, required this.selected, required this.onTap});
+  const _TabButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: selected ? Colors.orangeAccent.withValues(alpha: 0.15) : Colors.transparent,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: selected ? Colors.orangeAccent.withValues(alpha: 0.5) : Colors.transparent),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: selected ? Colors.orangeAccent : Colors.white54),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontWeight: FontWeight.bold,
-                    color: selected ? Colors.orangeAccent : Colors.white54,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? context.visual.accent.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: selected
+                ? context.visual.accent.withValues(alpha: 0.5)
+                : Colors.transparent,
           ),
         ),
-      );
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: selected ? context.visual.accent : Colors.white54,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.bold,
+                color: selected ? context.visual.accent : Colors.white54,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _PlayersTab extends StatelessWidget {
@@ -421,12 +554,20 @@ class _PlayersTab extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: nameController,
-                    style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Cairo',
+                    ),
                     decoration: InputDecoration(
                       hintText: 'أدخل اسم اللاعب...',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontFamily: 'Cairo'),
+                      hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontFamily: 'Cairo',
+                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
                     ),
                     onSubmitted: onAdd,
                   ),
@@ -434,11 +575,11 @@ class _PlayersTab extends StatelessWidget {
                 Container(
                   margin: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.orangeAccent,
+                    color: context.visual.accent,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.add, color: Colors.black),
+                    icon: const Icon(Icons.add, color: Colors.white),
                     onPressed: () => onAdd(nameController.text),
                   ),
                 ),
@@ -446,10 +587,17 @@ class _PlayersTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Saved Players
           if (savedPlayers.isNotEmpty) ...[
-            Text('اللاعبون المحفوظون:', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12, fontFamily: 'Cairo')),
+            Text(
+              'اللاعبون المحفوظون:',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontFamily: 'Cairo',
+              ),
+            ),
             const SizedBox(height: 6),
             SizedBox(
               height: 40,
@@ -466,9 +614,26 @@ class _PlayersTab extends StatelessWidget {
                         return GestureDetector(
                           onLongPress: () => onDeleteSaved(sp),
                           child: ActionChip(
-                            backgroundColor: isAdded ? Colors.orangeAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
-                            side: BorderSide(color: isAdded ? Colors.orangeAccent : Colors.white.withValues(alpha: 0.1)),
-                            label: Text(sp, style: TextStyle(color: isAdded ? Colors.orangeAccent : Colors.white70, fontFamily: 'Cairo', fontWeight: isAdded ? FontWeight.bold : FontWeight.normal)),
+                            backgroundColor: isAdded
+                                ? context.visual.accent.withValues(alpha: 0.2)
+                                : Colors.white.withValues(alpha: 0.05),
+                            side: BorderSide(
+                              color: isAdded
+                                  ? context.visual.accent
+                                  : Colors.white.withValues(alpha: 0.1),
+                            ),
+                            label: Text(
+                              sp,
+                              style: TextStyle(
+                                color: isAdded
+                                    ? context.visual.accent
+                                    : Colors.white70,
+                                fontFamily: 'Cairo',
+                                fontWeight: isAdded
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
                             onPressed: isAdded ? null : () => onAdd(sp),
                           ),
                         );
@@ -480,10 +645,10 @@ class _PlayersTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          
+
           const Divider(color: Colors.white10),
           const SizedBox(height: 8),
-          
+
           // Player List
           Expanded(
             child: ListView.builder(
@@ -494,16 +659,36 @@ class _PlayersTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
                   ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Colors.orangeAccent.withValues(alpha: 0.2),
-                      child: Text('${index + 1}', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                      backgroundColor: context.visual.accent.withValues(
+                        alpha: 0.2,
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: context.visual.accent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    title: Text(players[index].name, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo', fontSize: 18)),
+                    title: Text(
+                      players[index].name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                        fontSize: 18,
+                      ),
+                    ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
                       onPressed: () => onRemove(index),
                     ),
                   ),
@@ -543,9 +728,15 @@ class _RolesTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: remaining == 0 ? Colors.greenAccent.withValues(alpha: 0.1) : Colors.orangeAccent.withValues(alpha: 0.1),
+              color: remaining == 0
+                  ? Colors.greenAccent.withValues(alpha: 0.1)
+                  : context.visual.accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: remaining == 0 ? Colors.greenAccent.withValues(alpha: 0.3) : Colors.orangeAccent.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: remaining == 0
+                    ? Colors.greenAccent.withValues(alpha: 0.3)
+                    : context.visual.accent.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -553,16 +744,38 @@ class _RolesTab extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      const Text('الأدوار الموزعة:', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
+                      const Text(
+                        'الأدوار الموزعة:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       if (playerCount > 0)
                         ElevatedButton.icon(
                           onPressed: onAutoDistribute,
-                          icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.black),
-                          label: const Text('توزيع ذكي', style: TextStyle(fontFamily: 'Cairo', color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                          icon: const Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'توزيع ذكي',
+                            style: TextStyle(
+                              fontFamily: 'Cairo',
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orangeAccent,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            backgroundColor: context.visual.accent,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
                             minimumSize: const Size(0, 30),
                           ),
                         ),
@@ -572,7 +785,9 @@ class _RolesTab extends StatelessWidget {
                 Text(
                   '$totalRoles / $playerCount',
                   style: TextStyle(
-                    color: remaining == 0 ? Colors.greenAccent : Colors.orangeAccent,
+                    color: remaining == 0
+                        ? Colors.greenAccent
+                        : context.visual.accent,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -586,26 +801,50 @@ class _RolesTab extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('فريق المافيا', style: TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                  child: Text(
+                    'فريق المافيا',
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
                 ),
-                _buildRoleRow(Role.mafiaSheikh),
-                _buildRoleRow(Role.mafiaGirl),
-                _buildRoleRow(Role.normalMafia),
+                _buildRoleRow(context, Role.mafiaSheikh),
+                _buildRoleRow(context, Role.mafiaGirl),
+                _buildRoleRow(context, Role.normalMafia),
                 const Divider(color: Colors.white10, height: 32),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('فريق المواطنين', style: TextStyle(color: Colors.blueAccent, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                  child: Text(
+                    'فريق المواطنين',
+                    style: TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
                 ),
-                _buildRoleRow(Role.citizensSheikh),
-                _buildRoleRow(Role.citizensGirl),
-                _buildRoleRow(Role.citizensBoy),
-                _buildRoleRow(Role.goodCitizen),
+                _buildRoleRow(context, Role.citizensSheikh),
+                _buildRoleRow(context, Role.citizensGirl),
+                _buildRoleRow(context, Role.citizensBoy),
+                _buildRoleRow(context, Role.goodCitizen),
                 const Divider(color: Colors.white10, height: 32),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('المستقلين', style: TextStyle(color: Colors.purpleAccent, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                  child: Text(
+                    'المستقلين',
+                    style: TextStyle(
+                      color: Colors.purpleAccent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
                 ),
-                _buildRoleRow(Role.joker),
+                _buildRoleRow(context, Role.joker),
               ],
             ),
           ),
@@ -614,26 +853,32 @@ class _RolesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRoleRow(Role role) {
+  Widget _buildRoleRow(BuildContext context, Role role) {
     final count = roleConfig[role]!;
-    final color = role.team == Team.mafia 
-        ? Colors.redAccent 
-        : role.team == Team.independent 
-            ? Colors.purpleAccent 
-            : Colors.blueAccent;
-    final icon = role.team == Team.mafia 
-        ? Icons.local_fire_department 
-        : role.team == Team.independent 
-            ? Icons.sentiment_very_dissatisfied 
-            : Icons.shield;
-    
+    final color = role.team == Team.mafia
+        ? Colors.redAccent
+        : role.team == Team.independent
+        ? Colors.purpleAccent
+        : Colors.blueAccent;
+    final icon = role.team == Team.mafia
+        ? Icons.local_fire_department
+        : role.team == Team.independent
+        ? Icons.sentiment_very_dissatisfied
+        : Icons.shield;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: count > 0 ? color.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.02),
+        color: count > 0
+            ? color.withValues(alpha: 0.1)
+            : Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: count > 0 ? color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: count > 0
+              ? color.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -643,8 +888,23 @@ class _RolesTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppTheme.roleArabicName(role), style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-                Text(AppTheme.roleAbilityDescription(role), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11, fontFamily: 'Cairo')),
+                Text(
+                  context.roleName(role),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+                Text(
+                  AppTheme.roleAbilityDescription(role),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 11,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
               ],
             ),
           ),
@@ -658,9 +918,18 @@ class _RolesTab extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.remove, size: 18),
                   color: Colors.white54,
-                  onPressed: count > 0 ? () => onChanged(role, count - 1) : null,
+                  onPressed: count > 0
+                      ? () => onChanged(role, count - 1)
+                      : null,
                 ),
-                Text('$count', style: TextStyle(color: count > 0 ? color : Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    color: count > 0 ? color : Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.add, size: 18),
                   color: Colors.white,

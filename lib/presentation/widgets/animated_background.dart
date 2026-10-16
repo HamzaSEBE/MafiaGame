@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+
 import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'dart:math' as math;
 
@@ -10,7 +10,8 @@ class AnimatedBackground extends StatefulWidget {
   State<AnimatedBackground> createState() => _AnimatedBackgroundState();
 }
 
-class _AnimatedBackgroundState extends State<AnimatedBackground> with SingleTickerProviderStateMixin {
+class _AnimatedBackgroundState extends State<AnimatedBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -20,6 +21,16 @@ class _AnimatedBackgroundState extends State<AnimatedBackground> with SingleTick
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override
@@ -33,22 +44,28 @@ class _AnimatedBackgroundState extends State<AnimatedBackground> with SingleTick
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return Container(
+        return DecoratedBox(
           decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(
-                math.sin(_controller.value * 2 * math.pi) * 0.5,
-                math.cos(_controller.value * 2 * math.pi) * 0.5,
+            gradient: context.visual.backgroundGradient,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(
+                  math.sin(_controller.value * 2 * math.pi) * 0.5,
+                  math.cos(_controller.value * 2 * math.pi) * 0.5,
+                ),
+                radius: 1.5,
+                colors: [
+                  context.visual.glowColor.withValues(alpha: 0.22),
+                  context.visual.surface.withValues(alpha: 0.18),
+                  context.visual.iconColor2.withValues(alpha: 0.04),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.4, 0.8, 1.0],
               ),
-              radius: 1.5,
-              colors: [
-                AppTheme.background,
-                AppTheme.surface.withValues(alpha: 0.8),
-                AppTheme.mafiaPrimary.withValues(alpha: 0.15),
-                AppTheme.background,
-              ],
-              stops: const [0.0, 0.4, 0.8, 1.0],
             ),
+            child: const SizedBox.expand(),
           ),
         );
       },

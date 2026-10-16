@@ -1,0 +1,11 @@
+# Build from repository root. Region/repository substitutions are required.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'services/game_engine/Dockerfile', '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/game-engine:${SHORT_SHA}', '.']
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'services/game_api/Dockerfile', '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/game-api:${SHORT_SHA}', '.']
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/game-engine:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/game-api:${SHORT_SHA}'
+options:
+  logging: CLOUD_LOGGING_ONLY

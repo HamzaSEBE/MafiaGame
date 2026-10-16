@@ -16,9 +16,24 @@ void main() {
         phase: Phase.voteResolution,
         round: 1,
         players: [
-          Player(id: 'A', name: 'Player A', role: Role.goodCitizen, createdAt: DateTime.now()),
-          Player(id: 'B', name: 'Player B', role: Role.goodCitizen, createdAt: DateTime.now()),
-          Player(id: 'C', name: 'Player C', role: Role.goodCitizen, createdAt: DateTime.now()),
+          Player(
+            id: 'A',
+            name: 'Player A',
+            role: Role.goodCitizen,
+            createdAt: DateTime.now(),
+          ),
+          Player(
+            id: 'B',
+            name: 'Player B',
+            role: Role.goodCitizen,
+            createdAt: DateTime.now(),
+          ),
+          Player(
+            id: 'C',
+            name: 'Player C',
+            role: Role.goodCitizen,
+            createdAt: DateTime.now(),
+          ),
         ],
         eventHistory: [],
       );
@@ -27,10 +42,37 @@ void main() {
     test('Clear winner', () {
       final stateWithEvents = state.copyWith(
         eventHistory: [
-          GameEvent(id: 'v1', gameId: 'test_game', round: 1, phase: Phase.voting, type: EventType.vote, actorId: 'A', targetId: 'B', timestamp: DateTime.now()),
-          GameEvent(id: 'v2', gameId: 'test_game', round: 1, phase: Phase.voting, type: EventType.vote, actorId: 'B', targetId: 'A', timestamp: DateTime.now()),
-          GameEvent(id: 'v3', gameId: 'test_game', round: 1, phase: Phase.voting, type: EventType.vote, actorId: 'C', targetId: 'B', timestamp: DateTime.now()),
-        ]
+          GameEvent(
+            id: 'v1',
+            gameId: 'test_game',
+            round: 1,
+            phase: Phase.voting,
+            type: EventType.vote,
+            actorId: 'A',
+            targetId: 'B',
+            timestamp: DateTime.now(),
+          ),
+          GameEvent(
+            id: 'v2',
+            gameId: 'test_game',
+            round: 1,
+            phase: Phase.voting,
+            type: EventType.vote,
+            actorId: 'B',
+            targetId: 'A',
+            timestamp: DateTime.now(),
+          ),
+          GameEvent(
+            id: 'v3',
+            gameId: 'test_game',
+            round: 1,
+            phase: Phase.voting,
+            type: EventType.vote,
+            actorId: 'C',
+            targetId: 'B',
+            timestamp: DateTime.now(),
+          ),
+        ],
       );
 
       final result = VotingEngine.calculateVotes(stateWithEvents);
@@ -41,9 +83,27 @@ void main() {
     test('Tie', () {
       final stateWithEvents = state.copyWith(
         eventHistory: [
-          GameEvent(id: 'v1', gameId: 'test_game', round: 1, phase: Phase.voting, type: EventType.vote, actorId: 'A', targetId: 'B', timestamp: DateTime.now()),
-          GameEvent(id: 'v2', gameId: 'test_game', round: 1, phase: Phase.voting, type: EventType.vote, actorId: 'B', targetId: 'A', timestamp: DateTime.now()),
-        ]
+          GameEvent(
+            id: 'v1',
+            gameId: 'test_game',
+            round: 1,
+            phase: Phase.voting,
+            type: EventType.vote,
+            actorId: 'A',
+            targetId: 'B',
+            timestamp: DateTime.now(),
+          ),
+          GameEvent(
+            id: 'v2',
+            gameId: 'test_game',
+            round: 1,
+            phase: Phase.voting,
+            type: EventType.vote,
+            actorId: 'B',
+            targetId: 'A',
+            timestamp: DateTime.now(),
+          ),
+        ],
       );
 
       final result = VotingEngine.calculateVotes(stateWithEvents);

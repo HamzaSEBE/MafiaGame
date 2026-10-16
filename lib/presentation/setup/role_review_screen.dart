@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/domain/entities/player.dart';
@@ -25,9 +25,12 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-          content: Text('تم إعادة التوزيع عشوائياً 🎲',
-              style: TextStyle(fontFamily: 'Cairo')),
-          backgroundColor: Colors.green),
+        content: Text(
+          'تم إعادة التوزيع عشوائياً 🎲',
+          style: TextStyle(fontFamily: 'Cairo'),
+        ),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
@@ -38,23 +41,20 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
       if (_selectedPlayer!.id == p.id) {
         setState(() => _selectedPlayer = null); // deselect
       } else {
-        // Swap roles
-        final roleA = _selectedPlayer!.role;
-        final roleB = p.role;
-
+        // Swap role and sniper assignment together in one state update.
         ref
             .read(gameOrchestratorProvider.notifier)
-            .updatePlayer(_selectedPlayer!.copyWith(role: roleB));
-        ref
-            .read(gameOrchestratorProvider.notifier)
-            .updatePlayer(p.copyWith(role: roleA));
+            .swapPlayerRoles(_selectedPlayer!.id, p.id);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('تم تبديل الأدوار بنجاح 🔄',
-                  style: TextStyle(fontFamily: 'Cairo')),
-              backgroundColor: Colors.blueAccent,
-              duration: Duration(seconds: 1)),
+            content: Text(
+              'تم تبديل الأدوار بنجاح 🔄',
+              style: TextStyle(fontFamily: 'Cairo'),
+            ),
+            backgroundColor: Colors.blueAccent,
+            duration: Duration(seconds: 1),
+          ),
         );
         setState(() => _selectedPlayer = null);
       }
@@ -68,7 +68,6 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
     final players = state.players;
 
     return Scaffold(
-      
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -94,7 +93,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                 color: Colors.black45,
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: Colors.orangeAccent),
+                    Icon(Icons.info_outline, color: context.visual.accent),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -102,9 +101,10 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                             ? 'اضغط على أي لاعب لتحديده، ثم اضغط على لاعب آخر لتبديل أدوارهما.'
                             : 'تم تحديد ${_selectedPlayer!.name}. اضغط على لاعب آخر للتبديل.',
                         style: const TextStyle(
-                            color: Colors.white70,
-                            fontFamily: 'Cairo',
-                            fontSize: 13),
+                          color: Colors.white70,
+                          fontFamily: 'Cairo',
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -132,7 +132,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? roleColor.withValues(alpha: 0.2)
-                              : AppTheme.surface,
+                              : context.visual.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
@@ -147,8 +147,9 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                             CircleAvatar(
                               radius: 16,
                               backgroundColor: roleColor.withValues(alpha: 0.2),
-                              backgroundImage:
-                                  AssetImage(AppTheme.roleImage(p.role)),
+                              backgroundImage: AssetImage(
+                                AppTheme.roleImage(p.role),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -159,25 +160,31 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                                   Text(
                                     p.name,
                                     style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Cairo',
-                                        fontSize: 13),
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Cairo',
+                                      fontSize: 13,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Row(
                                     children: [
                                       Text(
-                                        AppTheme.roleArabicName(p.role),
+                                        context.roleName(p.role),
                                         style: TextStyle(
-                                            color: roleColor,
-                                            fontFamily: 'Cairo',
-                                            fontSize: 11),
+                                          color: roleColor,
+                                          fontFamily: 'Cairo',
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       if (p.hasSniper) ...[
                                         const SizedBox(width: 4),
-                                        const Icon(Icons.my_location, color: Colors.amberAccent, size: 12),
+                                        const Icon(
+                                          Icons.my_location,
+                                          color: Colors.amberAccent,
+                                          size: 12,
+                                        ),
                                       ],
                                     ],
                                   ),
@@ -194,8 +201,8 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceHigh,
-                  border: Border(top: BorderSide(color: Colors.white10)),
+                  color: context.visual.surfaceHigh,
+                  border: const Border(top: BorderSide(color: Colors.white10)),
                 ),
                 child: SafeArea(
                   child: Row(
@@ -203,15 +210,21 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _shuffleAgain,
-                          icon: const Icon(Icons.shuffle,
-                              color: Colors.orangeAccent, size: 20),
-                          label: const Text('إعادة التوزيع',
-                              style: TextStyle(
-                                  color: Colors.orangeAccent,
-                                  fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.bold)),
+                          icon: Icon(
+                            Icons.shuffle,
+                            color: context.visual.accent,
+                            size: 20,
+                          ),
+                          label: Text(
+                            'إعادة التوزيع',
+                            style: TextStyle(
+                              color: context.visual.accent,
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.orangeAccent),
+                            side: BorderSide(color: context.visual.accent),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
@@ -230,8 +243,11 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                               );
                             }
                           },
-                          icon: const Icon(Icons.play_arrow,
-                              color: Colors.white, size: 20),
+                          icon: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           label: Text(
                             widget.returnToLobby
                                 ? 'حفظ والعودة إلى اللوبي'
@@ -243,7 +259,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.mafiaPrimary,
+                            backgroundColor: context.visual.accent,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),

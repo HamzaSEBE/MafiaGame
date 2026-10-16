@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 Future<bool> confirmEndInteractiveSession(BuildContext context) async {
@@ -5,7 +6,7 @@ Future<bool> confirmEndInteractiveSession(BuildContext context) async {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A22),
+          backgroundColor: context.visual.surface,
           title: const Text(
             'إنهاء اللعبة؟',
             style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
@@ -23,7 +24,9 @@ Future<bool> confirmEndInteractiveSession(BuildContext context) async {
               ),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.visual.accent,
+              ),
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: const Text(
                 'إنهاء الجلسة',

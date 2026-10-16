@@ -1,0 +1,13 @@
+.git
+.local_tools
+.dart_tool
+build
+releases
+assets
+**/node_modules
+**/dist
+**/.dart_tool
+**/.env
+**/key.properties
+**/*.jks
+**/*.keystore

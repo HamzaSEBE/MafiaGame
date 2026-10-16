@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mafia_nightfall/application/game_orchestrator.dart';
 import 'package:mafia_nightfall/core/audio/audio_manager.dart';
@@ -32,7 +32,9 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
   void initState() {
     super.initState();
     _shakeController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
 
     // We delay slightly so state is updated
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,18 +53,19 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
     final summaryEvent = state.eventHistory.lastWhere(
       (e) => e.type == EventType.nightResolutionSummary,
       orElse: () => GameEvent(
-          id: '',
-          gameId: '',
-          round: state.round,
-          phase: state.phase,
-          type: EventType.nightResolutionSummary,
-          timestamp: DateTime.now()),
+        id: '',
+        gameId: '',
+        round: state.round,
+        phase: state.phase,
+        type: EventType.nightResolutionSummary,
+        timestamp: DateTime.now(),
+      ),
     );
 
     final assassinatedIds =
         (summaryEvent.metadata['assassinatedIds'] as List<dynamic>?)
-                ?.cast<String>() ??
-            [];
+            ?.cast<String>() ??
+        [];
     if (assassinatedIds.isEmpty) {
       // Peaceful
       if (mounted) setState(() => _step = 1); // Peaceful sunrise
@@ -107,21 +110,22 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
     if (_step == 0) {
       return GamePopScope(
         onExit: widget.onInteractiveExit,
-        child: Scaffold(
+        child: const Scaffold(
           backgroundColor: Colors.black,
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 Icon(Icons.nightlight_round, color: Colors.white24, size: 80),
                 SizedBox(height: 20),
                 Text(
                   'المدينة تستيقظ...',
                   style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 28,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white54,
+                    fontSize: 28,
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -134,21 +138,22 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
     final summaryEvent = state.eventHistory.lastWhere(
       (e) => e.type == EventType.nightResolutionSummary,
       orElse: () => GameEvent(
-          id: '',
-          gameId: '',
-          round: state.round,
-          phase: state.phase,
-          type: EventType.nightResolutionSummary,
-          timestamp: DateTime.now()),
+        id: '',
+        gameId: '',
+        round: state.round,
+        phase: state.phase,
+        type: EventType.nightResolutionSummary,
+        timestamp: DateTime.now(),
+      ),
     );
     final assassinatedIds =
         (summaryEvent.metadata['assassinatedIds'] as List<dynamic>?)
-                ?.cast<String>() ??
-            [];
+            ?.cast<String>() ??
+        [];
     final successfulProtections =
         (summaryEvent.metadata['successfulProtections'] as List<dynamic>?)
-                ?.cast<String>() ??
-            [];
+            ?.cast<String>() ??
+        [];
 
     if (_step == 1) {
       return GamePopScope(
@@ -159,16 +164,20 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.wb_sunny,
-                    size: 140, color: Colors.orangeAccent),
+                const Icon(
+                  Icons.wb_sunny,
+                  size: 140,
+                  color: Colors.orangeAccent,
+                ),
                 const SizedBox(height: 30),
                 const Text(
                   'صباح هادئ!',
                   style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 44,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Cairo'),
+                    color: Colors.black87,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Cairo',
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -176,10 +185,11 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
                       ? 'عناية الطبيب أنقذت الضحية هذه الليلة!'
                       : 'لم يُقتل أحد في هذه الليلة.',
                   style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 20,
-                      fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w600),
+                    color: Colors.black54,
+                    fontSize: 20,
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -206,28 +216,33 @@ class _CinematicRevealScreenState extends ConsumerState<CinematicRevealScreen>
               const Text(
                 'فاجعة!',
                 style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 56,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Cairo'),
+                  color: Colors.redAccent,
+                  fontSize: 56,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Cairo',
+                ),
               ),
               const SizedBox(height: 10),
               const Text(
                 'استيقظت المدينة على مقتل:',
                 style: TextStyle(
-                    color: Colors.white70, fontSize: 22, fontFamily: 'Cairo'),
+                  color: Colors.white70,
+                  fontSize: 22,
+                  fontFamily: 'Cairo',
+                ),
               ),
               const SizedBox(height: 20),
-              ...deadPlayers
-                  .map((p) => Text(
-                        p.name,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Cairo'),
-                      ))
-                  .toList(),
+              ...deadPlayers.map(
+                (p) => Text(
+                  p.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
             ],
           ),
         ),

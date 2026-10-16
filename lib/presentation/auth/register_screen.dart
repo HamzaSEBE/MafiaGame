@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mafia_nightfall/data/services/auth_service.dart';
@@ -40,18 +40,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final username = _usernameController.text.trim().toLowerCase();
-      
+
       // Check for uniqueness
       final existingUser = await FirebaseFirestore.instance
           .collection('users')
           .where('username', isEqualTo: username)
           .limit(1)
           .get();
-          
+
       if (existingUser.docs.isNotEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('اسم المستخدم هذا محجوز، يرجى اختيار اسم آخر', style: TextStyle(fontFamily: 'Cairo'))),
+            const SnackBar(
+              content: Text(
+                'اسم المستخدم هذا محجوز، يرجى اختيار اسم آخر',
+                style: TextStyle(fontFamily: 'Cairo'),
+              ),
+            ),
           );
           setState(() => _isLoading = false);
         }
@@ -75,7 +80,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل إنشاء الحساب، قد يكون البريد الإلكتروني مستخدماً', style: TextStyle(fontFamily: 'Cairo'))),
+          const SnackBar(
+            content: Text(
+              'فشل إنشاء الحساب، قد يكون البريد الإلكتروني مستخدماً',
+              style: TextStyle(fontFamily: 'Cairo'),
+            ),
+          ),
         );
       }
     } finally {
@@ -87,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     ref.watch(selectedThemeProvider);
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: context.visual.background,
       body: Stack(
         children: [
           const AnimatedBackground(),
@@ -105,10 +115,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       'حساب جديد',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            color: Colors.white,
-                            fontFamily: 'Cairo',
-                            fontWeight: FontWeight.w900,
-                          ),
+                        color: Colors.white,
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 32),
                     TextFormField(
@@ -116,14 +126,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'الاسم الكامل',
-                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: Icon(Icons.person, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(
+                          color: context.visual.textSecondary,
+                          fontFamily: 'Cairo',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.person,
+                          color: context.visual.textSecondary,
+                        ),
                         filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: context.visual.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return 'مطلوب';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'مطلوب';
+                        }
                         return null;
                       },
                     ),
@@ -133,14 +153,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'اسم المستخدم بالإنجليزية',
-                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: Icon(Icons.alternate_email, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(
+                          color: context.visual.textSecondary,
+                          fontFamily: 'Cairo',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.alternate_email,
+                          color: context.visual.textSecondary,
+                        ),
                         filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: context.visual.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) return 'مطلوب';
+                        if (value == null || value.trim().isEmpty) {
+                          return 'مطلوب';
+                        }
                         if (!RegExp(r'^[a-zA-Z0-9_]{3,15}$').hasMatch(value)) {
                           return 'يجب أن يكون بين 3-15 حرف، باللغة الإنجليزية، وبدون مسافات';
                         }
@@ -154,15 +184,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'البريد الإلكتروني',
-                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: Icon(Icons.email, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(
+                          color: context.visual.textSecondary,
+                          fontFamily: 'Cairo',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.email,
+                          color: context.visual.textSecondary,
+                        ),
                         filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: context.visual.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'مطلوب';
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value)) {
                           return 'صيغة البريد الإلكتروني غير صحيحة';
                         }
                         return null;
@@ -175,11 +215,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'كلمة المرور',
-                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: Icon(Icons.lock, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(
+                          color: context.visual.textSecondary,
+                          fontFamily: 'Cairo',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.lock,
+                          color: context.visual.textSecondary,
+                        ),
                         filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: context.visual.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onChanged: (val) {
                         // Trigger confirm password revalidation
@@ -188,8 +236,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         }
                       },
                       validator: (value) {
-                        if (value == null || value.length < 8) return '8 حروف على الأقل';
-                        if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$').hasMatch(value)) {
+                        if (value == null || value.length < 8) {
+                          return '8 حروف على الأقل';
+                        }
+                        if (!RegExp(
+                          r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$',
+                        ).hasMatch(value)) {
                           return 'يجب أن تحتوي على حرف ورقم واحد على الأقل';
                         }
                         return null;
@@ -202,15 +254,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'تأكيد كلمة المرور',
-                        labelStyle: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Cairo'),
-                        prefixIcon: Icon(Icons.lock_outline, color: AppTheme.textSecondary),
+                        labelStyle: TextStyle(
+                          color: context.visual.textSecondary,
+                          fontFamily: 'Cairo',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
+                          color: context.visual.textSecondary,
+                        ),
                         filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: context.visual.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'مطلوب';
-                        if (value != _passwordController.text) return 'كلمات المرور غير متطابقة';
+                        if (value != _passwordController.text) {
+                          return 'كلمات المرور غير متطابقة';
+                        }
                         return null;
                       },
                     ),
@@ -218,18 +280,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ElevatedButton(
                       onPressed: _isLoading ? null : _register,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.mafiaPrimary,
+                        backgroundColor: context.visual.accent,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('إنشاء الحساب', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                          : const Text(
+                              'إنشاء الحساب',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('لديك حساب؟ سجل الدخول', style: TextStyle(color: AppTheme.textPrimary, fontFamily: 'Cairo')),
+                      child: Text(
+                        'لديك حساب؟ سجل الدخول',
+                        style: TextStyle(
+                          color: context.visual.textPrimary,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
                     ),
                   ],
                 ),

@@ -1,0 +1,7 @@
+name: mafia_game_engine
+publish_to: none
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  game_core:
+    path: ../../packages/game_core

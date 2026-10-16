@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
-import 'dart:math' as math;
+import 'package:mafia_nightfall/presentation/interactive/web/player_components.dart';
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +25,8 @@ class WebPlayerScreen extends ConsumerStatefulWidget {
   ConsumerState<WebPlayerScreen> createState() => _WebPlayerScreenState();
 }
 
-class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
+class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
+    with WidgetsBindingObserver {
   final Map<String, String> _selectedTargets = {};
   final Set<String> _submittingActions = {};
   bool _isShowingRole = false;
@@ -38,65 +39,114 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   String? _lastPrivateResult;
   Timer? _privateResultTimer;
 
+  late final Stream<InteractiveSession?> _sessionStream;
+  late final Stream<InteractiveSeat?> _seatStream;
+  late final Stream<InteractiveSecret?> _secretStream;
+  late final Stream<List<InteractiveSeat>> _seatsStream;
+  late final Stream<List<ActionRequest>> _myActionsStream;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final service = ref.read(interactiveServiceProvider);
-    _sessionSubscription = service.streamSession(widget.sessionId).listen(
-      (session) {
-        if (!mounted) return;
-        if (session?.status == SessionStatus.finished) {
-          setState(() => _sessionEnded = true);
-        }
-        
-        if (session?.globalAnnouncement != null && session?.globalAnnouncement != _lastSeenAnnouncement) {
-          _lastSeenAnnouncement = session?.globalAnnouncement;
-          
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              backgroundColor: const Color(0xFF1E1E24),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: const BorderSide(color: Colors.orangeAccent, width: 2)),
-              title: const Column(
-                children: [
-                  Icon(Icons.campaign, color: Colors.orangeAccent, size: 60),
-                  SizedBox(height: 16),
-                  Text('إفصاح شيخ المواطنين!', style: TextStyle(color: Colors.orangeAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 24)),
-                ],
-              ),
-              content: Column(
+    _sessionStream = service.streamSession(widget.sessionId);
+    _seatStream = service.streamMySeat(widget.sessionId, widget.seatId);
+    _secretStream = service.streamMySecret(widget.sessionId, widget.seatId);
+    _seatsStream = service.streamSeats(widget.sessionId);
+    _myActionsStream = service.uid == null
+        ? Stream.value(const [])
+        : service.streamMyActionRequests(widget.sessionId, service.uid!);
+    _sessionSubscription = _sessionStream.listen((session) {
+      if (!mounted) return;
+      if (session?.status == SessionStatus.finished) {
+        setState(() => _sessionEnded = true);
+      }
+
+      if (session?.globalAnnouncement != null &&
+          session?.globalAnnouncement != _lastSeenAnnouncement) {
+        _lastSeenAnnouncement = session?.globalAnnouncement;
+
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            scrollable: true,
+            backgroundColor: context.visual.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: context.visual.accent, width: 2),
+            ),
+            icon: Icon(
+              Icons.campaign_outlined,
+              color: context.visual.iconColor2,
+            ),
+            title: const Text(
+              'إفصاح شيخ المواطنين',
+              textAlign: TextAlign.center,
+            ),
+            content: SizedBox(
+              width: 320,
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 150,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(AppTheme.roleImage(Role.citizensSheikh), fit: BoxFit.cover),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      AppTheme.roleImage(Role.citizensSheikh),
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(session!.globalAnnouncement!, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Cairo'), textAlign: TextAlign.center),
+                  Text(
+                    session!.globalAnnouncement!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: context.visual.textPrimary,
+                      height: 1.8,
+                    ),
+                  ),
                 ],
               ),
-              actions: [
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
-                    child: const Text('حسناً', style: TextStyle(color: Colors.black, fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-                  ),
-                )
-              ],
             ),
-          );
-        }
-      },
-    );
+            actions: [
+              Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.visual.accent,
+                  ),
+                  child: const Text(
+                    'حسناً',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }, onError: (Object _) {});
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && mounted) {
+      setState(() {
+        _isShowingRole = false;
+        _privateResultVisible = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sessionSubscription?.cancel();
     _privateResultTimer?.cancel();
     super.dispose();
@@ -105,16 +155,22 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   Future<void> _submitAction(
     String actionType,
     String targetId,
-  ) async {
+    int expectedRevision, {
+    int expectedActionVersion = 0,
+  }) async {
     if (_submittingActions.contains(actionType)) return;
     setState(() => _submittingActions.add(actionType));
 
     try {
-      await ref.read(interactiveServiceProvider).submitAction(
+      await ref
+          .read(interactiveServiceProvider)
+          .submitAction(
             widget.sessionId,
             widget.seatId,
             actionType,
             targetId,
+            expectedRevision: expectedRevision,
+            expectedActionVersion: expectedActionVersion,
           );
     } catch (error) {
       if (mounted) {
@@ -151,273 +207,287 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
     });
   }
 
+  String _phaseTitle(InteractiveSession s) => s.status == SessionStatus.waiting
+      ? 'قبل بداية الحكاية'
+      : switch (s.phase) {
+          Phase.roleReveal => 'اكتشف دورك في المدينة',
+          Phase.night || Phase.nightResolution => 'المدينة تُغمض عينيها',
+          Phase.day => 'الشمس كشفت شيئاً',
+          Phase.voting => 'صوتك يغيّر الحكاية',
+          _ => 'القرار بيد الحكم',
+        };
+  Widget _page(Widget child, {InteractiveSession? session}) => PlayerPage(
+    title: session == null ? 'بطاقتك في المدينة' : _phaseTitle(session),
+    subtitle: session?.phase == Phase.voting
+        ? 'اختر بعناية. يمكنك تغيير صوتك ما دام التصويت مفتوحاً.'
+        : 'احتفظ بأسرارك، وتابع إشارة الحكم. ستظهر حركتك هنا عندما يحين دورك.',
+    status: session == null
+        ? 'جارٍ الاتصال'
+        : 'الجولة ${session.round} · ${session.phase == Phase.voting
+              ? 'التصويت'
+              : session.phase == Phase.day
+              ? 'النهار'
+              : session.phase == Phase.night
+              ? 'الليل'
+              : 'طاولة اللعب'}',
+    child: child,
+  );
   @override
   Widget build(BuildContext context) {
-    ref.watch(selectedThemeProvider);
     if (_sessionEnded) return const WebSessionEndedScreen();
-
     final service = ref.read(interactiveServiceProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title:
-            const Text('بطاقتك السرية', style: TextStyle(fontFamily: 'Cairo')),
-        backgroundColor: Colors.transparent,
-      ),
-      body: StreamBuilder<InteractiveSession?>(
-        stream: service.streamSession(widget.sessionId),
-        builder: (context, sessionSnap) {
-          if (sessionSnap.hasError) {
-            return _buildError('تعذر الاتصال بالجلسة: ${sessionSnap.error}');
-          }
-          final session = sessionSnap.data;
-          if (session?.status == SessionStatus.finished) {
-            return const WebSessionEndedScreen();
-          }
-          if (session == null) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.orangeAccent),
-            );
-          }
-          _resetForRevision(session);
-
-          return StreamBuilder<InteractiveSeat?>(
-            stream: service.streamMySeat(widget.sessionId, widget.seatId),
-            builder: (context, seatSnap) {
-              if (seatSnap.hasError) {
-                return _buildError('تعذر تحميل مقعدك: ${seatSnap.error}');
-              }
-              final seat = seatSnap.data;
-
-              return StreamBuilder<InteractiveSecret?>(
-                stream: service.streamMySecret(widget.sessionId, widget.seatId),
-                builder: (context, secretSnap) {
-                  if (secretSnap.hasError) {
-                    return _buildError(
-                        'تعذر تحميل بطاقتك: ${secretSnap.error}');
-                  }
-                  final secret = secretSnap.data;
-                  if (seat == null || secret == null) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.orangeAccent,
-                      ),
-                    );
-                  }
-
-                  final canUseDeadAbility = secret.requiredActions
-                      .any((action) => action.type == 'retaliation');
-                  if (!seat.isAlive && !canUseDeadAbility) {
-                    return _buildDeadScreen();
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildPrivateRoleCard(seat, secret),
-                        if (seat.isAlive &&
-                            secret.role == Role.citizensSheikh &&
-                            !seat.isCitizenSheikhRevealed &&
-                            (session.phase == Phase.day || session.phase == Phase.voting)) ...[
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              service.submitAction(
-                                  widget.sessionId,
-                                  widget.seatId,
+    return StreamBuilder<InteractiveSession?>(
+      stream: _sessionStream,
+      builder: (context, roomSnap) {
+        if (roomSnap.hasError) {
+          return _page(
+            _buildError(
+              'تعذر الاتصال بالجلسة. تحقق من الإنترنت ثم أعد فتح الرابط.',
+            ),
+          );
+        }
+        final session = roomSnap.data;
+        if (session?.status == SessionStatus.finished ||
+            (roomSnap.connectionState == ConnectionState.active &&
+                session == null)) {
+          return const WebSessionEndedScreen();
+        }
+        if (session == null) {
+          return _page(
+            const PlayerNotice(
+              title: 'نوصلك بالمدينة…',
+              message: 'أبقِ الصفحة مفتوحة حتى يكتمل الاتصال.',
+            ),
+          );
+        }
+        _resetForRevision(session);
+        return StreamBuilder<InteractiveSeat?>(
+          stream: _seatStream,
+          builder: (context, seatSnap) {
+            if (seatSnap.hasError) {
+              return _page(
+                _buildError('تعذر تحميل مقعدك. أعد فتح رابط الجلسة.'),
+                session: session,
+              );
+            }
+            return StreamBuilder<InteractiveSecret?>(
+              stream: _secretStream,
+              builder: (context, secretSnap) {
+                if (secretSnap.hasError) {
+                  return _page(
+                    _buildError(
+                      'تعذر تحميل بطاقتك. تحقق من اتصالك ثم أعد فتح الرابط.',
+                    ),
+                    session: session,
+                  );
+                }
+                final seat = seatSnap.data, secret = secretSnap.data;
+                if (seat == null || secret == null) {
+                  return _page(
+                    const PlayerNotice(
+                      title: 'نجهّز بطاقتك…',
+                      message: 'ستظهر هنا بعد اكتمال ربط مقعدك.',
+                    ),
+                    session: session,
+                  );
+                }
+                if (!seat.isAlive &&
+                    !secret.requiredActions.any(
+                      (a) => a.type == 'retaliation',
+                    )) {
+                  return _page(_buildDeadScreen(), session: session);
+                }
+                return _page(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildPrivateRoleCard(seat, secret),
+                      if (seat.isAlive &&
+                          secret.role == Role.citizensSheikh &&
+                          !seat.isCitizenSheikhRevealed &&
+                          (session.phase == Phase.day ||
+                              session.phase == Phase.voting)) ...[
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed:
+                              !session.actionsOpen ||
+                                  secret.promptRevision !=
+                                      session.actionRevision ||
+                                  _submittingActions.contains(
+                                    'citizenSheikhReveal',
+                                  )
+                              ? null
+                              : () => _submitAction(
                                   'citizenSheikhReveal',
-                                  widget.seatId);
-                            },
-                            icon:
-                                const Icon(Icons.campaign, color: Colors.black),
-                            label: const Text('إفصاح هويتك علناً (مرة واحدة)',
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Cairo')),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orangeAccent,
-                              minimumSize: const Size(double.infinity, 48),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: _buildActionArea(
-                            session,
-                            seat,
-                            secret,
-                            service,
+                                  widget.seatId,
+                                  session.actionRevision,
+                                ),
+                          icon: const Icon(Icons.campaign_outlined),
+                          label: const Text(
+                            'إفصاح هويتك علناً · مرة واحدة',
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
+                      const SizedBox(height: 24),
+                      _buildActionArea(session, seat, secret, service),
+                    ],
+                  ),
+                  session: session,
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
   Widget _buildPrivateRoleCard(InteractiveSeat seat, InteractiveSecret secret) {
     final role = secret.role;
-    final roleColor =
-        role == null ? Colors.orangeAccent : AppTheme.roleColor(role);
+    final visible = _isShowingRole && role != null;
+    void conceal() {
+      if (mounted && _isShowingRole) setState(() => _isShowingRole = false);
+    }
 
-    return Listener(
-      behavior: HitTestBehavior.opaque,
-      onPointerDown:
-          role == null ? null : (_) => setState(() => _isShowingRole = true),
-      onPointerUp: (_) => setState(() => _isShowingRole = false),
-      onPointerCancel: (_) => setState(() => _isShowingRole = false),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 420),
-        transitionBuilder: (child, animation) => AnimatedBuilder(
-          animation: animation,
-          child: child,
-          builder: (context, child) => Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.rotationY((1 - animation.value) * math.pi / 2),
-            child: child,
-          ),
-        ),
-        child: Container(
-          key: ValueKey(_isShowingRole && role != null),
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 156),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: _isShowingRole && role != null
-                  ? (role.team.name == 'mafia'
-                      ? const [Color(0xFF3A1515), Color(0xFF1A0A0A)]
-                      : const [Color(0xFF15223A), Color(0xFF0A101A)])
-                  : const [Color(0xFF211B15), Color(0xFF100D0A)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: _isShowingRole
-                  ? roleColor
-                  : Colors.orangeAccent.withValues(alpha: 0.5),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: roleColor.withValues(alpha: 0.16),
-                blurRadius: 24,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              if (_isShowingRole && role != null)
-                ClipOval(
-                  child: Image.asset(
-                    AppTheme.roleImage(role),
-                    width: 82,
-                    height: 82,
-                    fit: BoxFit.cover,
+    return Focus(
+      onFocusChange: (focused) {
+        if (!focused) conceal();
+      },
+      onKeyEvent: (node, event) {
+        if (event.logicalKey != LogicalKeyboardKey.space &&
+            event.logicalKey != LogicalKeyboardKey.enter) {
+          return KeyEventResult.ignored;
+        }
+        setState(() => _isShowingRole = event is! KeyUpEvent && role != null);
+        return KeyEventResult.handled;
+      },
+      child: MouseRegion(
+        onExit: (_) => conceal(),
+        child: Listener(
+          onPointerDown: role == null
+              ? null
+              : (_) => setState(() => _isShowingRole = true),
+          onPointerUp: (_) => conceal(),
+          onPointerCancel: (_) => conceal(),
+          child: Semantics(
+            label: visible
+                ? 'بطاقتك مكشوفة. ارفع إصبعك لإخفائها.'
+                : 'بطاقتك السرية. اضغط باستمرار لكشفها.',
+            child: PlayerPanel(
+              highlight: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        visible
+                            ? Icons.visibility_outlined
+                            : Icons.lock_outline_rounded,
+                        size: 18,
+                        color: context.visual.iconColor2,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          visible ? 'لعيونك فقط' : 'هوية محمية',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.visual.textSecondary,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.fingerprint_rounded,
+                        size: 26,
+                        color: context.visual.iconColor2,
+                      ),
+                    ],
                   ),
-                )
-              else
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.orangeAccent.withValues(alpha: 0.12),
-                  child: Icon(
-                    role == null ? Icons.hourglass_top : Icons.fingerprint,
-                    color: Colors.orangeAccent,
-                    size: 42,
+                  const SizedBox(height: 20),
+                  Text(
+                    seat.playerName,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: context.visual.textPrimary,
+                    ),
                   ),
-                ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      seat.playerName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
+                  const SizedBox(height: 16),
+                  if (visible) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        AppTheme.roleImage(role),
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 16),
                     Text(
-                      role == null
-                          ? 'بانتظار توزيع الأدوار'
-                          : _isShowingRole
-                              ? AppTheme.roleArabicName(role)
-                              : 'اضغط مطولًا لكشف بطاقتك السرية',
+                      context.roleName(role),
                       style: TextStyle(
-                        color: _isShowingRole ? roleColor : Colors.white70,
-                        fontSize: _isShowingRole ? 21 : 14,
-                        fontWeight: _isShowingRole
-                            ? FontWeight.w900
-                            : FontWeight.normal,
-                        fontFamily: 'Cairo',
+                        color: AppTheme.roleColor(role),
+                        fontSize: 25,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    if (_isShowingRole && role != null) ...[
-                      const SizedBox(height: 8),
-                      if (secret.isSniper) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.amberAccent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.amberAccent),
-                          ),
-                          child: const Text(
-                            'لديك قدرة القنص لمرة واحدة ليلاً!',
-                            style: TextStyle(fontSize: 14, color: Colors.amberAccent, fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                      if (secret.mafiaTeammates.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-                          ),
-                          child: Text(
-                            'زملاؤك في المافيا:\n${secret.mafiaTeammates.join("، ")}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 13,
-                              fontFamily: 'Cairo',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 4),
+                    Text(
+                      AppTheme.roleAbilityDescription(role),
+                      style: TextStyle(
+                        color: context.visual.textSecondary,
+                        height: 1.7,
+                      ),
+                    ),
+                    if (secret.isSniper) ...[
+                      const SizedBox(height: 12),
+                      const PlayerTag(
+                        label: 'رصاصة قنّاص واحدة',
+                        icon: Icons.gps_fixed_rounded,
+                        color: AppTheme.warning,
+                      ),
+                    ],
+                    if (secret.mafiaTeammates.isNotEmpty) ...[
+                      const SizedBox(height: 12),
                       Text(
-                        AppTheme.roleAbilityDescription(role),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontFamily: 'Cairo',
+                        'زملاؤك في المافيا: ${secret.mafiaTeammates.join('، ')}',
+                        style: TextStyle(
+                          color: context.visual.textPrimary,
+                          height: 1.8,
                         ),
                       ),
                     ],
+                  ] else ...[
+                    Divider(color: context.visual.surfaceHigh),
+                    const SizedBox(height: 12),
+                    Text(
+                      role == null
+                          ? 'دورك لم يُوزّع بعد'
+                          : 'اضغط باستمرار لكشف دورك',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: context.visual.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      role == null
+                          ? 'انتظر الحكم حتى يجهّز الأدوار.'
+                          : 'ارفع إصبعك لإخفائه فوراً. تأكد أن الشاشة لك وحدك.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.8,
+                        color: context.visual.textSecondary,
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -430,206 +500,212 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
     InteractiveSecret secret,
     InteractiveService service,
   ) {
-    final playerUid = service.uid;
-    if (playerUid == null) {
-      return _buildError('انتهى اتصال اللاعب. أعد فتح رابط الجلسة.');
+    if (service.uid == null) {
+      return _buildError('انتهى اتصالك. أعد فتح رابط الجلسة.');
     }
-
     return StreamBuilder<List<ActionRequest>>(
-      stream: service.streamMyActionRequests(session.id, playerUid),
+      stream: _myActionsStream,
       builder: (context, actionSnap) {
         if (actionSnap.hasError) {
-          return _buildError('تعذر تحميل حركاتك: ${actionSnap.error}');
+          return _buildError(
+            'تعذر تأكيد حركاتك. تحقق من الاتصال ثم أعد فتح الرابط.',
+          );
         }
-        final myActions = actionSnap.data ?? const <ActionRequest>[];
-        final submittedTypes = myActions
-            .where((action) => action.revision == session.actionRevision)
-            .map((action) => action.actionType)
-            .toSet();
-        final previousVote =
-            myActions.where((action) => action.actionType == 'vote').toList()
-              ..sort((left, right) {
-                final revisionOrder = left.revision.compareTo(right.revision);
-                return revisionOrder != 0
-                    ? revisionOrder
-                    : left.timestamp.compareTo(right.timestamp);
-              });
-
+        final actions = (actionSnap.data ?? <ActionRequest>[])
+            .where((a) => a.revision == session.actionRevision)
+            .toList();
+        final submitted = actions.map((a) => a.actionType).toSet();
         if (secret.requiredActions.isEmpty) {
           return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (secret.privateResult != null)
+              if (secret.privateResult != null) ...[
                 _buildPrivateResult(secret.privateResult!),
-              const SizedBox(height: 12),
-              Text(
-                session.phase == Phase.roleReveal
-                    ? 'اكشف بطاقتك بالضغط المطوّل، ثم انتظر إشارة الحكم.'
+                const SizedBox(height: 16),
+              ],
+              PlayerNotice(
+                title: session.phase == Phase.day
+                    ? 'استمع. ناقش. راقب.'
+                    : 'كل دور يأتي في وقته',
+                message: session.phase == Phase.roleReveal
+                    ? 'اكشف بطاقتك بالضغط المستمر ثم انتظر إشارة الحكم.'
                     : session.phase == Phase.day
-                        ? 'نهار هادئ... تحدث مع الجميع.'
-                        : 'انتظر دورك...',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 18,
-                  fontFamily: 'Cairo',
-                ),
+                    ? 'ناقش اللاعبين وحافظ على سرّك. ستظهر خيارات التصويت عندما يفتحها الحكم.'
+                    : 'لا يوجد إجراء مطلوب منك الآن. أبقِ الصفحة مفتوحة وتابع إشارة الحكم.',
+                icon: session.phase == Phase.day
+                    ? Icons.wb_sunny_outlined
+                    : Icons.nights_stay_outlined,
               ),
             ],
           );
         }
-
         return StreamBuilder<List<InteractiveSeat>>(
-          stream: service.streamSeats(session.id),
+          stream: _seatsStream,
           builder: (context, seatsSnap) {
             if (seatsSnap.hasError) {
-              return _buildError('تعذر تحميل اللاعبين: ${seatsSnap.error}');
+              return _buildError('تعذر تحميل أسماء اللاعبين. تحقق من الاتصال.');
             }
-            final seats = seatsSnap.data ?? const <InteractiveSeat>[];
-            return ListView(
-              padding: const EdgeInsets.only(bottom: 16),
+            if (!seatsSnap.hasData) {
+              return const PlayerNotice(
+                title: 'نجهّز خياراتك…',
+                message: 'جارٍ تحميل اللاعبين المتاحين.',
+              );
+            }
+            final seats = seatsSnap.data!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (secret.privateResult != null) ...[
                   _buildPrivateResult(secret.privateResult!),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                 ],
-                ...secret.requiredActions.map((prompt) {
-                  final completed = submittedTypes.contains(prompt.type);
-                  final isVote = prompt.type == 'vote';
-                  final selectedTarget = _selectedTargets[prompt.type] ??
-                      (isVote && previousVote.isNotEmpty
-                          ? previousVote.last.targetId
-                          : null);
-                  final actionCompleted = completed && !isVote;
-                  final targets = seats
-                      .where((candidate) =>
-                          prompt.availableTargets.contains(candidate.id))
-                      .toList();
-                  return Card(
-                    color: const Color(0xFF17151A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                      side: BorderSide(
-                        color: actionCompleted
-                            ? Colors.greenAccent.withValues(alpha: 0.5)
-                            : Colors.orangeAccent.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            _actionTitle(prompt.type),
-                            style: TextStyle(
-                              color: actionCompleted
-                                  ? Colors.greenAccent
-                                  : Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Cairo',
-                            ),
-                          ),
-                          if (actionCompleted)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Text(
-                                'تم إرسال هذه الحركة. بانتظار بقية الأدوار...',
-                                style: TextStyle(
-                                  color: Colors.greenAccent,
-                                  fontFamily: 'Cairo',
-                                ),
-                              ),
-                            )
-                          else ...[
-                            if (isVote && previousVote.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(
-                                  'تصويتك الحالي: ${seats.where((candidate) => candidate.id == previousVote.last.targetId).firstOrNull?.playerName ?? 'لاعب غادر الجولة'}. يمكنك تغييره قبل فرز الأصوات.',
-                                  style: const TextStyle(
-                                    color: Colors.orangeAccent,
-                                    fontFamily: 'Cairo',
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            ...targets.map((target) => RadioListTile<String>(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Row(
-                                    children: [
-                                      Text(
-                                        target.playerName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontFamily: 'Cairo',
-                                        ),
-                                      ),
-                                      if (target.isCitizenSheikhRevealed) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                              color: Colors.orangeAccent,
-                                              borderRadius:
-                                                  BorderRadius.circular(8)),
-                                          child: const Text('x3',
-                                              style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold)),
-                                        )
-                                      ]
-                                    ],
-                                  ),
-                                  value: target.id,
-                                  groupValue: selectedTarget,
-                                  activeColor: Colors.orangeAccent,
-                                  onChanged: (value) => setState(() {
-                                    if (value != null) {
-                                      _selectedTargets[prompt.type] = value;
-                                    }
-                                  }),
-                                )),
-                            ElevatedButton(
-                              onPressed: selectedTarget == null ||
-                                      _submittingActions.contains(prompt.type)
-                                  ? null
-                                  : () => _submitAction(
-                                      prompt.type, selectedTarget),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orangeAccent,
-                                minimumSize: const Size(double.infinity, 48),
-                              ),
-                              child: _submittingActions.contains(prompt.type)
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.black,
-                                      ),
-                                    )
-                                  : Text(
-                                      isVote && previousVote.isNotEmpty
-                                          ? 'تأكيد / تغيير التصويت'
-                                          : 'تأكيد وإرسال',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 16,
-                                        fontFamily: 'Cairo',
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                for (final prompt in secret.requiredActions) ...[
+                  Builder(
+                    builder: (context) {
+                      final isVote = prompt.type == 'vote';
+                      final previous = actions
+                          .where((a) => a.actionType == prompt.type)
+                          .firstOrNull;
+                      final completed =
+                          submitted.contains(prompt.type) && !isVote;
+                      final candidate =
+                          _selectedTargets[prompt.type] ??
+                          (isVote ? previous?.targetId : null);
+                      final selected =
+                          prompt.availableTargets.contains(candidate)
+                          ? candidate
+                          : null;
+                      final busy = _submittingActions.contains(prompt.type);
+                      final enabled =
+                          session.actionsOpen &&
+                          secret.promptRevision == session.actionRevision &&
+                          !busy &&
+                          actionSnap.hasData;
+                      final targets = seats
+                          .where(
+                            (s) =>
+                                prompt.availableTargets.contains(s.id) &&
+                                !(prompt.type == 'sniperKill' &&
+                                    s.id == widget.seatId),
+                          )
+                          .toList();
+                      return PlayerPanel(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _actionTitle(prompt.type),
+                                    style: TextStyle(
+                                      color: context.visual.textPrimary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 20,
                                     ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  isVote
+                                      ? Icons.how_to_vote_outlined
+                                      : Icons.touch_app_outlined,
+                                  color: context.visual.iconColor2,
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 8),
+                            if (completed)
+                              const PlayerNotice(
+                                title: 'وصل قرارك',
+                                message:
+                                    'تم إرسال هذه الحركة. بانتظار بقية الأدوار…',
+                                icon: Icons.check_circle_outline_rounded,
+                              )
+                            else ...[
+                              Text(
+                                !session.actionsOpen
+                                    ? 'أغلق الحكم استقبال الحركات. انتظر النتيجة.'
+                                    : isVote && previous != null
+                                    ? 'تصويتك الحالي: ${seats.where((s) => s.id == previous.targetId).firstOrNull?.playerName ?? 'لاعب'}. يمكنك تغييره قبل الفرز.'
+                                    : 'اختر لاعباً ثم أكّد قرارك. لا يُرسل اختيارك حتى التأكيد.',
+                                style: TextStyle(
+                                  color: context.visual.textSecondary,
+                                  height: 1.8,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              for (final target in targets)
+                                PlayerChoice(
+                                  name: target.playerName,
+                                  selected: selected == target.id,
+                                  badge: target.isCitizenSheikhRevealed
+                                      ? 'صوته ×3'
+                                      : null,
+                                  onTap: enabled
+                                      ? () => setState(
+                                          () => _selectedTargets[prompt.type] =
+                                              target.id,
+                                        )
+                                      : null,
+                                ),
+                              if (targets.isEmpty &&
+                                  prompt.type != 'sniperKill')
+                                const Text('لا توجد أهداف متاحة لهذه الحركة.'),
+                              const SizedBox(height: 8),
+                              ElevatedButton.icon(
+                                onPressed: enabled && selected != null
+                                    ? () => _submitAction(
+                                        prompt.type,
+                                        selected,
+                                        session.actionRevision,
+                                        expectedActionVersion:
+                                            previous?.submissionVersion ?? 0,
+                                      )
+                                    : null,
+                                icon: Icon(
+                                  busy
+                                      ? Icons.hourglass_top_rounded
+                                      : Icons.check_rounded,
+                                ),
+                                label: Text(
+                                  busy
+                                      ? 'جارٍ إرسال قرارك…'
+                                      : isVote && previous != null
+                                      ? 'تأكيد تغيير التصويت'
+                                      : 'تأكيد وإرسال',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              if (prompt.type == 'sniperKill' &&
+                                  prompt.availableTargets.contains(
+                                    widget.seatId,
+                                  )) ...[
+                                const SizedBox(height: 10),
+                                OutlinedButton(
+                                  onPressed: enabled
+                                      ? () => _submitAction(
+                                          prompt.type,
+                                          widget.seatId,
+                                          session.actionRevision,
+                                          expectedActionVersion:
+                                              previous?.submissionVersion ?? 0,
+                                        )
+                                      : null,
+                                  child: const Text(
+                                    'تخطي القنص · احتفظ بالرصاصة',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ],
-                        ],
-                      ),
-                    ),
-                  );
-                }),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ],
             );
           },
@@ -639,80 +715,59 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
   }
 
   String _actionTitle(String type) => switch (type) {
-        'vote' => 'صوّت ضد لاعب للإقصاء',
-        'assassination' => 'اختر هدف الاغتيال',
-        'protection' => 'اختر من تريد حمايته',
-        'investigation' => 'اختر لاعبًا للتحقيق معه',
-        'silence' => 'اختر من تريد إسكات صوته',
-        'retaliation' => 'اختر هدف الانتقام',
-        'sniperKill' => 'اختر هدف القنص (أو اختر نفسك للتخطي)',
-        'sleep' => 'لا يوجد لديك قدرة (اختر اسمك للتأكيد)',
-        _ => 'اختر هدف الحركة',
-      };
+    'vote' => 'صوّت ضد لاعب للإقصاء',
+    'assassination' => 'اختر هدف الاغتيال',
+    'protection' => 'اختر من تريد حمايته',
+    'investigation' => 'اختر لاعبًا للتحقيق معه',
+    'silence' => 'اختر من تريد إسكات صوته',
+    'retaliation' => 'اختر هدف الانتقام',
+    'sniperKill' => 'رصاصة واحدة. قرارك.',
+    'sleep' => 'لا يوجد لديك قدرة (اختر اسمك للتأكيد)',
+    _ => 'اختر هدف الحركة',
+  };
 
   Widget _buildPrivateResult(String result) {
-    // Detect new result and start auto-dismiss timer
     if (result != _lastPrivateResult) {
       _lastPrivateResult = result;
       _privateResultVisible = true;
       _privateResultTimer?.cancel();
-      _privateResultTimer = Timer(const Duration(seconds: 3), () {
+      _privateResultTimer = Timer(const Duration(seconds: 8), () {
         if (mounted) setState(() => _privateResultVisible = false);
       });
     }
-    if (!_privateResultVisible) return const SizedBox.shrink();
-    return AnimatedOpacity(
-      opacity: _privateResultVisible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 500),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.greenAccent.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.visibility, color: Colors.greenAccent),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                result,
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
+    return PlayerPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.visibility_outlined, color: context.visual.iconColor2),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'نتيجة خاصة بك',
+                  style: TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeadScreen() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.dangerous, color: Colors.redAccent, size: 80),
-          SizedBox(height: 20),
-          Text(
-            'لقد مت!',
-            style: TextStyle(
-              color: Colors.redAccent,
-              fontSize: 32,
-              fontFamily: 'Cairo',
-              fontWeight: FontWeight.bold,
-            ),
+            ],
           ),
-          Text(
-            'أنت الآن شبح، لا يمكنك الكلام أو التصويت.',
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 16,
-              fontFamily: 'Cairo',
+          const SizedBox(height: 12),
+          if (_privateResultVisible)
+            Text(
+              result,
+              style: TextStyle(
+                color: context.visual.textPrimary,
+                fontSize: 16,
+                height: 1.8,
+              ),
+            )
+          else
+            const Text('أُخفيت النتيجة لحماية خصوصيتك.'),
+          TextButton(
+            onPressed: () =>
+                setState(() => _privateResultVisible = !_privateResultVisible),
+            child: Text(
+              _privateResultVisible ? 'إخفاء النتيجة' : 'عرض النتيجة',
             ),
           ),
         ],
@@ -720,16 +775,16 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen> {
     );
   }
 
-  Widget _buildError(String errorMsg) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          errorMsg,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.redAccent, fontFamily: 'Cairo'),
-        ),
-      ),
-    );
-  }
+  Widget _buildDeadScreen() => const PlayerNotice(
+    title: 'انتهى دورك… وبقيت الحكاية',
+    message:
+        'أصبحت خارج اللعب. تابع مجريات المدينة بصمت، ولا تشارك في النقاش أو التصويت.',
+    icon: Icons.nightlight_outlined,
+  );
+  Widget _buildError(String message) => PlayerNotice(
+    title: 'نحتاج اتصالك من جديد',
+    message: message,
+    error: true,
+    icon: Icons.wifi_off_rounded,
+  );
 }

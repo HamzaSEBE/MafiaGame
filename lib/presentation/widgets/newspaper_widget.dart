@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:game_core/game_core.dart' show NightCasualties;
+
 import 'package:mafia_nightfall/domain/entities/game_state.dart';
 import 'package:mafia_nightfall/domain/events/game_event.dart';
 import 'package:mafia_nightfall/domain/enums/team.dart';
@@ -13,7 +14,8 @@ class NewspaperWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateStr = '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
 
     return Container(
       width: double.infinity,
@@ -26,7 +28,7 @@ class NewspaperWidget extends StatelessWidget {
             blurRadius: 20,
             spreadRadius: 5,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
         gradient: const RadialGradient(
           center: Alignment.center,
@@ -45,19 +47,32 @@ class NewspaperWidget extends StatelessWidget {
               children: [
                 Text(
                   'العدد: ${now.millisecondsSinceEpoch.toString().substring(5, 10)}',
-                  style: const TextStyle(fontFamily: 'Courier', fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontFamily: 'Courier',
+                    fontSize: 12,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   dateStr,
-                  style: const TextStyle(fontFamily: 'Courier', fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontFamily: 'Courier',
+                    fontSize: 12,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Container(height: 2, color: Colors.black87),
-            Container(height: 5, margin: const EdgeInsets.only(top: 2), color: Colors.black87),
+            Container(
+              height: 5,
+              margin: const EdgeInsets.only(top: 2),
+              color: Colors.black87,
+            ),
             const SizedBox(height: 16),
-            
             const Text(
               'جريدة المدينة',
               style: TextStyle(
@@ -70,7 +85,6 @@ class NewspaperWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            
             const Text(
               'أخبار المافيا العاجلة - النسخة الحصرية',
               style: TextStyle(
@@ -84,9 +98,7 @@ class NewspaperWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Container(height: 2, color: Colors.black87),
             const SizedBox(height: 24),
-            
             _buildArticleBody(),
-            
             const SizedBox(height: 32),
             Container(height: 1, color: Colors.black38),
             const SizedBox(height: 12),
@@ -109,7 +121,11 @@ class NewspaperWidget extends StatelessWidget {
     if (gameState.eventHistory.isEmpty) {
       return const Text(
         'لا يوجد أحداث مسجلة. مرت الأيام بسلام.',
-        style: TextStyle(fontFamily: 'Cairo', fontSize: 18, color: Colors.black87),
+        style: TextStyle(
+          fontFamily: 'Cairo',
+          fontSize: 18,
+          color: Colors.black87,
+        ),
         textAlign: TextAlign.center,
       );
     }
@@ -117,18 +133,19 @@ class NewspaperWidget extends StatelessWidget {
     List<Widget> sections = [];
     final eventsByRound = <int, List<GameEvent>>{};
     for (final event in gameState.eventHistory) {
+      if (event.gameId != gameState.id) continue;
       eventsByRound.putIfAbsent(event.round, () => []).add(event);
     }
-    
+
     final sortedRounds = eventsByRound.keys.toList()..sort();
-    
+
     for (final r in sortedRounds) {
       final events = eventsByRound[r]!;
       sections.add(_buildRoundSection(r, events));
     }
-    
+
     sections.add(_buildConclusion());
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: sections,
@@ -139,65 +156,124 @@ class NewspaperWidget extends StatelessWidget {
     List<Widget> roundWidgets = [];
 
     // Night Summary
-    final nightSummary = events.where((e) => e.type == EventType.nightResolutionSummary).lastOrNull;
+    final nightSummary = events
+        .where((e) => e.type == EventType.nightResolutionSummary)
+        .lastOrNull;
     if (nightSummary != null) {
-      roundWidgets.add(_buildSectionHeader('أحداث الليلة $round', Icons.nights_stay));
-      
-      final deadIds = (nightSummary.metadata['assassinatedIds'] as List?)?.cast<String>() ?? [];
-      final silencedIds = (nightSummary.metadata['silencedIds'] as List?)?.cast<String>() ?? [];
-      final successfulProtections = (nightSummary.metadata['successfulProtections'] as List?)?.cast<String>() ?? [];
+      roundWidgets.add(
+        _buildSectionHeader('أحداث الليلة $round', Icons.nights_stay),
+      );
 
-      if (deadIds.isEmpty) {
-        roundWidgets.add(_buildInfoRow('خيم الهدوء على المدينة. لم يُسفك أي دم.', '🕊️'));
-      } else {
-        roundWidgets.add(_buildEventRow('اغتيال المافيا:', '🔫', deadIds, const Color(0xFF8B0000)));
+      final casualties = NightCasualties(nightSummary, events);
+      final silencedIds =
+          (nightSummary.metadata['silencedIds'] as List?)?.cast<String>() ?? [];
+      final successfulProtections =
+          (nightSummary.metadata['successfulProtections'] as List?)
+              ?.cast<String>() ??
+          [];
+
+      if (casualties.isEmpty) {
+        roundWidgets.add(
+          _buildInfoRow('خيم الهدوء على المدينة. لم يُسفك أي دم.', '🕊️'),
+        );
+      }
+      if (casualties.mafia.isNotEmpty) {
+        roundWidgets.add(
+          _buildEventRow(
+            'اغتيال المافيا:',
+            '🔫',
+            casualties.mafia.toList(),
+            const Color(0xFF8B0000),
+          ),
+        );
+      }
+      if (casualties.sniper.isNotEmpty) {
+        roundWidgets.add(
+          _buildEventRow(
+            'ضحية القنص:',
+            '🎯',
+            casualties.sniper.toList(),
+            const Color(0xFF3F356C),
+          ),
+        );
+      }
+      if (casualties.unknown.isNotEmpty) {
+        roundWidgets.add(
+          _buildEventRow(
+            'ضحايا الليل:',
+            '📰',
+            casualties.unknown.toList(),
+            Colors.black87,
+          ),
+        );
       }
 
       if (successfulProtections.isNotEmpty) {
-        roundWidgets.add(_buildEventRow('تدخل الطبيب وأنقذ:', '🛡️', successfulProtections, const Color(0xFF006400)));
+        roundWidgets.add(
+          _buildEventRow(
+            'تدخل الطبيب وأنقذ:',
+            '🛡️',
+            successfulProtections,
+            const Color(0xFF006400),
+          ),
+        );
       }
 
       if (silencedIds.isNotEmpty) {
-        roundWidgets.add(_buildEventRow('تم تكميم أفواه:', '🤐', silencedIds, Colors.black87));
+        roundWidgets.add(
+          _buildEventRow('تم تكميم أفواه:', '🤐', silencedIds, Colors.black87),
+        );
       }
     }
 
     // Voting Activity
     final votes = events.where((e) => e.type == EventType.vote).toList();
     if (votes.isNotEmpty) {
-      roundWidgets.add(_buildSectionHeader('قاعة المحكمة - النهار $round', Icons.gavel));
-      
+      roundWidgets.add(
+        _buildSectionHeader('قاعة المحكمة - النهار $round', Icons.gavel),
+      );
+
       final voteMap = <String, List<String>>{};
       for (final v in votes) {
-        voteMap.putIfAbsent(v.targetId ?? 'تخطي', () => []).add(v.actorId ?? '');
+        voteMap
+            .putIfAbsent(v.targetId ?? 'تخطي', () => [])
+            .add(v.actorId ?? '');
       }
-      
+
       List<Widget> voteRows = [];
       voteMap.forEach((candidateId, voters) {
         voteRows.add(_buildVoteCard(candidateId, voters));
       });
-      
+
       roundWidgets.add(Column(children: voteRows));
     }
 
     // Eliminations
-    final elimination = events.where((e) => e.type == EventType.elimination).lastOrNull;
+    final elimination = events
+        .where((e) => e.type == EventType.elimination)
+        .lastOrNull;
     if (elimination != null) {
-      roundWidgets.add(_buildEventCard(
-        title: 'قرار المحكمة (إعدام)',
-        emoji: '⚖️',
-        targetId: elimination.targetId,
-        color: const Color(0xFF8B0000),
-      ));
+      roundWidgets.add(
+        _buildEventCard(
+          title: 'قرار المحكمة (إعدام)',
+          emoji: '⚖️',
+          targetId: elimination.targetId,
+          color: const Color(0xFF8B0000),
+        ),
+      );
     }
 
     // Retaliations
-    final retaliation = events.where((e) => e.type == EventType.citizenBoyRetaliation).lastOrNull;
+    final retaliation = events
+        .where((e) => e.type == EventType.citizenBoyRetaliation)
+        .lastOrNull;
     if (retaliation != null) {
-      roundWidgets.add(_buildRetaliationCard(
-        actorId: retaliation.actorId,
-        targetId: retaliation.targetId,
-      ));
+      roundWidgets.add(
+        _buildRetaliationCard(
+          actorId: retaliation.actorId,
+          targetId: retaliation.targetId,
+        ),
+      );
     }
 
     return Padding(
@@ -241,7 +317,12 @@ class NewspaperWidget extends StatelessWidget {
         children: [
           Text(
             text,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
             textDirection: TextDirection.rtl,
           ),
           const SizedBox(width: 8),
@@ -251,7 +332,12 @@ class NewspaperWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildEventRow(String title, String emoji, List<String> playerIds, Color accentColor) {
+  Widget _buildEventRow(
+    String title,
+    String emoji,
+    List<String> playerIds,
+    Color accentColor,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6.0),
       padding: const EdgeInsets.all(12),
@@ -267,7 +353,12 @@ class NewspaperWidget extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: accentColor),
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                ),
               ),
               const SizedBox(width: 8),
               Text(emoji, style: const TextStyle(fontSize: 20)),
@@ -301,7 +392,12 @@ class NewspaperWidget extends StatelessWidget {
               padding: EdgeInsets.all(16.0),
               child: Text(
                 'تخطي التصويت',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
             )
           else
@@ -316,7 +412,9 @@ class NewspaperWidget extends StatelessWidget {
               runSpacing: 8,
               alignment: WrapAlignment.start,
               textDirection: TextDirection.rtl,
-              children: voters.map((id) => _buildPlayerAvatar(id, small: true)).toList(),
+              children: voters
+                  .map((id) => _buildPlayerAvatar(id, small: true))
+                  .toList(),
             ),
           ),
         ],
@@ -324,7 +422,12 @@ class NewspaperWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildEventCard({required String title, required String emoji, String? targetId, required Color color}) {
+  Widget _buildEventCard({
+    required String title,
+    required String emoji,
+    String? targetId,
+    required Color color,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       padding: const EdgeInsets.all(12),
@@ -343,7 +446,12 @@ class NewspaperWidget extends StatelessWidget {
               Text(emoji, style: const TextStyle(fontSize: 32)),
               Text(
                 title,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.bold, color: color),
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
             ],
           ),
@@ -358,7 +466,10 @@ class NewspaperWidget extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.orange.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.2)],
+          colors: [
+            Colors.orange.withValues(alpha: 0.2),
+            Colors.red.withValues(alpha: 0.2),
+          ],
         ),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.deepOrange),
@@ -367,7 +478,12 @@ class NewspaperWidget extends StatelessWidget {
         children: [
           const Text(
             '💥 انتقام المواطن الشجاع!',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepOrange,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -376,7 +492,11 @@ class NewspaperWidget extends StatelessWidget {
               if (actorId != null) _buildPlayerAvatar(actorId),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Icon(Icons.double_arrow, color: Colors.deepOrange, size: 32),
+                child: Icon(
+                  Icons.double_arrow,
+                  color: Colors.deepOrange,
+                  size: 32,
+                ),
               ),
               if (targetId != null) _buildPlayerAvatar(targetId),
             ],
@@ -425,16 +545,20 @@ class NewspaperWidget extends StatelessWidget {
 
   Widget _buildConclusion() {
     final String winnerStr;
-    if (gameState.winner == Team.mafia) winnerStr = 'المافيا';
-    else if (gameState.winner == Team.independent) winnerStr = 'المهرج (الجوكر)';
-    else winnerStr = 'المواطنون';
-    
-    final reasonText = gameState.victoryReason != null ? 'السبب: ${gameState.victoryReason}' : '';
+    if (gameState.winner == Team.mafia) {
+      winnerStr = 'المافيا';
+    } else if (gameState.winner == Team.independent) {
+      winnerStr = 'المهرج (الجوكر)';
+    } else {
+      winnerStr = 'المواطنون';
+    }
 
     final isMafia = gameState.winner == Team.mafia;
     final isJoker = gameState.winner == Team.independent;
-    
-    final color = isMafia ? const Color(0xFF8B0000) : (isJoker ? Colors.purple : const Color(0xFF00008B));
+
+    final color = isMafia
+        ? const Color(0xFF8B0000)
+        : (isJoker ? Colors.purple : const Color(0xFF00008B));
     final icon = isMafia ? '🩸' : (isJoker ? '🤡' : '🕊️');
 
     return Container(
@@ -446,10 +570,7 @@ class NewspaperWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            icon,
-            style: const TextStyle(fontSize: 40),
-          ),
+          Text(icon, style: const TextStyle(fontSize: 40)),
           const SizedBox(height: 8),
           Text(
             'النتيجة النهائية',

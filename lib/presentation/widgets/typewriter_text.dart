@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mafia_nightfall/presentation/premium/themes_screen.dart';
+import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mafia_nightfall/core/audio/audio_manager.dart';
 import 'dart:async';
 
 class TypewriterText extends ConsumerStatefulWidget {

@@ -1,10 +1,11 @@
-﻿import 'dart:io';
+// ignore_for_file: avoid_print
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
 void main() {
   const sampleRate = 44100;
-  
+
   void writeWav(String path, List<double> floatSamples) {
     double maxAmp = 0.0;
     for (var s in floatSamples) {
@@ -45,36 +46,41 @@ void main() {
   {
     final n = (sampleRate * 10.0).toInt();
     final out = List<double>.filled(n, 0.0);
-    
+
     // Simple low-pass filter state
     double windFilter = 0.0;
-    
+
     for (int i = 0; i < n; i++) {
       final t = i / sampleRate;
-      
+
       // 1. Wind (filtered white noise)
       final noise = rng.nextDouble() * 2 - 1;
-      
+
       // Modulate filter cutoff with a slow LFO to sound like howling wind
-      final lfo = (sin(2 * pi * 0.1 * t) + sin(2 * pi * 0.15 * t + 1.0)) * 0.5; // -1 to 1 roughly
+      final lfo =
+          (sin(2 * pi * 0.1 * t) + sin(2 * pi * 0.15 * t + 1.0)) *
+          0.5; // -1 to 1 roughly
       final cutoff = 0.02 + (lfo + 1.0) * 0.02; // Very low cutoff
-      
+
       windFilter += (noise - windFilter) * cutoff;
-      
+
       // Wind volume also modulated
       final windVol = 0.3 + (lfo * 0.1);
       double val = windFilter * windVol;
-      
+
       // 2. Occasional crickets (high frequency bursts)
       // Every ~1 second, with some randomness
       final cricketCycle = (t * 1.5) % 1.0;
       if (cricketCycle < 0.1 && rng.nextDouble() > 0.3) {
         final cricketLfo = sin(2 * pi * 50 * t); // chirp speed
         if (cricketLfo > 0) {
-           val += (rng.nextDouble() * 2 - 1) * 0.05 * sin(2 * pi * 4000 * t); // 4kHz chirp
+          val +=
+              (rng.nextDouble() * 2 - 1) *
+              0.05 *
+              sin(2 * pi * 4000 * t); // 4kHz chirp
         }
       }
-      
+
       out[i] = val;
     }
     writeWav('assets/audio/ambience.wav', out);

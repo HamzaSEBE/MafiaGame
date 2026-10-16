@@ -3,7 +3,7 @@
     "id": "mafia",
     "title": "مافيا عالشوارب",
     "eyebrow": "لعبة مافيا بطابع عربي",
-    "description": "اجمع الشلة، وزّع الأدوار، واترك للتطبيق إدارة أسرار المدينة. لعب كلاسيكي مع الحكم، أو تجربة تفاعلية ينضم لها اللاعبون عبر QR.",
+    "description": "لعبة مافيا بطابع عربي تجمع الشلة حول طاولة واحدة. الحكم يدير أسرار المدينة، واللاعبون يعيشون أدوارهم؛ كلاسيكياً أو عبر QR من هواتفهم.",
     "icon": "assets/app-icon.png",
     "url": "mafia.html",
     "labels": [
@@ -12,7 +12,10 @@
       "عربي"
     ],
     "download": true,
-    "actionLabel": "اكتشف اللعبة",
-    "identity": "الأحمر الدموي والكحلي"
+    "actionLabel": "استكشف عالم اللعبة",
+    "identity": "الأحمر الدموي والكحلي",
+    "preview": "assets/player.png",
+    "visualCaption": "A WORLD OF SECRETS. A TABLE OF FRIENDS.",
+    "previewAlt": "واجهة اللاعب في جلسة مافيا عالشوارب"
   }
 ]

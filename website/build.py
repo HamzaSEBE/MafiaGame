@@ -65,9 +65,16 @@ def project_cards(release):
         title, eyebrow, description, action, identity = (escape(project[field]) for field in ('title', 'eyebrow', 'description', 'actionLabel', 'identity'))
         labels = ''.join(f'<span>{escape(label)}</span>' for label in project['labels'])
         download = ''
+        preview = ''
+        if project.get('preview'):
+            preview_url = local_or_https(project['preview'])
+            preview_alt = escape(project.get('previewAlt', f'معاينة {project["title"]}'), quote=True)
+            preview = f'<figure class="release-phone"><img src="{preview_url}" alt="{preview_alt}" width="390" height="844" loading="lazy"></figure>'
         if project.get('download'):
-            download = f'<a href="{DOWNLOAD_BASE}{escape(release["file"],quote=True)}" type="application/vnd.android.package-archive">تحميل APK <bdi>{escape(release["version"])}</bdi> <span aria-hidden="true">↓</span></a>'
-        cards.append(f'''<article class="studio-project" data-project="{project_id}"><div class="project-main"><div class="project-copy"><span class="project-availability">متاح الآن</span><p class="project-eyebrow">{eyebrow}</p><h3>{title}</h3><p>{description}</p><div class="project-labels">{labels}</div><div class="project-actions"><a class="button" href="{url}">{action} <span aria-hidden="true">↙</span></a>{download}</div></div><a class="project-art" href="{url}" aria-label="استكشف {title}"><img src="{icon}" alt="أيقونة {title} الأصلية" width="1024" height="1024" loading="lazy"></a></div><div class="project-footer"><span>هوية المشروع: {identity}</span><a href="{url}">من أعمال <strong dir="ltr">ABWINI Labs</strong> <span aria-hidden="true">↗</span></a></div></article>''')
+            download = f'<a class="release-download" href="{DOWNLOAD_BASE}{escape(release["file"],quote=True)}" type="application/vnd.android.package-archive">تحميل Android <bdi>{escape(release["version"])}</bdi> <span aria-hidden="true">↓</span></a>'
+        visual_caption = escape(project.get('visualCaption', 'AN ABWINI LABS EXPERIENCE'))
+        layout_class = ' has-preview' if preview else ''
+        cards.append(f'''<article class="release" data-project="{project_id}"><div class="release-visual{layout_class}"><span class="release-number" dir="ltr">ABWINI LABS / {str(len(cards)+1).zfill(2)}</span><a class="release-image-link" href="{url}" aria-label="استكشف {title}"><img class="release-image" src="{icon}" alt="أيقونة {title} الأصلية" width="1024" height="1024" loading="lazy"></a>{preview}<span class="release-visual-caption" dir="ltr">{visual_caption}</span></div><div class="release-caption"><div><p class="release-category">{eyebrow}</p><h3><a href="{url}">{title}</a></h3><p class="release-description">{description}</p><div class="release-labels">{labels}</div></div><div class="release-actions"><a class="line-link" href="{url}">{action} <span aria-hidden="true">↖</span></a>{download}<span class="release-status">متاح للتنزيل الآن</span></div></div><div class="release-caption-foot"><span>هوية المشروع: {identity}</span><span dir="ltr">AN ABWINI LABS ORIGINAL</span></div></article>''')
     return '\n'.join(cards)
 
 

@@ -7,7 +7,9 @@
 
 رفيق الحكم العربي لإدارة المافيا وجهًا لوجه، على جهاز واحد أو بمشاركة اللاعبين عبر QR.
 
-[**زيارة الموقع**](https://mafia-alshawareb.wavygrass32.chatgpt.site/) · [**تحميل Android APK — 1.2.7**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.7-arm64.apk)
+أحد أعمال **ABWINI Labs**، استوديو مستقل من مطوّر واحد لتطبيقات وألعاب Android.
+
+[**ABWINI Labs**](https://mafia-alshawareb.wavygrass32.chatgpt.site/) · [**صفحة اللعبة**](https://mafia-alshawareb.wavygrass32.chatgpt.site/mafia.html) · [**تحميل Android APK — 1.2.7**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.7-arm64.apk)
 
 Android 7.0+ · ARM64 · 37.4 MB
 
@@ -61,7 +63,7 @@ Android 7.0+ · ARM64 · 37.4 MB
 lib/                  واجهات التطبيق وحالته ومستودعات البيانات
 packages/game_core/   محرك Dart مشترك لقواعد اللعبة
 services/             API ومحرك V2 التجريبيان
-website/              الموقع التعريفي الثابت
+website/              موقع ABWINI Labs وصفحات أعماله
 web/                  عميل Flutter Web لجلسات QR
 infra/                إعدادات النشر المستقبلي للخادم
 test/                اختبارات المنطق والواجهات والصلاحيات

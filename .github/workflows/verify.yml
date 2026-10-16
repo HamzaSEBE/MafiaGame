@@ -52,3 +52,5 @@ jobs:
           node-version: '24'
       - run: python3 website/build.py
       - run: node --check website/app.js
+      - run: node --check website/studio.js
+      - run: node --test website/check.mjs

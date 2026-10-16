@@ -1,0 +1,8 @@
+/* Viewports display the supplied artwork itself; the logo is never redrawn. */
+.studio-mark{display:block;position:relative;overflow:hidden;flex-shrink:0;direction:ltr;width:48px;height:48px;border-radius:13px;background:#07090c;isolation:isolate}
+.studio-mark img{position:absolute;display:block;width:452.5%;max-width:none;height:auto;left:-349.375%;top:-34.375%}
+.studio-bar{background:#07090c;color:#c7cbd2;border-bottom:1px solid #e4b64e33;font-size:.68rem}
+.studio-bar>.wrap{display:flex;justify-content:space-between;align-items:center;min-height:48px;gap:20px;padding-block:6px}
+.studio-owner{display:flex;align-items:center;gap:10px}.studio-owner bdi,.by-studio{color:#f0c96b}.studio-owner .studio-mark{width:32px;height:32px;border-radius:9px}
+.studio-bar a:hover,.by-studio:hover{color:#fff}.studio-bar a:focus-visible{outline-color:#f0c96b}
+@media(max-width:480px){.studio-bar{font-size:.58rem}.studio-bar>.wrap{gap:10px}.studio-owner{gap:7px}.studio-owner .studio-mark{width:28px;height:28px}}

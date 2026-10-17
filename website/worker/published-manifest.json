@@ -1,13 +1,13 @@
 {
   "index.html": {
-    "key": "assets/87f367e85da509a866b7b92fe0b0257336477f55e5b03f31b939c3f8daa98acd/index.html",
-    "sha256": "87f367e85da509a866b7b92fe0b0257336477f55e5b03f31b939c3f8daa98acd",
+    "key": "assets/f971fdf17ef409e9485270b605c5cc94ac29b786df9ec4d43e99b0474522f413/index.html",
+    "sha256": "f971fdf17ef409e9485270b605c5cc94ac29b786df9ec4d43e99b0474522f413",
     "size": 7273,
     "type": "text/html; charset=utf-8"
   },
   "mafia.html": {
-    "key": "assets/e470355047a99c65c0839847831656ad02c8ea4cbf1e4e2f257eb04720f77d24/mafia.html",
-    "sha256": "e470355047a99c65c0839847831656ad02c8ea4cbf1e4e2f257eb04720f77d24",
+    "key": "assets/a459775dd8cfb6def390d27c05cd7441217dfdcca5fd2ef3cb9e5e0178a631ca/mafia.html",
+    "sha256": "a459775dd8cfb6def390d27c05cd7441217dfdcca5fd2ef3cb9e5e0178a631ca",
     "size": 12763,
     "type": "text/html; charset=utf-8"
   },
@@ -54,9 +54,9 @@
     "type": "text/xml; charset=utf-8"
   },
   "release.json": {
-    "key": "assets/3e13f0e960ec1ed2ac6f6753e37a66606bb88dd0020fb28dde03218c237f1b34/release.json",
-    "sha256": "3e13f0e960ec1ed2ac6f6753e37a66606bb88dd0020fb28dde03218c237f1b34",
-    "size": 1771,
+    "key": "assets/1e43a4b42c9b65aa25ad2227479ceea203adbbbec9870853f801106169ad2cd2/release.json",
+    "sha256": "1e43a4b42c9b65aa25ad2227479ceea203adbbbec9870853f801106169ad2cd2",
+    "size": 1867,
     "type": "application/json; charset=utf-8"
   },
   "assets/app-icon.png": {
@@ -143,12 +143,12 @@
     "size": 1700274,
     "type": "image/png"
   },
-  "downloads/mafia-nightfall-1.2.8-arm64.apk": {
-    "key": "releases/2abfdd88f332e37eb0d73eacddfaafb09aa1966d4294d9be6ff3df90350bd07e/mafia-nightfall-1.2.8-arm64.apk",
-    "sha256": "2abfdd88f332e37eb0d73eacddfaafb09aa1966d4294d9be6ff3df90350bd07e",
+  "downloads/mafia-nightfall-1.2.9-arm64.apk": {
+    "key": "releases/b8ca528ecaf4942354695b1628cb67cc58dad74edc6a3708b7c03af1f8c87f3b/mafia-nightfall-1.2.9-arm64.apk",
+    "sha256": "b8ca528ecaf4942354695b1628cb67cc58dad74edc6a3708b7c03af1f8c87f3b",
     "size": 37377163,
     "type": "application/vnd.android.package-archive",
     "download": true,
-    "filename": "mafia-nightfall-1.2.8-arm64.apk"
+    "filename": "mafia-nightfall-1.2.9-arm64.apk"
   }
 }

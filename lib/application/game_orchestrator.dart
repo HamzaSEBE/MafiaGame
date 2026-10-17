@@ -105,6 +105,8 @@ class GameOrchestrator extends Notifier<GameState> {
     (g) =>
         g.submitNightAction(actorId: actorId, targetId: targetId, type: type),
   );
+  void clearNightAction({required String actorId, required EventType type}) =>
+      _change((g) => g.clearNightAction(actorId: actorId, type: type));
   void undoLastNightAction() => _change((g) => g.undoLastNightAction());
   void resolveNight() => _change((g) => g.resolveNight());
   void startVoting() => _change((g) => g.startVoting());

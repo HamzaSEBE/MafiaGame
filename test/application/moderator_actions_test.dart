@@ -155,6 +155,17 @@ void main() {
     expect(restored.alivePlayers.length, 5);
     expect(g.canUndo, false);
   });
+
+  test('clearing a skipped role does not erase another actor decision', () {
+    final g = GameMachine(match(phase: Phase.night));
+    g.submitNightAction(
+      actorId: 'p0',
+      targetId: 'p1',
+      type: EventType.assassination,
+    );
+    g.clearNightAction(actorId: 'p2', type: EventType.sniperKill);
+    expect(g.state.eventHistory.single.type, EventType.assassination);
+  });
   late MemoryFirestore db;
   late InteractiveService service;
   void seed({bool finished = false, bool closed = false}) {

@@ -1,0 +1,41 @@
+{
+  "version": "1.2.9",
+  "sourceVersionCode": 16,
+  "apkVersionCode": 2016,
+  "buildMode": "release",
+  "packageId": "com.example.mafia_nightfall",
+  "abi": "arm64-v8a",
+  "file": "mafia-nightfall-1.2.9-arm64.apk",
+  "sizeBytes": 37377163,
+  "sha256": "b8ca528ecaf4942354695b1628cb67cc58dad74edc6a3708b7c03af1f8c87f3b",
+  "signingCertificateSha256": "8cf88a21502fd3314a9469fdaa56333712a81f1e7cd853418ca7e5461355f544",
+  "signing": "Existing test certificate, verified to match the previous APK; private key excluded",
+  "builtAt": "2026-10-17T06:36:30.786332+00:00",
+  "minSdk": 24,
+  "targetSdk": 36,
+  "backendDeployment": "Firebase Hosting and updated Firestore rules; V2 and paid services disabled",
+  "validation": {
+    "flutterTests": 170,
+    "firestoreRulesTests": 30,
+    "backendIntegrationTests": 7,
+    "websiteTests": 17,
+    "flutterAnalyze": "No issues",
+    "physicalAndroidAndBrowserTesting": "Not run; browser and Android emulator tests excluded per owner workflow",
+    "publicWebMainJsSha256": "43ef62e71d9d99d7cbdb94d53434c28dea12436cd405c638bee36b75b1c43105"
+  },
+  "changes": [
+    "Redesigned responsive judge lobby, live request inbox and seat progress",
+    "Copy complete join link and enlarge QR code",
+    "Parallel transaction reads and duplicate approval coalescing",
+    "Immediate guest navigation from private membership confirmation",
+    "Independent per-seat approval feedback, retries and pending seat changes"
+  ],
+  "downloadUrl": "https://mafia-alshawareb.wavygrass32.chatgpt.site/downloads/mafia-nightfall-1.2.9-arm64.apk",
+  "features": [
+    "Live QR phase updates, listener reconnection and matching prompt revisions",
+    "Moderator undo and kick with new QR action windows",
+    "Rematch with role editing, new result ID and retained QR membership",
+    "Direct APK download independent of repository visibility",
+    "Correcting or skipping current-night sniper/protection choices preserves lifetime limits"
+  ]
+}

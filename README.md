@@ -9,7 +9,7 @@
 
 أحد أعمال **ABWINI Labs**، استوديو مستقل من مطوّر واحد لتطبيقات وألعاب Android.
 
-[**ABWINI Labs**](https://mafia-alshawareb.wavygrass32.chatgpt.site/) · [**صفحة اللعبة**](https://mafia-alshawareb.wavygrass32.chatgpt.site/mafia.html) · [**تحميل Android APK — 1.2.8**](https://mafia-alshawareb.wavygrass32.chatgpt.site/downloads/mafia-nightfall-1.2.8-arm64.apk)
+[**ABWINI Labs**](https://mafia-alshawareb.wavygrass32.chatgpt.site/) · [**صفحة اللعبة**](https://mafia-alshawareb.wavygrass32.chatgpt.site/mafia.html) · [**تحميل Android APK — 1.2.9**](https://mafia-alshawareb.wavygrass32.chatgpt.site/downloads/mafia-nightfall-1.2.9-arm64.apk)
 
 Android 7.0+ · ARM64 · 37.4 MB
 
@@ -56,7 +56,7 @@ Android 7.0+ · ARM64 · 37.4 MB
 
 <img src="website/assets/lobby.png" width="260" alt="صالة انتظار اللاعبين في النسخة الحالية" />
 
-[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.8.json) · [آخر التغييرات](CHANGELOG.md)
+[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.9.json) · [آخر التغييرات](CHANGELOG.md)
 
 <details>
 <summary><strong>للمطورين: البنية والتشغيل</strong></summary>

@@ -157,20 +157,31 @@ class _NightScreenState extends ConsumerState<NightScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  bool _canSelectTarget(Player target, _DynamicNightStep step) {
-    // QR uses self as a skip sentinel; local play has a separate skip button.
-    if (step.eventType == EventType.sniperKill && target.id == step.actor.id) {
-      return false;
-    }
+  Set<String> _availableTargetsForStep(_DynamicNightStep step) {
+    final state = ref.read(gameOrchestratorProvider);
+    // Editing this night's pending choice must not consume its own lifetime
+    // allowance. Past nights remain in the history, just as in RuleValidator.
     final prompts = InteractivePrompts.night(
-      ref.read(gameOrchestratorProvider),
+      state.copyWith(
+        eventHistory: state.eventHistory
+            .where(
+              (e) =>
+                  !(e.gameId == state.id &&
+                      e.round == state.round &&
+                      e.phase == Phase.night &&
+                      e.actorId == step.actor.id &&
+                      e.type == step.eventType),
+            )
+            .toList(),
+      ),
     )[step.actor.id];
-    return prompts?.any(
-          (p) =>
-              p.type == step.eventType.name &&
-              p.availableTargets.contains(target.id),
-        ) ??
-        false;
+    final targets = <String>{
+      for (final p in prompts ?? const [])
+        if (p.type == step.eventType.name) ...p.availableTargets,
+    };
+    // QR uses self as a skip sentinel; local play has a separate skip button.
+    if (step.eventType == EventType.sniperKill) targets.remove(step.actor.id);
+    return targets;
   }
 
   void _confirmAction() {
@@ -388,7 +399,13 @@ class _NightScreenState extends ConsumerState<NightScreen> {
 
   void _undo() {
     if (_stepIndex > 0) {
-      ref.read(gameOrchestratorProvider.notifier).undoLastNightAction();
+      final previous = _activeSteps[_stepIndex - 1];
+      ref
+          .read(gameOrchestratorProvider.notifier)
+          .clearNightAction(
+            actorId: previous.actor.id,
+            type: previous.eventType,
+          );
       setState(() {
         _stepIndex--;
         _selectedPlayerId = null;
@@ -587,6 +604,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
 
     final step = _activeSteps[_stepIndex];
     final targets = gameState.alivePlayers;
+    final allowedTargets = _availableTargetsForStep(step);
 
     return GamePopScope(
       onExit: widget.onInteractiveExit,
@@ -758,7 +776,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                         itemCount: targets.length,
                         itemBuilder: (context, index) {
                           final player = targets[index];
-                          final canSelect = _canSelectTarget(player, step);
+                          final canSelect = allowedTargets.contains(player.id);
                           final isSelected = _selectedPlayerId == player.id;
 
                           String errorMsg = '';
@@ -851,7 +869,15 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: OutlinedButton.icon(
                           key: const ValueKey('skip-sniper'),
-                          onPressed: _nextStep,
+                          onPressed: () {
+                            ref
+                                .read(gameOrchestratorProvider.notifier)
+                                .clearNightAction(
+                                  actorId: step.actor.id,
+                                  type: EventType.sniperKill,
+                                );
+                            _nextStep();
+                          },
                           icon: const Icon(Icons.nights_stay_outlined),
                           label: const Text(
                             'تخطي القنص · احتفظ بالرصاصة لليلة لاحقة',

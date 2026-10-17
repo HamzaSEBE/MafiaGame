@@ -372,6 +372,23 @@ class GameMachine {
     );
   }
 
+  void clearNightAction({required String actorId, required EventType type}) {
+    if (!_isNight) return;
+    final history = state.eventHistory
+        .where(
+          (e) =>
+              !(e.gameId == state.id &&
+                  e.round == state.round &&
+                  e.phase == Phase.night &&
+                  e.actorId == actorId &&
+                  e.type == type),
+        )
+        .toList();
+    if (history.length != state.eventHistory.length) {
+      state = state.copyWith(eventHistory: history);
+    }
+  }
+
   void undoLastNightAction() {
     if (!_isNight || state.eventHistory.isEmpty) return;
     final lastEvent = state.eventHistory.last;

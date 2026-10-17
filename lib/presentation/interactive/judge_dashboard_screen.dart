@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/widgets/moderator_controls.dart';
 import 'package:mafia_nightfall/application/interactive_prompts.dart';
 import 'package:mafia_nightfall/domain/engine/citizen_boy_engine.dart';
 import 'dart:async';
@@ -246,9 +247,13 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
     if (_isProcessing || _isExiting) return;
     setState(() => _isProcessing = true);
     final before = ref.read(gameOrchestratorProvider);
+    final moderator = ref.read(gameOrchestratorProvider.notifier);
+    moderator.beginModeratorStep();
     try {
       await action();
+      moderator.commitModeratorStep();
     } catch (error) {
+      moderator.cancelModeratorStep();
       ref.read(gameOrchestratorProvider.notifier).restoreCheckpoint(before);
       try {
         final restored = await ref
@@ -597,7 +602,13 @@ class _JudgeDashboardScreenState extends ConsumerState<JudgeDashboardScreen> {
           'لوحة الحكم - ${_phaseLabel(state.phase)}',
           style: const TextStyle(fontFamily: 'Cairo'),
         ),
-        actions: [_exitButton()],
+        actions: [
+          ModeratorControls(
+            sessionId: widget.sessionId,
+            enabled: !_isProcessing && !_isLoadingSessionState && !_isExiting,
+          ),
+          _exitButton(),
+        ],
         backgroundColor: Colors.transparent,
       ),
       body: StreamBuilder<List<InteractiveSeat>>(

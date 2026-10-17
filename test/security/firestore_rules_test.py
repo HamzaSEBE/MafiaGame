@@ -260,6 +260,42 @@ class FirestoreRulesTest(unittest.TestCase):
         self.assertDenied(self.action())
         self.assertDenied(commit(self.host, [write(self.path, {'status': 'active'}, mask=['status'])]))
 
+    def test_host_rewind_requires_a_new_action_window(self):
+        self.ready()
+        self.assertDenied(commit(self.host, [write(self.path, {'round': 1}, mask=['round'])]))
+        self.assertEqual(commit(self.host, [write(self.path,
+            {'round': 1, 'stateVersion': 1, 'actionRevision': 2},
+            mask=['round', 'stateVersion', 'actionRevision'])])[0], 200)
+        self.assertDenied(self.action(revision=1))
+
+    def test_kicked_member_cannot_submit_even_with_current_prompt(self):
+        self.ready()
+        self.assertEqual(commit(self.host, [write(self.path+'/seats/a',
+            {'isKicked': True}, mask=['isKicked'])])[0], 200)
+        self.assertDenied(self.action())
+        self.assertEqual(commit(self.host, [write(self.path+'/seats/a',
+            {'isKicked': False}, mask=['isKicked'])])[0], 200)
+        self.assertEqual(self.action()[0], 200)
+
+    def test_rematch_preserves_membership_and_changes_match_identity(self):
+        self.ready()
+        self.assertEqual(commit(self.host, [write(self.path,
+            {'status': 'finished', 'winner': 'citizens'}, mask=['status','winner'])])[0], 200)
+        data = {'status':'active','phase':'roleReveal','round':1,'winner':None,
+            'matchId':'new-match', 'stateVersion':1, 'actionRevision':2}
+        self.assertDenied(commit(self.player,[write(self.path,data,mask=list(data))]))
+        self.assertEqual(commit(self.host,[write(self.path,data,mask=list(data))])[0],200)
+        self.assertEqual(request('GET','/'+self.path+'/members/'+self.player,uid=self.player)[0],200)
+        self.assertDenied(self.action(revision=1))
+
+    def test_explicitly_closed_room_never_reopens(self):
+        self.ready()
+        self.assertEqual(commit(self.host, [write(self.path,
+            {'status':'finished','closed':True},mask=['status','closed'])])[0],200)
+        data={'status':'active','closed':False,'phase':'roleReveal','round':1,
+            'winner':None,'matchId':'new-match','stateVersion':1,'actionRevision':2}
+        self.assertDenied(commit(self.host,[write(self.path,data,mask=list(data))]))
+
     def test_premium_cannot_be_self_granted_or_removed(self):
         path = 'users/' + self.player
         self.assertDenied(commit(self.player, [write(path, {'isPremium': True})]))

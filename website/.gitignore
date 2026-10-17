@@ -2,3 +2,8 @@ dist/
 .sites-runtime/
 .sites-checkout/
 __pycache__/
+
+# Release asset is generated from the SHA-pinned APK in the app repository.
+downloads/
+
+.site-static/

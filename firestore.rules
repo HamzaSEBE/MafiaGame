@@ -25,7 +25,7 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly([
           'id', 'hostUid', 'status', 'phase', 'round', 'actionRevision',
           'actionsPhase', 'actionsRound', 'winner', 'createdAt', 'globalAnnouncement',
-          'stateVersion', 'actionsOpen', 'expiresAt'
+          'stateVersion', 'actionsOpen', 'expiresAt', 'matchId', 'closed'
         ]) &&
         request.resource.data.id == sessionId &&
         request.resource.data.hostUid == request.auth.uid &&
@@ -36,15 +36,25 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly([
           'id', 'hostUid', 'status', 'phase', 'round', 'actionRevision',
           'actionsPhase', 'actionsRound', 'winner', 'createdAt', 'globalAnnouncement',
-          'stateVersion', 'actionsOpen', 'expiresAt'
+          'stateVersion', 'actionsOpen', 'expiresAt', 'matchId', 'closed'
         ]) &&
-        request.resource.data.round >= resource.data.round &&
+        (request.resource.data.round >= resource.data.round ||
+          (request.resource.data.actionRevision > resource.data.actionRevision &&
+           request.resource.data.stateVersion > resource.data.get('stateVersion', 0))) &&
+        request.resource.data.round >= 1 &&
+        (resource.data.get('closed', false) == false || request.resource.data.get('closed', false) == true) &&
         request.resource.data.status in ['waiting', 'active', 'finished'] &&
         request.resource.data.hostUid == resource.data.hostUid &&
         request.resource.data.id == resource.data.id &&
         request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.actionRevision >= resource.data.actionRevision &&
-        (resource.data.status != 'finished' || request.resource.data.status == 'finished');
+        (resource.data.status != 'finished' || request.resource.data.status == 'finished' ||
+          (resource.data.get('closed', false) == false &&
+           request.resource.data.status == 'active' && request.resource.data.phase == 'roleReveal' &&
+           request.resource.data.round == 1 && request.resource.data.winner == null &&
+           request.resource.data.matchId != resource.data.get('matchId', sessionId) &&
+           request.resource.data.actionRevision > resource.data.actionRevision &&
+           request.resource.data.stateVersion > resource.data.get('stateVersion', 0)));
       allow delete: if isHost();
 
       match /hostState/{checkpointId} {
@@ -131,7 +141,8 @@ service cloud.firestore {
             data.revision is int && data.revision == session.actionRevision &&
             secret.get('promptRevision', data.revision) == data.revision &&
             data.timestamp == request.time &&
-            session.status == 'active' && session.get('actionsOpen', true) == true && seat.linkedUid == request.auth.uid &&
+            session.status == 'active' && session.get('actionsOpen', true) == true &&
+            seat.get('isKicked', false) == false && seat.linkedUid == request.auth.uid &&
             ((data.actionType == 'citizenSheikhReveal' &&
                 secret.role == 'citizensSheikh' && secret.canReveal == true && seat.isAlive &&
                 !seat.isCitizenSheikhRevealed && data.targetId == data.seatId &&

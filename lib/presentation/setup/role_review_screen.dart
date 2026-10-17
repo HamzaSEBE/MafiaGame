@@ -1,3 +1,5 @@
+import 'package:mafia_nightfall/data/services/interactive/interactive_service.dart';
+import 'package:mafia_nightfall/presentation/interactive/judge_dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +11,15 @@ import 'package:mafia_nightfall/presentation/widgets/animated_background.dart';
 
 class RoleReviewScreen extends ConsumerStatefulWidget {
   final bool returnToLobby;
+  final bool isRematch;
+  final String? rematchSessionId;
 
-  const RoleReviewScreen({super.key, this.returnToLobby = false});
+  const RoleReviewScreen({
+    super.key,
+    this.returnToLobby = false,
+    this.isRematch = false,
+    this.rematchSessionId,
+  });
 
   @override
   ConsumerState<RoleReviewScreen> createState() => _RoleReviewScreenState();
@@ -18,6 +27,39 @@ class RoleReviewScreen extends ConsumerStatefulWidget {
 
 class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
   Player? _selectedPlayer;
+  bool _starting = false;
+  Future<void> _startRematch() async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    try {
+      final room = widget.rematchSessionId!;
+      await ref
+          .read(interactiveServiceProvider)
+          .syncGameState(
+            room,
+            ref.read(gameOrchestratorProvider),
+            null,
+            null,
+            isRematch: true,
+            clearPrivateResults: true,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => JudgeDashboardScreen(sessionId: room),
+        ),
+        (_) => false,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('تعذر بدء الإعادة: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
 
   void _shuffleAgain() {
     ref.read(gameOrchestratorProvider.notifier).shuffleAssignedRoles();
@@ -126,7 +168,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                     final roleColor = AppTheme.roleColor(p.role);
 
                     return GestureDetector(
-                      onTap: () => _onPlayerTapped(p),
+                      onTap: _starting ? null : () => _onPlayerTapped(p),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
@@ -209,7 +251,7 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: _shuffleAgain,
+                          onPressed: _starting ? null : _shuffleAgain,
                           icon: Icon(
                             Icons.shuffle,
                             color: context.visual.accent,
@@ -232,17 +274,30 @@ class _RoleReviewScreenState extends ConsumerState<RoleReviewScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            if (widget.returnToLobby) {
-                              Navigator.of(context).pop();
-                            } else {
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => const RoleRevealScreen(),
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: _starting
+                              ? null
+                              : () {
+                                  if (widget.rematchSessionId != null) {
+                                    _startRematch();
+                                  } else if (widget.returnToLobby) {
+                                    Navigator.of(context).pop();
+                                  } else if (widget.isRematch) {
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const RoleRevealScreen(),
+                                      ),
+                                      (_) => false,
+                                    );
+                                  } else {
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const RoleRevealScreen(),
+                                      ),
+                                    );
+                                  }
+                                },
                           icon: const Icon(
                             Icons.play_arrow,
                             color: Colors.white,

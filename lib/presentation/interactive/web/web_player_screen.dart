@@ -31,6 +31,9 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
   final Set<String> _submittingActions = {};
   bool _isShowingRole = false;
   bool _sessionEnded = false;
+  bool _sessionClosed = false;
+  Timer? _reconnectTimer;
+  int _reconnectAttempt = 0;
   Phase? _lastPhase;
   int? _lastActionRevision;
   String? _lastSeenAnnouncement;
@@ -39,29 +42,61 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
   String? _lastPrivateResult;
   Timer? _privateResultTimer;
 
-  late final Stream<InteractiveSession?> _sessionStream;
-  late final Stream<InteractiveSeat?> _seatStream;
-  late final Stream<InteractiveSecret?> _secretStream;
-  late final Stream<List<InteractiveSeat>> _seatsStream;
-  late final Stream<List<ActionRequest>> _myActionsStream;
+  late Stream<InteractiveSession?> _sessionStream;
+  late Stream<InteractiveSeat?> _seatStream;
+  late Stream<InteractiveSecret?> _secretStream;
+  late Stream<List<InteractiveSeat>> _seatsStream;
+  late Stream<List<ActionRequest>> _myActionsStream;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _connect();
+  }
+
+  // Browsers may suspend rendering/network work while a tab is in the
+  // background. Reattach on resume and retry terminal listener errors without
+  // reloading the page or polling Firestore.
+  Stream<T> _live<T>(Stream<T> stream) => stream
+      .map((value) {
+        WidgetsBinding.instance.ensureVisualUpdate();
+        return value;
+      })
+      .handleError((Object error, StackTrace trace) {
+        _scheduleReconnect();
+        Error.throwWithStackTrace(error, trace);
+      });
+
+  void _scheduleReconnect() {
+    if (!mounted || _reconnectTimer != null) return;
+    final seconds = (2 << _reconnectAttempt.clamp(0, 4)).clamp(2, 30);
+    _reconnectAttempt++;
+    _reconnectTimer = Timer(Duration(seconds: seconds), () {
+      _reconnectTimer = null;
+      if (mounted) setState(_connect);
+    });
+  }
+
+  void _connect() {
+    unawaited(_sessionSubscription?.cancel() ?? Future<void>.value());
     final service = ref.read(interactiveServiceProvider);
-    _sessionStream = service.streamSession(widget.sessionId);
-    _seatStream = service.streamMySeat(widget.sessionId, widget.seatId);
-    _secretStream = service.streamMySecret(widget.sessionId, widget.seatId);
-    _seatsStream = service.streamSeats(widget.sessionId);
+    _sessionStream = _live(service.streamSession(widget.sessionId));
+    _seatStream = _live(service.streamMySeat(widget.sessionId, widget.seatId));
+    _secretStream = _live(
+      service.streamMySecret(widget.sessionId, widget.seatId),
+    );
+    _seatsStream = _live(service.streamSeats(widget.sessionId));
     _myActionsStream = service.uid == null
         ? Stream.value(const [])
-        : service.streamMyActionRequests(widget.sessionId, service.uid!);
+        : _live(service.streamMyActionRequests(widget.sessionId, service.uid!));
     _sessionSubscription = _sessionStream.listen((session) {
       if (!mounted) return;
-      if (session?.status == SessionStatus.finished) {
-        setState(() => _sessionEnded = true);
-      }
+      setState(() {
+        _sessionEnded = session?.status == SessionStatus.finished;
+        _sessionClosed = session?.closed == true;
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
 
       if (session?.globalAnnouncement != null &&
           session?.globalAnnouncement != _lastSeenAnnouncement) {
@@ -131,12 +166,19 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
           ),
         );
       }
-    }, onError: (Object _) {});
+    }, onError: (Object _) => _scheduleReconnect());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed && mounted) {
+    if (!mounted) return;
+    if (state == AppLifecycleState.resumed) {
+      _reconnectTimer?.cancel();
+      _reconnectTimer = null;
+      _reconnectAttempt = 0;
+      setState(_connect);
+      WidgetsBinding.instance.ensureVisualUpdate();
+    } else {
       setState(() {
         _isShowingRole = false;
         _privateResultVisible = false;
@@ -149,6 +191,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
     WidgetsBinding.instance.removeObserver(this);
     _sessionSubscription?.cancel();
     _privateResultTimer?.cancel();
+    _reconnectTimer?.cancel();
     super.dispose();
   }
 
@@ -234,7 +277,9 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
   );
   @override
   Widget build(BuildContext context) {
-    if (_sessionEnded) return const WebSessionEndedScreen();
+    if (_sessionEnded) {
+      return WebSessionEndedScreen(waitingForRematch: !_sessionClosed);
+    }
     final service = ref.read(interactiveServiceProvider);
     return StreamBuilder<InteractiveSession?>(
       stream: _sessionStream,
@@ -242,7 +287,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
         if (roomSnap.hasError) {
           return _page(
             _buildError(
-              'تعذر الاتصال بالجلسة. تحقق من الإنترنت ثم أعد فتح الرابط.',
+              'تعذر الاتصال بالجلسة. تحقق من الإنترنت؛ سنعيد الاتصال تلقائياً.',
             ),
           );
         }
@@ -250,7 +295,9 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
         if (session?.status == SessionStatus.finished ||
             (roomSnap.connectionState == ConnectionState.active &&
                 session == null)) {
-          return const WebSessionEndedScreen();
+          return WebSessionEndedScreen(
+            waitingForRematch: session != null && !session.closed,
+          );
         }
         if (session == null) {
           return _page(
@@ -266,7 +313,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
           builder: (context, seatSnap) {
             if (seatSnap.hasError) {
               return _page(
-                _buildError('تعذر تحميل مقعدك. أعد فتح رابط الجلسة.'),
+                _buildError('تعذر تحميل مقعدك. جارٍ إعادة الاتصال تلقائياً.'),
                 session: session,
               );
             }
@@ -276,7 +323,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
                 if (secretSnap.hasError) {
                   return _page(
                     _buildError(
-                      'تعذر تحميل بطاقتك. تحقق من اتصالك ثم أعد فتح الرابط.',
+                      'تعذر تحميل بطاقتك. جارٍ إعادة الاتصال تلقائياً.',
                     ),
                     session: session,
                   );
@@ -287,6 +334,26 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
                     const PlayerNotice(
                       title: 'نجهّز بطاقتك…',
                       message: 'ستظهر هنا بعد اكتمال ربط مقعدك.',
+                    ),
+                    session: session,
+                  );
+                }
+                if (seat.isKicked) {
+                  return _page(
+                    const PlayerNotice(
+                      title: 'غادرت طاولة اللعب',
+                      message: 'أخرجك الحكم من المباراة. لا يمكنك إرسال حركات.',
+                      icon: Icons.person_remove_outlined,
+                    ),
+                    session: session,
+                  );
+                }
+                if (secret.promptRevision != session.actionRevision) {
+                  return _page(
+                    const PlayerNotice(
+                      title: 'جارٍ تحديث المرحلة…',
+                      message:
+                          'ستظهر خياراتك تلقائياً عند اكتمال وصول المرحلة الجديدة.',
                     ),
                     session: session,
                   );
@@ -508,7 +575,7 @@ class _WebPlayerScreenState extends ConsumerState<WebPlayerScreen>
       builder: (context, actionSnap) {
         if (actionSnap.hasError) {
           return _buildError(
-            'تعذر تأكيد حركاتك. تحقق من الاتصال ثم أعد فتح الرابط.',
+            'تعذر تأكيد حركاتك. جارٍ إعادة الاتصال تلقائياً.',
           );
         }
         final actions = (actionSnap.data ?? <ActionRequest>[])

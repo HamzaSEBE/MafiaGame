@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/widgets/moderator_controls.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:mafia_nightfall/data/services/interactive/interactive_service.dart';
@@ -170,7 +171,9 @@ class _DayScreenState extends ConsumerState<DayScreen> {
                 (route) => false,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.visual.accent,
+            ),
             child: const Text(
               'نعم، إنهاء',
               style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
@@ -319,6 +322,10 @@ class _DayScreenState extends ConsumerState<DayScreen> {
           elevation: 0,
           title: GameRoundHeader(round: round),
           actions: [
+            ModeratorControls(
+              sessionId: widget.interactiveSessionId,
+              enabled: !_clockBusy,
+            ),
             IconButton(
               icon: const Icon(Icons.handyman, color: Colors.blueAccent),
               tooltip: 'أدوات الحكم',

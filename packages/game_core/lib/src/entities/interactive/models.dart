@@ -7,6 +7,7 @@ enum SeatStatus { unlinked, requested, linked }
 
 class InteractiveSession {
   final String id;
+  final bool closed;
   final String hostUid;
   final SessionStatus status;
   final Phase phase;
@@ -24,6 +25,7 @@ class InteractiveSession {
 
   InteractiveSession({
     required this.id,
+    this.closed = false,
     required this.hostUid,
     required this.status,
     required this.phase,
@@ -42,6 +44,7 @@ class InteractiveSession {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'closed': closed,
     'hostUid': hostUid,
     'status': status.name,
     'phase': phase.name,
@@ -59,6 +62,7 @@ class InteractiveSession {
   factory InteractiveSession.fromJson(Map<String, dynamic> json) =>
       InteractiveSession(
         id: json['id'] as String,
+        closed: json['closed'] == true,
         hostUid: json['hostUid'] as String,
         status: SessionStatus.values.firstWhere(
           (e) => e.name == json['status'],
@@ -93,6 +97,7 @@ class InteractiveSeat {
   final String id;
   final String playerName;
   final bool isAlive;
+  final bool isKicked;
   final SeatStatus status;
   final String? linkedUid;
   final bool isCitizenSheikhRevealed;
@@ -101,6 +106,7 @@ class InteractiveSeat {
     required this.id,
     required this.playerName,
     required this.isAlive,
+    this.isKicked = false,
     required this.status,
     this.linkedUid,
     this.isCitizenSheikhRevealed = false,
@@ -110,6 +116,7 @@ class InteractiveSeat {
     'id': id,
     'playerName': playerName,
     'isAlive': isAlive,
+    'isKicked': isKicked,
     'status': status.name,
     'linkedUid': linkedUid,
     'isCitizenSheikhRevealed': isCitizenSheikhRevealed,
@@ -120,6 +127,7 @@ class InteractiveSeat {
         id: json['id'] as String,
         playerName: json['playerName'] as String,
         isAlive: json['isAlive'] as bool? ?? true,
+        isKicked: json['isKicked'] as bool? ?? false,
         status: SeatStatus.values.firstWhere(
           (e) => e.name == json['status'],
           orElse: () => SeatStatus.unlinked,

@@ -1,0 +1,154 @@
+{
+  "index.html": {
+    "key": "assets/87f367e85da509a866b7b92fe0b0257336477f55e5b03f31b939c3f8daa98acd/index.html",
+    "sha256": "87f367e85da509a866b7b92fe0b0257336477f55e5b03f31b939c3f8daa98acd",
+    "size": 7273,
+    "type": "text/html; charset=utf-8"
+  },
+  "mafia.html": {
+    "key": "assets/e470355047a99c65c0839847831656ad02c8ea4cbf1e4e2f257eb04720f77d24/mafia.html",
+    "sha256": "e470355047a99c65c0839847831656ad02c8ea4cbf1e4e2f257eb04720f77d24",
+    "size": 12763,
+    "type": "text/html; charset=utf-8"
+  },
+  "styles.css": {
+    "key": "assets/f82aeb97cd3c64cf8d0d2fcc4ba33c52b9f9c3cb7d3bb6f24cdcfcf40a8e2a3d/styles.css",
+    "sha256": "f82aeb97cd3c64cf8d0d2fcc4ba33c52b9f9c3cb7d3bb6f24cdcfcf40a8e2a3d",
+    "size": 13200,
+    "type": "text/css; charset=utf-8"
+  },
+  "brand.css": {
+    "key": "assets/da7e7a3fa808fb4362445af77aecebe9c3a5fac0cc0ff7963a939f68eb63ad8f/brand.css",
+    "sha256": "da7e7a3fa808fb4362445af77aecebe9c3a5fac0cc0ff7963a939f68eb63ad8f",
+    "size": 1008,
+    "type": "text/css; charset=utf-8"
+  },
+  "studio.css": {
+    "key": "assets/05fb8759a3582eeb0a17efa7ee198739b369c783bba3da06d7b2ba377eb0e774/studio.css",
+    "sha256": "05fb8759a3582eeb0a17efa7ee198739b369c783bba3da06d7b2ba377eb0e774",
+    "size": 20494,
+    "type": "text/css; charset=utf-8"
+  },
+  "app.js": {
+    "key": "assets/7145ee054360c9199276545a84808fab5c1ad0463ae99cd1f071487773bd0035/app.js",
+    "sha256": "7145ee054360c9199276545a84808fab5c1ad0463ae99cd1f071487773bd0035",
+    "size": 4508,
+    "type": "text/javascript; charset=utf-8"
+  },
+  "studio.js": {
+    "key": "assets/6ddebc86b88286ff89066c57c5a019912209551b5d5ce07b4748556b5b879bb3/studio.js",
+    "sha256": "6ddebc86b88286ff89066c57c5a019912209551b5d5ce07b4748556b5b879bb3",
+    "size": 939,
+    "type": "text/javascript; charset=utf-8"
+  },
+  "robots.txt": {
+    "key": "assets/edfac83ec1f1669b52aa4f40804ab5b21355b1644dd77b464741a64e1097c7f5/robots.txt",
+    "sha256": "edfac83ec1f1669b52aa4f40804ab5b21355b1644dd77b464741a64e1097c7f5",
+    "size": 94,
+    "type": "text/plain; charset=utf-8"
+  },
+  "sitemap.xml": {
+    "key": "assets/140e65500e5a95c88c34871d183c67363a23cc519b2642e4a57375bb3d2fba30/sitemap.xml",
+    "sha256": "140e65500e5a95c88c34871d183c67363a23cc519b2642e4a57375bb3d2fba30",
+    "size": 263,
+    "type": "text/xml; charset=utf-8"
+  },
+  "release.json": {
+    "key": "assets/3e13f0e960ec1ed2ac6f6753e37a66606bb88dd0020fb28dde03218c237f1b34/release.json",
+    "sha256": "3e13f0e960ec1ed2ac6f6753e37a66606bb88dd0020fb28dde03218c237f1b34",
+    "size": 1771,
+    "type": "application/json; charset=utf-8"
+  },
+  "assets/app-icon.png": {
+    "key": "assets/f089d503c7f864cac0e9d854123d25b22c5e99a4eb77fb27ef5ab0e9e1157cd7/assets/app-icon.png",
+    "sha256": "f089d503c7f864cac0e9d854123d25b22c5e99a4eb77fb27ef5ab0e9e1157cd7",
+    "size": 1712258,
+    "type": "image/png"
+  },
+  "assets/Cairo.ttf": {
+    "key": "assets/667c987182391c91f4e57a2f455b1794fb5e3ee6ca4ef3383e86bb690fa9c964/assets/Cairo.ttf",
+    "sha256": "667c987182391c91f4e57a2f455b1794fb5e3ee6ca4ef3383e86bb690fa9c964",
+    "size": 599548,
+    "type": "font/ttf"
+  },
+  "assets/OFL.txt": {
+    "key": "assets/aa2b13bf0770c59a7fb7a3b793a7df5162c9cb5ad540ec81b0c0c1385946845d/assets/OFL.txt",
+    "sha256": "aa2b13bf0770c59a7fb7a3b793a7df5162c9cb5ad540ec81b0c0c1385946845d",
+    "size": 4379,
+    "type": "text/plain; charset=utf-8"
+  },
+  "assets/citizens_boy.jpg": {
+    "key": "assets/a7f039a92a76a35fd5186e052883e8e8f28ba32e14bbcfd653c79ad01dec32c0/assets/citizens_boy.jpg",
+    "sha256": "a7f039a92a76a35fd5186e052883e8e8f28ba32e14bbcfd653c79ad01dec32c0",
+    "size": 777467,
+    "type": "image/jpeg"
+  },
+  "assets/citizens_girl.jpg": {
+    "key": "assets/2644bd0dab2c54cf88a0481840182fc2af92abe05cd89d46d2878bec5766aa86/assets/citizens_girl.jpg",
+    "sha256": "2644bd0dab2c54cf88a0481840182fc2af92abe05cd89d46d2878bec5766aa86",
+    "size": 852127,
+    "type": "image/jpeg"
+  },
+  "assets/citizens_sheikh.jpg": {
+    "key": "assets/3e188d7c22b3680b22c1b1abd2e1a863fa8d381bc00a4895c8ab0fe3f92c80be/assets/citizens_sheikh.jpg",
+    "sha256": "3e188d7c22b3680b22c1b1abd2e1a863fa8d381bc00a4895c8ab0fe3f92c80be",
+    "size": 918294,
+    "type": "image/jpeg"
+  },
+  "assets/good_citizen.jpg": {
+    "key": "assets/2252a21dcedf1fa34500b7a97477b9e973d8412c6d41f47d3b3b5772d338cac6/assets/good_citizen.jpg",
+    "sha256": "2252a21dcedf1fa34500b7a97477b9e973d8412c6d41f47d3b3b5772d338cac6",
+    "size": 880449,
+    "type": "image/jpeg"
+  },
+  "assets/mafia_girl.jpg": {
+    "key": "assets/809e5fdc928aba796e5ebed6e88ebf04bda2673bbb44efca0536ae95439951d4/assets/mafia_girl.jpg",
+    "sha256": "809e5fdc928aba796e5ebed6e88ebf04bda2673bbb44efca0536ae95439951d4",
+    "size": 827080,
+    "type": "image/jpeg"
+  },
+  "assets/mafia_sheikh.jpg": {
+    "key": "assets/46cfc1d24238928403a95ae38e2dd130cb4a77ea562fe1dac8613410d3e88b22/assets/mafia_sheikh.jpg",
+    "sha256": "46cfc1d24238928403a95ae38e2dd130cb4a77ea562fe1dac8613410d3e88b22",
+    "size": 821926,
+    "type": "image/jpeg"
+  },
+  "assets/normal_mafia.jpg": {
+    "key": "assets/5370f8e442871e0cf51554780175d3d2530647665c3c81e4302aa6c9371421d0/assets/normal_mafia.jpg",
+    "sha256": "5370f8e442871e0cf51554780175d3d2530647665c3c81e4302aa6c9371421d0",
+    "size": 762902,
+    "type": "image/jpeg"
+  },
+  "assets/joker.jpg": {
+    "key": "assets/d0575f7ce776a8a4dca537126dfc3b785d7c21c0f21577026b046417f4ce7ba5/assets/joker.jpg",
+    "sha256": "d0575f7ce776a8a4dca537126dfc3b785d7c21c0f21577026b046417f4ce7ba5",
+    "size": 967204,
+    "type": "image/jpeg"
+  },
+  "assets/lobby.png": {
+    "key": "assets/e6352fda96b20e295647a6a589ac9fadcc20b850d3d79e341935e06d61e87d8d/assets/lobby.png",
+    "sha256": "e6352fda96b20e295647a6a589ac9fadcc20b850d3d79e341935e06d61e87d8d",
+    "size": 125358,
+    "type": "image/png"
+  },
+  "assets/player.png": {
+    "key": "assets/b81d561cd44b0c2579c8a9d3d51db98821df4f2f1018177df612811d70d83982/assets/player.png",
+    "sha256": "b81d561cd44b0c2579c8a9d3d51db98821df4f2f1018177df612811d70d83982",
+    "size": 151144,
+    "type": "image/png"
+  },
+  "assets/abwini-brand.png": {
+    "key": "assets/965d38863088bb7a25de542fcdaa63ec32134937032550612f6d830c8235148f/assets/abwini-brand.png",
+    "sha256": "965d38863088bb7a25de542fcdaa63ec32134937032550612f6d830c8235148f",
+    "size": 1700274,
+    "type": "image/png"
+  },
+  "downloads/mafia-nightfall-1.2.8-arm64.apk": {
+    "key": "releases/2abfdd88f332e37eb0d73eacddfaafb09aa1966d4294d9be6ff3df90350bd07e/mafia-nightfall-1.2.8-arm64.apk",
+    "sha256": "2abfdd88f332e37eb0d73eacddfaafb09aa1966d4294d9be6ff3df90350bd07e",
+    "size": 37377163,
+    "type": "application/vnd.android.package-archive",
+    "download": true,
+    "filename": "mafia-nightfall-1.2.8-arm64.apk"
+  }
+}

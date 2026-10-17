@@ -12,7 +12,14 @@ import 'package:mafia_nightfall/presentation/interactive/judge_lobby_screen.dart
 
 class SetupScreen extends ConsumerStatefulWidget {
   final bool isInteractive;
-  const SetupScreen({super.key, required this.isInteractive});
+  final bool rolesOnly;
+  final String? rematchSessionId;
+  const SetupScreen({
+    super.key,
+    required this.isInteractive,
+    this.rolesOnly = false,
+    this.rematchSessionId,
+  });
 
   @override
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
@@ -24,7 +31,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen>
   int _currentTab = 0; // 0 = players, 1 = roles
 
   List<String> _savedPlayers = [];
-  final PlayerProfilesRepository _profilesRepo = PlayerProfilesRepository();
+  late final PlayerProfilesRepository _profilesRepo =
+      PlayerProfilesRepository();
 
   final Map<Role, int> _roleConfig = {
     Role.mafiaSheikh: 0,
@@ -42,7 +50,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen>
   @override
   void initState() {
     super.initState();
-    _loadProfiles();
+    if (widget.rolesOnly) {
+      _currentTab = 1;
+      for (final p in ref.read(gameOrchestratorProvider).players) {
+        _roleConfig[p.role] = (_roleConfig[p.role] ?? 0) + 1;
+      }
+    } else {
+      _loadProfiles();
+    }
   }
 
   @override
@@ -108,7 +123,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen>
             ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.visual.accent,
+            ),
             onPressed: () {
               Navigator.pop(ctx);
               setState(() => _savedPlayers.remove(name));
@@ -176,7 +193,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen>
       return;
     }
 
-    if (isInteractive) {
+    if (widget.rolesOnly) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RoleReviewScreen(
+            rematchSessionId: widget.rematchSessionId,
+            isRematch: true,
+          ),
+        ),
+      );
+    } else if (isInteractive) {
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => const JudgeLobbyScreen()));
@@ -293,37 +319,38 @@ class _SetupScreenState extends ConsumerState<SetupScreen>
                 ),
 
                 // Tabs
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                if (!widget.rolesOnly)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          _TabButton(
+                            label: 'اللاعبين (${players.length})',
+                            icon: Icons.people,
+                            selected: _currentTab == 0,
+                            onTap: () => setState(() => _currentTab = 0),
+                          ),
+                          _TabButton(
+                            label: 'الأدوار ($_totalRoles)',
+                            icon: Icons.admin_panel_settings,
+                            selected: _currentTab == 1,
+                            onTap: () => setState(() => _currentTab = 1),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        _TabButton(
-                          label: 'اللاعبين (${players.length})',
-                          icon: Icons.people,
-                          selected: _currentTab == 0,
-                          onTap: () => setState(() => _currentTab = 0),
-                        ),
-                        _TabButton(
-                          label: 'الأدوار ($_totalRoles)',
-                          icon: Icons.admin_panel_settings,
-                          selected: _currentTab == 1,
-                          onTap: () => setState(() => _currentTab = 1),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
 
                 // Content
                 Expanded(
@@ -350,38 +377,42 @@ class _SetupScreenState extends ConsumerState<SetupScreen>
                 ),
 
                 // Rule Settings Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  child: OutlinedButton.icon(
-                    icon: Icon(Icons.settings, color: context.visual.accent),
-                    label: const Text(
-                      'قوانين وإعدادات اللعبة',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Cairo',
-                        fontSize: 16,
-                      ),
+                if (!widget.rolesOnly)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
                     ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: context.visual.accent, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RuleSettingsScreen(),
+                    child: OutlinedButton.icon(
+                      icon: Icon(Icons.settings, color: context.visual.accent),
+                      label: const Text(
+                        'قوانين وإعدادات اللعبة',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
+                          fontSize: 16,
                         ),
-                      );
-                    },
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(
+                          color: context.visual.accent,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RuleSettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
 
                 // Start Button
                 Padding(
@@ -742,7 +773,10 @@ class _RolesTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Row(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text(
                         'الأدوار الموزعة:',

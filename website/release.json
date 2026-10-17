@@ -1,28 +1,26 @@
 {
-  "version": "1.2.7",
-  "sourceVersionCode": 14,
-  "apkVersionCode": 2014,
+  "version": "1.2.8",
+  "sourceVersionCode": 15,
+  "apkVersionCode": 2015,
   "buildMode": "release",
   "packageId": "com.example.mafia_nightfall",
   "abi": "arm64-v8a",
-  "file": "mafia-nightfall-1.2.7-arm64.apk",
-  "sizeBytes": 37376919,
-  "sha256": "f239816c22ab0eb440ca69d4ca8674b343ad27ed2c210cb8711437b0b1d6fdc4",
+  "file": "mafia-nightfall-1.2.8-arm64.apk",
+  "sizeBytes": 37377163,
+  "sha256": "2abfdd88f332e37eb0d73eacddfaafb09aa1966d4294d9be6ff3df90350bd07e",
   "signingCertificateSha256": "8cf88a21502fd3314a9469fdaa56333712a81f1e7cd853418ca7e5461355f544",
   "signing": "Existing test certificate, verified to match the previous APK; private key excluded",
-  "builtAt": "2026-10-16T05:26:01.663915+00:00",
+  "builtAt": "2026-10-17T06:26:26.406351+00:00",
   "minSdk": 24,
   "targetSdk": 36,
-  "backendDeployment": "Firebase Hosting deployed and verified; Firestore rules unchanged; V2 and paid services disabled",
+  "backendDeployment": "Firebase Hosting and updated Firestore rules; V2 and paid services disabled",
   "validation": {
-    "flutterTests": 149,
-    "newLobbyTests": 13,
-    "firestoreRulesTests": 26,
+    "flutterTests": 167,
+    "firestoreRulesTests": 30,
     "backendIntegrationTests": 7,
+    "websiteTests": 17,
     "flutterAnalyze": "No issues",
-    "publicWebMainJsSha256": "d8b40c56f91600e9a2295d0099d814ac443095d19a4c1d9596b352fcffd6bd40",
-    "physicalAndroidAndBrowserTesting": "Manual testing after download; no browser or Android emulator launched",
-    "networkLatencyBenchmark": "No physical-device WAN latency claim; verified concurrent reads and direct membership navigation"
+    "physicalAndroidAndBrowserTesting": "Not run; browser and Android emulator tests excluded per owner workflow"
   },
   "changes": [
     "Redesigned responsive judge lobby, live request inbox and seat progress",
@@ -30,5 +28,12 @@
     "Parallel transaction reads and duplicate approval coalescing",
     "Immediate guest navigation from private membership confirmation",
     "Independent per-seat approval feedback, retries and pending seat changes"
+  ],
+  "downloadUrl": "https://mafia-alshawareb.wavygrass32.chatgpt.site/downloads/mafia-nightfall-1.2.8-arm64.apk",
+  "features": [
+    "Live QR phase updates, listener reconnection and matching prompt revisions",
+    "Moderator undo and kick with new QR action windows",
+    "Rematch with role editing, new result ID and retained QR membership",
+    "Direct APK download independent of repository visibility"
   ]
 }

@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/widgets/moderator_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/application/interactive_prompts.dart';
 import 'package:mafia_nightfall/application/theme_service.dart';
@@ -75,7 +76,13 @@ class _NightScreenState extends ConsumerState<NightScreen> {
       return;
     }
 
-    final prompts = InteractivePrompts.night(state);
+    final prompts = InteractivePrompts.night(
+      state.copyWith(
+        eventHistory: state.eventHistory
+            .where((e) => !(e.round == state.round && e.phase == Phase.night))
+            .toList(),
+      ),
+    );
     const titles = {
       'assassination': 'الاغتيال',
       'silence': 'الإسكات',
@@ -104,6 +111,18 @@ class _NightScreenState extends ConsumerState<NightScreen> {
           ),
         );
       }
+    }
+    if (_activeSteps.isNotEmpty) {
+      final next = _activeSteps.indexWhere(
+        (step) => !state.eventHistory.any(
+          (e) =>
+              e.round == state.round &&
+              e.phase == Phase.night &&
+              e.actorId == step.actor.id &&
+              e.type == step.eventType,
+        ),
+      );
+      _stepIndex = next < 0 ? _activeSteps.length - 1 : next;
     }
   }
 
@@ -409,7 +428,9 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                 (route) => false,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.visual.accent,
+            ),
             child: const Text(
               'تأكيد الإنهاء',
               style: TextStyle(
@@ -440,6 +461,11 @@ class _NightScreenState extends ConsumerState<NightScreen> {
         return GamePopScope(
           onExit: widget.onInteractiveExit,
           child: Scaffold(
+            appBar: AppBar(
+              actions: [
+                ModeratorControls(sessionId: widget.interactiveSessionId),
+              ],
+            ),
             body: Stack(
               children: [
                 Positioned.fill(
@@ -585,6 +611,7 @@ class _NightScreenState extends ConsumerState<NightScreen> {
                 )
               : null,
           actions: [
+            ModeratorControls(sessionId: widget.interactiveSessionId),
             IconButton(
               icon: const Icon(Icons.handyman, color: Colors.blueAccent),
               tooltip: 'أدوات الحكم',

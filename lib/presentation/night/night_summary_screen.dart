@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/widgets/moderator_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/application/theme_service.dart';
 import 'package:mafia_nightfall/presentation/widgets/game_pop_scope.dart';
@@ -447,6 +448,7 @@ class _NightSummaryScreenState extends ConsumerState<NightSummaryScreen> {
           elevation: 0,
           automaticallyImplyLeading: false,
           actions: [
+            ModeratorControls(sessionId: widget.interactiveSessionId),
             IconButton(
               icon: const Icon(Icons.handyman, color: Colors.blueAccent),
               tooltip: 'أدوات الحكم',

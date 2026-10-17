@@ -125,8 +125,10 @@ class GameState {
     victoryReason: json['victoryReason'],
   );
 
-  List<Player> get alivePlayers => players.where((p) => p.isAlive).toList();
-  List<Player> get deadPlayers => players.where((p) => !p.isAlive).toList();
+  List<Player> get alivePlayers =>
+      players.where((p) => p.isAlive && !p.isKicked).toList();
+  List<Player> get deadPlayers =>
+      players.where((p) => !p.isAlive && !p.isKicked).toList();
 
   Player? getPlayerById(String id) {
     try {

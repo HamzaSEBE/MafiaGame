@@ -29,6 +29,7 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
   bool _isRequesting = false;
   bool _isNavigating = false;
   bool _sessionEnded = false;
+  bool _sessionClosed = false;
   bool _choosingAnotherSeat = false;
   Stream<List<InteractiveSeat>>? _seatsStream;
   Stream<JoinRequest?>? _myRequestStream;
@@ -43,8 +44,12 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
         .streamSession(widget.sessionId)
         .listen(
           (session) {
-            if (!mounted || session?.status != SessionStatus.finished) return;
-            setState(() => _sessionEnded = true);
+            if (!mounted) return;
+            setState(() {
+              _sessionEnded = session?.status == SessionStatus.finished;
+              _sessionClosed = session?.closed == true;
+            });
+            WidgetsBinding.instance.ensureVisualUpdate();
           },
           onError: (Object error) {
             if (mounted) setState(() => _errorMessage = _friendlyError(error));
@@ -171,7 +176,7 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
         .streamMyMembership(widget.sessionId, uid)
         .listen(
           (seatId) {
-            if (seatId != null && mounted && !_sessionEnded) {
+            if (seatId != null && mounted && !_sessionClosed) {
               _openPlayer(seatId);
             }
           },
@@ -185,7 +190,7 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
     if (_isNavigating || !mounted) return;
     _isNavigating = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _sessionEnded) return;
+      if (!mounted || _sessionClosed) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => RoomThemeScope(
@@ -228,7 +233,9 @@ class _WebJoinScreenState extends ConsumerState<WebJoinScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_sessionEnded) return const WebSessionEndedScreen();
+    if (_sessionEnded) {
+      return WebSessionEndedScreen(waitingForRematch: !_sessionClosed);
+    }
     if (_isInitializing) {
       return _page(
         const PlayerNotice(

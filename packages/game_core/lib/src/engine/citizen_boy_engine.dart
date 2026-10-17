@@ -10,7 +10,7 @@ class CitizenBoyEngine {
   /// If so, we need to transition to the triggered ability phase.
   static bool shouldTriggerAbility(GameState state, String recentlyDeceasedId) {
     final player = state.getPlayerById(recentlyDeceasedId);
-    if (player == null) return false;
+    if (player == null || player.isKicked) return false;
 
     // Trigger only if it's the citizen boy and he is now dead
     if (player.role == Role.citizensBoy && !player.isAlive) {

@@ -31,6 +31,11 @@ class TimelineGenerator {
     for (final r in sortedRounds) {
       final events = eventsByRound[r]!;
 
+      for (final e in events.where((e) => e.type == EventType.playerKicked)) {
+        buffer.writeln(
+          'أخرج الحكم (${getPlayerName(e.targetId)}) من المباراة.',
+        );
+      }
       // Night Summary
       final nightSummary = events
           .where((e) => e.type == EventType.nightResolutionSummary)

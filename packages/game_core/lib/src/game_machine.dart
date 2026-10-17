@@ -75,6 +75,89 @@ class GameMachine {
     );
   }
 
+  /// Expulsion is an administrative removal, never an execution or a kill.
+  void kickPlayer(String playerId) {
+    if (_isSetup || state.phase == Phase.winCheck) return;
+    final player = state.getPlayerById(playerId);
+    if (player == null || player.isKicked) return;
+    final pendingNight = _isNight;
+    final next = state.copyWith(
+      players: state.players
+          .map(
+            (p) => p.id == playerId
+                ? p.copyWith(isAlive: false, isKicked: true, isSilenced: false)
+                : p,
+          )
+          .toList(),
+      eventHistory: [
+        ...state.eventHistory.where(
+          (e) =>
+              !(pendingNight &&
+                  e.round == state.round &&
+                  e.phase == state.phase &&
+                  (e.actorId == playerId || e.targetId == playerId)),
+        ),
+        GameEvent(
+          id: nextId(),
+          gameId: state.id,
+          round: state.round,
+          phase: state.phase,
+          type: EventType.playerKicked,
+          targetId: playerId,
+          timestamp: clock(),
+        ),
+      ],
+    );
+    // Kicking the Citizen Boy does not trigger his death ability.
+    final before = state;
+    if (before.phase == Phase.triggeredAbility &&
+        CitizenBoyEngine.pendingActor(next) == null) {
+      final fromNight =
+          next.eventHistory.any(
+            (e) =>
+                e.round == next.round &&
+                e.type == EventType.nightResolutionSummary,
+          ) &&
+          !next.eventHistory.any(
+            (e) => e.round == next.round && e.type == EventType.elimination,
+          );
+      state = _afterDeath(
+        next,
+        fromNight ? Phase.day : Phase.night,
+        checkRetaliation: false,
+        advanceRound: !fromNight,
+      );
+    } else {
+      state = _afterDeath(next, state.phase, checkRetaliation: false);
+      if (state.phase == before.phase && state.phase == Phase.day) {
+        state = state.copyWith(
+          discussionDeadlineAt: before.discussionDeadlineAt,
+          discussionRemainingSeconds: before.discussionRemainingSeconds,
+          discussionPaused: before.discussionPaused,
+        );
+      }
+    }
+  }
+
+  void prepareRematch() {
+    if (state.phase != Phase.winCheck) {
+      throw StateError('يمكن إعادة المباراة بعد ظهور النتيجة فقط.');
+    }
+    state = GameState(
+      id: nextId(),
+      rules: state.rules,
+      players: [
+        for (final p in state.players.where((p) => !p.isKicked))
+          p.copyWith(
+            isAlive: true,
+            isSilenced: false,
+            hasSniper: false,
+            isCitizenSheikhRevealed: false,
+          ),
+      ],
+    );
+  }
+
   void updatePlayer(Player updatedPlayer) {
     if (!_isSetup) return;
     final name = updatedPlayer.name.trim();
@@ -541,6 +624,7 @@ class GameMachine {
 
   void resetGame() {
     final players = state.players
+        .where((p) => !p.isKicked)
         .map(
           (p) => p.copyWith(
             role: Role.goodCitizen,

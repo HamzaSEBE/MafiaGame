@@ -9,7 +9,7 @@
 
 أحد أعمال **ABWINI Labs**، استوديو مستقل من مطوّر واحد لتطبيقات وألعاب Android.
 
-[**ABWINI Labs**](https://mafia-alshawareb.wavygrass32.chatgpt.site/) · [**صفحة اللعبة**](https://mafia-alshawareb.wavygrass32.chatgpt.site/mafia.html) · [**تحميل Android APK — 1.2.7**](https://github.com/HamzaSEBE/MafiaGame/raw/main/releases/mafia-nightfall-1.2.7-arm64.apk)
+[**ABWINI Labs**](https://mafia-alshawareb.wavygrass32.chatgpt.site/) · [**صفحة اللعبة**](https://mafia-alshawareb.wavygrass32.chatgpt.site/mafia.html) · [**تحميل Android APK — 1.2.8**](https://mafia-alshawareb.wavygrass32.chatgpt.site/downloads/mafia-nightfall-1.2.8-arm64.apk)
 
 Android 7.0+ · ARM64 · 37.4 MB
 
@@ -27,6 +27,8 @@ Android 7.0+ · ARM64 · 37.4 MB
 | الميزة | ما تقدّمه |
 | :--- | :--- |
 | إدارة الجولات | كشف للأدوار، اغتيال وحماية وتحقيق وإسكات، ثم نقاش وتصويت ودفاع وحسم. |
+| أدوات الحكم | تراجع عن خطوة أثناء اللعب أو اطرد لاعباً، مع تحديث حالات اللاعبين وشروط الفوز. |
+| إعادة المباراة | نفس اللاعبين والقواعد، مع تعديل الأدوار. في QR تبقى الأجهزة متصلة دون إعادة مسح الرمز. |
 | مؤقت النقاش | إيقاف واستئناف وتمديد الوقت من شاشة الحكم. |
 | قوانين قابلة للتخصيص | شرح لكل إعداد، وحدود للقدرات وخيارات لشروط الفوز. القناص قدرة إضافية لأحد المواطنين، بطلقة واحدة يمكن تأجيلها. |
 | صالة الانتظار | QR قابل للتكبير، نسخ رابط الانضمام، متابعة المقاعد وقبول الطلبات أو رفضها. |
@@ -54,7 +56,7 @@ Android 7.0+ · ARM64 · 37.4 MB
 
 <img src="website/assets/lobby.png" width="260" alt="صالة انتظار اللاعبين في النسخة الحالية" />
 
-[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.7.json) · [آخر التغييرات](CHANGELOG.md)
+[بيانات APK والتوقيع وSHA-256](releases/apk-info-1.2.8.json) · [آخر التغييرات](CHANGELOG.md)
 
 <details>
 <summary><strong>للمطورين: البنية والتشغيل</strong></summary>

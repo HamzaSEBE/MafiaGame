@@ -188,4 +188,28 @@ void main() {
       }
     },
   );
+  test(
+    'deleting a prior result preserves its reused room; latest rematch deletion purges the room',
+    () async {
+      db.documents['sessions/room'] = {
+        'hostUid': 'account',
+        'status': 'finished',
+        'matchId': 'next',
+      };
+      db.documents['sessions/room/secrets/seat'] = {'role': 'secret'};
+      await history.addGame(record('room'));
+      await history.deleteGame('room');
+      expect(db.documents.containsKey('sessions/room'), true);
+      final next = GameRecord.fromJson(
+        record('next').toJson()..['sessionId'] = 'room',
+      );
+      await history.addGame(next);
+      await history.deleteGame('next');
+      expect(
+        db.documents.keys.where((p) => p.startsWith('sessions/room')),
+        isEmpty,
+      );
+      expect(db.documents.containsKey('users/account/gameDetails/next'), false);
+    },
+  );
 }

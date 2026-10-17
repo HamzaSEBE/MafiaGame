@@ -1,3 +1,4 @@
+import 'package:mafia_nightfall/presentation/widgets/moderator_controls.dart';
 import 'package:mafia_nightfall/application/interactive_prompts.dart';
 import 'package:flutter/material.dart';
 import 'package:mafia_nightfall/application/theme_service.dart';
@@ -69,9 +70,13 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
     if (_processing) return;
     final before = ref.read(gameOrchestratorProvider);
     setState(() => _processing = true);
+    final moderator = ref.read(gameOrchestratorProvider.notifier);
+    moderator.beginModeratorStep();
     try {
       await operation();
+      moderator.commitModeratorStep();
     } catch (error) {
+      moderator.cancelModeratorStep();
       ref.read(gameOrchestratorProvider.notifier).restoreCheckpoint(before);
       final id = widget.interactiveSessionId;
       if (id != null) {
@@ -717,7 +722,9 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                 _routeAfterRetaliation();
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.visual.accent,
+            ),
             child: const Text(
               'متابعة',
               style: TextStyle(
@@ -779,7 +786,9 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                 (route) => false,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: context.visual.accent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.visual.accent,
+            ),
             child: const Text(
               'تأكيد الإنهاء',
               style: TextStyle(
@@ -1022,6 +1031,10 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
             ),
           ),
           actions: [
+            ModeratorControls(
+              sessionId: widget.interactiveSessionId,
+              enabled: !_processing,
+            ),
             IconButton(
               icon: const Icon(Icons.handyman, color: Colors.blueAccent),
               tooltip: 'أدوات الحكم',

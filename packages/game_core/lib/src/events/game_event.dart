@@ -11,6 +11,7 @@ enum EventType {
   nightResolutionSummary,
   sniperKill,
   citizenSheikhReveal,
+  playerKicked,
 }
 
 class GameEvent {

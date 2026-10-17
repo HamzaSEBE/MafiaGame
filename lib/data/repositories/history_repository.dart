@@ -35,6 +35,7 @@ class GameRecord {
   final List<PlayerRecord> players;
   final String newspaperText;
   final Map<String, dynamic>? gameStateJson;
+  final String? sessionId;
 
   GameRecord({
     required this.id,
@@ -43,6 +44,7 @@ class GameRecord {
     required this.players,
     required this.newspaperText,
     this.gameStateJson,
+    this.sessionId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -52,6 +54,7 @@ class GameRecord {
     'players': players.map((p) => p.toJson()).toList(),
     'newspaperText': newspaperText,
     'gameStateJson': gameStateJson,
+    if (sessionId != null) 'sessionId': sessionId,
   };
 
   factory GameRecord.fromJson(Map<String, dynamic> json) => GameRecord(
@@ -63,6 +66,7 @@ class GameRecord {
         .toList(),
     newspaperText: json['newspaperText'] as String,
     gameStateJson: json['gameStateJson'] as Map<String, dynamic>?,
+    sessionId: json['sessionId'] as String?,
   );
 }
 
@@ -73,20 +77,24 @@ class GameSummary {
     required this.date,
     required this.winningTeam,
     required this.playerCount,
+    this.sessionId,
   });
   final String id;
   final DateTime date;
   final String winningTeam;
   final int playerCount;
+  final String? sessionId;
   factory GameSummary.fromRecord(GameRecord record) => GameSummary(
     id: record.id,
     date: record.date,
     winningTeam: record.winningTeam,
     playerCount: record.players.length,
+    sessionId: record.sessionId,
   );
   factory GameSummary.fromData(String id, Map<String, dynamic> data) =>
       GameSummary(
         id: id,
+        sessionId: data['sessionId'] as String?,
         date: DateTime.parse(data['date'] as String),
         winningTeam: data['winningTeam'] as String,
         playerCount:
@@ -100,6 +108,7 @@ class GameSummary {
     'date': date.toIso8601String(),
     'winningTeam': winningTeam,
     'playerCount': playerCount,
+    if (sessionId != null) 'sessionId': sessionId,
   };
 }
 
@@ -214,7 +223,9 @@ class HistoryRepository {
   Future<void> _deleteGames(String uid, Iterable<String> ids) async {
     final account = _account(uid), batch = _firestore.batch();
     for (final id in ids.toSet()) {
-      await _deleteFinishedRoom(uid, id);
+      final summary = await account.collection('games').doc(id).get();
+      final roomId = summary.data()?['sessionId'] as String? ?? id;
+      await _deleteFinishedRoom(uid, id, sessionId: roomId);
       // Retain aggregate deduplication with an opaque receipt, not game data.
       batch.set(
         account.collection('resultReceipts').doc(resultReceiptId(uid, id)),
@@ -230,12 +241,18 @@ class HistoryRepository {
 
   /// Firestore parent deletion does not cascade. Purge all legacy QR children
   /// while the parent still exists for host authorization; keep active rooms.
-  Future<void> _deleteFinishedRoom(String uid, String gameId) async {
-    final room = _firestore.collection('sessions').doc(gameId);
+  Future<void> _deleteFinishedRoom(
+    String uid,
+    String gameId, {
+    String? sessionId,
+  }) async {
+    final room = _firestore.collection('sessions').doc(sessionId ?? gameId);
     final snapshot = await room.get(const GetOptions(source: Source.server));
     if (!snapshot.exists ||
         snapshot.data()?['hostUid'] != uid ||
-        snapshot.data()?['status'] != 'finished') {
+        snapshot.data()?['status'] != 'finished' ||
+        (snapshot.data()?['matchId'] != null &&
+            snapshot.data()?['matchId'] != gameId)) {
       return;
     }
     for (final name in [

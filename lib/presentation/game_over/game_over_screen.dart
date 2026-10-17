@@ -1,4 +1,5 @@
-import 'dart:async';
+import 'package:mafia_nightfall/presentation/setup/setup_screen.dart';
+import 'package:mafia_nightfall/domain/enums/phase.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,6 +28,7 @@ class GameOverScreen extends ConsumerStatefulWidget {
 class _GameOverScreenState extends ConsumerState<GameOverScreen> {
   bool _savingResult = false;
   bool _resultSaveFailed = false;
+  bool _resultSaved = false;
   @override
   void initState() {
     super.initState();
@@ -35,20 +37,10 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
       ref.read(audioManagerProvider).playReveal();
       _saveGameToHistory();
     });
-    final sessionId = widget.interactiveSessionId;
-    if (sessionId != null &&
-        ref.read(interactiveServiceProvider).protocolFor(sessionId) == 1) {
-      unawaited(
-        ref
-            .read(interactiveServiceProvider)
-            .endSession(sessionId)
-            .catchError((_) {}),
-      );
-    }
   }
 
   Future<void> _saveGameToHistory() async {
-    if (_savingResult) return;
+    if (_savingResult || _resultSaved) return;
     setState(() {
       _savingResult = true;
       _resultSaveFailed = false;
@@ -84,6 +76,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
           .toList(),
       newspaperText: narrative,
       gameStateJson: gameState.toJson(),
+      sessionId: widget.interactiveSessionId,
     );
 
     try {
@@ -99,6 +92,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                         .protocolFor(widget.interactiveSessionId!) ==
                     2,
           );
+      _resultSaved = true;
     } catch (_) {
       if (mounted) setState(() => _resultSaveFailed = true);
     } finally {
@@ -240,11 +234,62 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: !_resultSaved || _savingResult
+                      ? null
+                      : () async {
+                          final room = widget.interactiveSessionId;
+                          final completed = ref.read(gameOrchestratorProvider);
+                          ref
+                              .read(gameOrchestratorProvider.notifier)
+                              .prepareRematch();
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SetupScreen(
+                                isInteractive: room != null,
+                                rolesOnly: true,
+                                rematchSessionId: room,
+                              ),
+                            ),
+                          );
+                          if (context.mounted &&
+                              ModalRoute.of(context)?.isCurrent == true &&
+                              ref.read(gameOrchestratorProvider).phase !=
+                                  Phase.winCheck) {
+                            ref
+                                .read(gameOrchestratorProvider.notifier)
+                                .restoreCheckpoint(completed);
+                          }
+                        },
+                  icon: const Icon(Icons.replay_rounded),
+                  label: const Text('إعادة المباراة بنفس اللاعبين'),
+                ),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () async {
+                        final room = widget.interactiveSessionId;
+                        if (room != null) {
+                          try {
+                            await ref
+                                .read(interactiveServiceProvider)
+                                .endSession(room);
+                          } catch (error) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('تعذر إغلاق الغرفة: $error'),
+                                ),
+                              );
+                            }
+                            return;
+                          }
+                        }
                         await ref
                             .read(gameOrchestratorProvider.notifier)
                             .endGame();

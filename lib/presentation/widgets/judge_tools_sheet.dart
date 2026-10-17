@@ -312,6 +312,11 @@ class _JudgeToolsWidgetState extends ConsumerState<_JudgeToolsWidget> {
             icon = Icons.my_location;
             color = Colors.amberAccent;
             break;
+          case EventType.playerKicked:
+            desc = 'طرد الحكم ${target?.name ?? "لاعباً"}';
+            icon = Icons.person_remove_outlined;
+            color = Colors.orange;
+            break;
           case EventType.citizenSheikhReveal:
             desc = 'أفصح شيخ المواطنين عن نفسه';
             icon = Icons.campaign;

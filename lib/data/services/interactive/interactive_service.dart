@@ -89,7 +89,7 @@ class InteractiveService {
   final Map<String, int> _stateVersions = {};
   final Map<String, Future<void>> _hostWrites = {};
   final Map<(String, String, String), Future<void>> _approvals = {};
-  final Map<String, Map<String, (bool, bool)>> _publishedSeats = {};
+  final Map<String, Map<String, (bool, bool, bool)>> _publishedSeats = {};
 
   // A session is a party-sized room; large concurrency is spread across rooms.
   // This bounds the largest atomic write (session + seats + secrets).
@@ -260,6 +260,8 @@ class InteractiveService {
     if (room.data()?['hostUid'] != uid) {
       throw StateError('لا تملك صلاحية استرجاع الجلسة.');
     }
+    _stateVersions[sessionId] =
+        (room.data()?['stateVersion'] as num?)?.toInt() ?? 0;
     if (room.data()?['status'] == 'finished') {
       final checkpoint = await _sessionRef(sessionId)
           .collection('hostState')
@@ -520,9 +522,16 @@ class InteractiveService {
     Map<String, List<PlayerActionPrompt>>? actionPrompts,
     Map<String, String>? privateResults,
     bool clearPrivateResults = false,
+    bool moderatorRewind = false,
+    bool isRematch = false,
   }) => _serializeHostWrite(sessionId, () async {
     _validateRoom(state);
     if (_v2(sessionId)) {
+      if (moderatorRewind ||
+          isRematch ||
+          state.players.any((p) => p.isKicked)) {
+        throw StateError('هذه الأدوات متاحة في غرف QR الحالية فقط.');
+      }
       final hasPrompts =
           actionPrompts?.values.any((p) => p.isNotEmpty) ??
           requiredActions?.isNotEmpty ??
@@ -555,24 +564,69 @@ class InteractiveService {
     if (!_stateVersions.containsKey(sessionId)) await getSession(sessionId);
     final expectedVersion = _stateVersions[sessionId];
     int committedVersion = 0;
-    final changedSeats = <String, (bool, bool)>{};
+    GameState? alreadyStarted;
+    final changedSeats = <String, (bool, bool, bool)>{};
     await _firestore.runTransaction<void>((transaction) async {
       // Update public session state
       final sessionRef = _sessionRef(sessionId);
       final currentSession = await transaction.get(sessionRef);
       if (!currentSession.exists ||
-          currentSession.data()?['status'] == SessionStatus.finished.name) {
+          currentSession.data()?['closed'] == true ||
+          (currentSession.data()?['status'] == SessionStatus.finished.name &&
+              !isRematch)) {
         throw StateError('لا يمكن تحديث لعبة غير موجودة.');
       }
       final currentVersion =
           (currentSession.data()?['stateVersion'] as num?)?.toInt() ?? 0;
+      if (isRematch &&
+          currentSession.data()?['matchId'] == state.id &&
+          currentSession.data()?['status'] == 'active') {
+        final saved = await transaction.get(
+          sessionRef.collection('hostState').doc('current'),
+        );
+        alreadyStarted = GameState.fromJson(
+          Map<String, dynamic>.from(saved.data()!['state'] as Map),
+        );
+        committedVersion = currentVersion;
+        return;
+      }
       if (expectedVersion != currentVersion) {
         throw StateError('توجد حالة أحدث على الخادم. أعد فتح شاشة الحكم.');
       }
       committedVersion = currentVersion + 1;
-      if (state.round <
-          ((currentSession.data()?['round'] as num?)?.toInt() ?? 1)) {
+      if (!moderatorRewind &&
+          !isRematch &&
+          state.round <
+              ((currentSession.data()?['round'] as num?)?.toInt() ?? 1)) {
         throw StateError('توجد جولة أحدث على الخادم. أعد فتح شاشة الحكم.');
+      }
+      final checkpointRef = sessionRef.collection('hostState').doc('current');
+      if (isRematch) {
+        final saved = await transaction.get(checkpointRef);
+        final previous = GameState.fromJson(
+          Map<String, dynamic>.from(saved.data()!['state'] as Map),
+        );
+        final expectedIds = previous.players
+            .where((p) => !p.isKicked)
+            .map((p) => p.id)
+            .toSet();
+        if (previous.phase != Phase.winCheck ||
+            state.id == previous.id ||
+            state.phase != Phase.roleReveal ||
+            state.round != 1 ||
+            state.players.length != expectedIds.length ||
+            !state.players.every(
+              (p) => expectedIds.contains(p.id) && p.isAlive && !p.isKicked,
+            ) ||
+            jsonEncode(state.rules.toJson()) !=
+                jsonEncode(previous.rules.toJson())) {
+          throw StateError(
+            'إعادة المباراة تحفظ نفس اللاعبين والقواعد وتتطلب أدواراً جديدة.',
+          );
+        }
+      } else if (currentSession.data()?['matchId'] != null &&
+          currentSession.data()?['matchId'] != state.id) {
+        throw StateError('بدأت مباراة أخرى في هذه الغرفة. أعد فتح شاشة الحكم.');
       }
       final actionRevision =
           ((currentSession.data()?['actionRevision'] as num?)?.toInt() ?? 0) +
@@ -598,14 +652,15 @@ class InteractiveService {
                 .name,
         'phase': state.phase.name,
         'round': state.round,
+        'matchId': state.id,
+        'closed': false,
         'actionRevision': actionRevision,
         'stateVersion': committedVersion,
-        'actionsOpen': true,
+        'actionsOpen': state.phase != Phase.winCheck,
         'actionsPhase': hasActionPrompts ? state.phase.name : null,
         'actionsRound': hasActionPrompts ? state.round : null,
         'winner': state.winner?.name,
-        if (globalAnnouncement != null)
-          'globalAnnouncement': globalAnnouncement,
+        'globalAnnouncement': globalAnnouncement,
       });
 
       transaction.set(sessionRef.collection('hostState').doc('current'), {
@@ -617,10 +672,15 @@ class InteractiveService {
         final seatRef = _sessionRef(
           sessionId,
         ).collection('seats').doc(player.id);
-        final publicState = (player.isAlive, player.isCitizenSheikhRevealed);
+        final publicState = (
+          player.isAlive,
+          player.isCitizenSheikhRevealed,
+          player.isKicked,
+        );
         if (_publishedSeats[sessionId]?[player.id] != publicState) {
           transaction.update(seatRef, {
             'isAlive': player.isAlive,
+            'isKicked': player.isKicked,
             'isCitizenSheikhRevealed': player.isCitizenSheikhRevealed,
           });
         }
@@ -629,17 +689,18 @@ class InteractiveService {
         final secretRef = _sessionRef(
           sessionId,
         ).collection('secrets').doc(player.id);
-        final prompts =
-            actionPrompts?[player.id] ??
-            (requiredActions?[player.id] == null
-                ? const <PlayerActionPrompt>[]
-                : <PlayerActionPrompt>[
-                    PlayerActionPrompt(
-                      type: requiredActions![player.id]!,
-                      availableTargets:
-                          availableTargets?[player.id] ?? const [],
-                    ),
-                  ]);
+        final prompts = player.isKicked
+            ? const <PlayerActionPrompt>[]
+            : actionPrompts?[player.id] ??
+                  (requiredActions?[player.id] == null
+                      ? const <PlayerActionPrompt>[]
+                      : <PlayerActionPrompt>[
+                          PlayerActionPrompt(
+                            type: requiredActions![player.id]!,
+                            availableTargets:
+                                availableTargets?[player.id] ?? const [],
+                          ),
+                        ]);
         final secretData = <String, dynamic>{
           'role': player.role.name,
           'promptRevision': actionRevision,
@@ -665,7 +726,10 @@ class InteractiveService {
                     .toList()
               : <String>[],
         };
-        if (clearPrivateResults) {
+        if (clearPrivateResults ||
+            moderatorRewind ||
+            isRematch ||
+            player.isKicked) {
           secretData['privateResult'] = null;
         }
         if (privateResults?.containsKey(player.id) == true) {
@@ -676,6 +740,9 @@ class InteractiveService {
     });
     _stateVersions[sessionId] = committedVersion;
     _publishedSeats[sessionId] = changedSeats;
+    if (alreadyStarted != null && !_disposed) {
+      onAuthoritativeState?.call(alreadyStarted!);
+    }
   });
 
   /// Publishes an investigation result to the investigating seat as soon as
@@ -832,6 +899,7 @@ class InteractiveService {
           final active = await transaction.get(activeRef);
           transaction.update(_sessionRef(sessionId), {
             'status': SessionStatus.finished.name,
+            'closed': true,
             'actionsOpen': false,
             'actionsPhase': null,
             'actionsRound': null,
@@ -962,6 +1030,7 @@ class InteractiveService {
       if (data == null ||
           data['status'] != SessionStatus.active.name ||
           seat.data()?['linkedUid'] != playerUid ||
+          seat.data()?['isKicked'] == true ||
           !secret.exists) {
         throw StateError('الجلسة أو المقعد لم يعد متاحًا.');
       }

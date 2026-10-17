@@ -53,4 +53,5 @@ jobs:
       - run: python3 website/build.py
       - run: node --check website/app.js
       - run: node --check website/studio.js
-      - run: node --test website/check.mjs
+      - run: node --test website/check.mjs website/worker.test.mjs
+      - run: python3 website/build_worker.py

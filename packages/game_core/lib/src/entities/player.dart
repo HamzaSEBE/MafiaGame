@@ -5,6 +5,7 @@ class Player {
   final String name;
   final Role role;
   final bool isAlive;
+  final bool isKicked;
   final bool isSilenced;
   final bool hasSniper;
   final bool isCitizenSheikhRevealed;
@@ -15,6 +16,7 @@ class Player {
     required this.name,
     required this.role,
     this.isAlive = true,
+    this.isKicked = false,
     this.isSilenced = false,
     this.hasSniper = false,
     this.isCitizenSheikhRevealed = false,
@@ -26,6 +28,7 @@ class Player {
     String? name,
     Role? role,
     bool? isAlive,
+    bool? isKicked,
     bool? isSilenced,
     bool? hasSniper,
     bool? isCitizenSheikhRevealed,
@@ -36,6 +39,7 @@ class Player {
       name: name ?? this.name,
       role: role ?? this.role,
       isAlive: isAlive ?? this.isAlive,
+      isKicked: isKicked ?? this.isKicked,
       isSilenced: isSilenced ?? this.isSilenced,
       hasSniper: hasSniper ?? this.hasSniper,
       isCitizenSheikhRevealed:
@@ -49,6 +53,7 @@ class Player {
     'name': name,
     'role': role.name,
     'isAlive': isAlive,
+    'isKicked': isKicked,
     'isSilenced': isSilenced,
     'hasSniper': hasSniper,
     'isCitizenSheikhRevealed': isCitizenSheikhRevealed,
@@ -63,6 +68,7 @@ class Player {
       orElse: () => Role.goodCitizen,
     ),
     isAlive: json['isAlive'] as bool? ?? true,
+    isKicked: json['isKicked'] as bool? ?? false,
     isSilenced: json['isSilenced'] as bool? ?? false,
     hasSniper: json['hasSniper'] as bool? ?? false,
     isCitizenSheikhRevealed: json['isCitizenSheikhRevealed'] as bool? ?? false,

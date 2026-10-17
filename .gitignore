@@ -68,3 +68,8 @@ tool/load/load-report-*.json
 website/.git/
 website/.site-workflow/
 *.tar.gz
+
+# The canonical APK is in releases; the Site checkout packages its own copy.
+/website/downloads/
+
+/website/.site-static/
